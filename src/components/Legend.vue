@@ -3,7 +3,7 @@
     <li><span class="doc">▯ Collection</span> STAC document: a separate JSON file</li>
     <li><span class="glyph">{}</span> object inside a document <span class="glyph">[{}]</span> object in an array</li>
     <li><span class="geo">properties</span> GeoJSON Feature properties of an Item</li>
-    <li><span class="chip">cube:*</span> fields validated there by the schema</li>
+    <li><span class="chip">cube:*</span> fields validated there by the schema; <code>prefix:*</code> means all fields of that prefix, otherwise they are named</li>
     <li><span class="chip presence">cube:*</span> presence only: the value is not validated there, but counts towards the extension's “use at least one field” rule</li>
     <li><span class="chip possible">cf:*</span> allowed, not populated (STAC URL view)</li>
     <li><span class="chip unexpected">foo:bar</span> populated, but no selected schema places it there</li>

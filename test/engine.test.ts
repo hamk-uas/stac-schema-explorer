@@ -128,12 +128,21 @@ describe('schemas that validate fields of other extensions', () => {
     it('reports CF fields that the Observatory extension allows in Table columns', async () => {
         const observatory = 'https://sklvarjo.github.io/observatory-stac-extension/schema.json';
         const table = 'https://stac-extensions.github.io/table/v1.3.0/schema.json';
-        const result = await probe(fixtureStore(), '1.1.0', [observatory, CF, table]);
+        const result = await probe(fixtureStore(), '1.1.0', [observatory, CF, table, DATACUBE]);
         const info = result.sources.find((s) => s.key === observatory)!;
         expect(info.prefixes).toEqual(['obs', 'in_situ']);
         expect(info.fields).toContain('cf:cell_methods');
         expect(placed(result, 'Feature', observatory, 'cf:cell_methods').get('/properties/table:columns/0')).toBe('validated');
         expect(placed(result, 'Feature', CF, 'cf:cell_methods').has('/properties/table:columns/0')).toBe(false);
+
+        const fieldsAt = (location: string) => result.templates.Collection.placements
+            .filter((p) => p.location === location && p.source === observatory)
+            .map((p) => ({ name: p.field, source: p.source, state: 'populated' as const, kind: p.kind }));
+        const dimension = groupFields(fieldsAt('/assets/data/cube:dimensions/time'), result.sources)[0];
+        expect(dimension.label).not.toContain('obs:*');
+        expect(dimension.label).toMatch(/of 11 obs:\)/);
+        const column = groupFields(fieldsAt('/assets/data/table:columns/0'), result.sources)[0];
+        expect(column.label).toContain('cf:cell_methods');
     });
 });
 

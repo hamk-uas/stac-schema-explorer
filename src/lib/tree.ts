@@ -245,13 +245,19 @@ export function groupFields(fields: FieldView[], sources: SourceInfo[]): FieldGr
     });
 }
 
-/** `cube:*` for several fields of an own prefix; other schemas' fields (`cf:cell_methods`) by name. */
+/**
+ * `cube:*` when every field of an own prefix is here; otherwise the fields by name (shortened when there are many).
+ * Other schemas' fields (`cf:cell_methods` validated by the Observatory extension) are always listed by name.
+ */
 function prefixedLabel(list: FieldView[], info: SourceInfo): string {
     const parts: string[] = [];
     for (const prefix of info.prefixes) {
-        const own = list.filter((f) => prefixOf(f.name) === prefix);
-        if (own.length > 1) parts.push(`${prefix}:*`);
-        else if (own.length === 1) parts.push(own[0].name);
+        const here = list.filter((f) => prefixOf(f.name) === prefix);
+        const all = info.fields.filter((f) => prefixOf(f) === prefix);
+        if (here.length === 0) continue;
+        if (here.length === all.length && all.length > 1) parts.push(`${prefix}:*`);
+        else if (here.length <= 2) parts.push(...here.map((f) => f.name));
+        else parts.push(`${here[0].name}, … (${here.length} of ${all.length} ${prefix}:)`);
     }
     const foreign = list.filter((f) => !info.prefixes.includes(prefixOf(f.name) ?? ''));
     parts.push(...foreign.map((f) => f.name));
