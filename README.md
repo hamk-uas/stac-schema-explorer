@@ -1,0 +1,108 @@
+# STAC Schema Explorer
+
+A web app for understanding [SpatioTemporal Asset Catalog (STAC)](https://stacspec.org) core spec and STAC extensions:
+**where in the STAC hierarchy, and where within each STAC object, can each field go?**
+
+Live app: <https://hamk-uas.github.io/stac-schema-explorer/>
+
+Reading extension JSON Schemas by hand to find out, say, whether `cf:cell_methods` may appear in an asset, in a band,
+in a `cube:variables` entry or in Collection `summaries` is slow and error-prone. This app answers the question by
+asking the schemas themselves.
+
+## Views
+
+- **Example catalog**: a conceptual catalog tree (Catalog → sub-catalog, Collection → Item) showing the *extreme case*:
+  every field of the selected schemas placed everywhere the schemas allow it. Separate JSON documents are cards,
+  objects inside a document are indented rows (`{}` objects, `[{}]` objects in arrays), Item `properties` are a green
+  GeoJSON box, and fields are chips coloured by extension. Click a chip group to list its fields, an object to highlight
+  it in the JSON panel. The generated example documents validate against STAC core and every selected extension and can
+  be copied or downloaded.
+- **Placement matrix**: every field × every conceptual location (Collection › Asset › Band, Item › properties ›
+  cube:variable, …) on one screen, for comparing extensions with each other.
+- **Explore a STAC URL**: open a Catalog, Collection or Item (static or STAC API) and browse its children. Each object
+  shows its populated fields highlighted within all fields the schemas would allow at the same place: dotted chips are
+  allowed but absent, red chips are present but not placed there by any selected schema. Documents are validated
+  against STAC core and the extensions they declare.
+
+Extensions are chosen from quick-select buttons (the extensions discussed in the
+[Observatory](https://github.com/hamk-uas/observatory) project) or added as any JSON Schema URL or `name@version`
+(short for `https://stac-extensions.github.io/<name>/v<version>/schema.json`).
+
+All state is kept in the URL, so any view can be shared by copying the address.
+
+| Parameter | Meaning |
+| --- | --- |
+| `mode` | `example` or `href` |
+| `v` | STAC version of the example (`1.1.0` default, `1.0.0`) |
+| `ext` | an extension, repeatable: `name@version` or a schema URL; `noext=1` for none |
+| `href` | STAC document to explore |
+| `sel`, `ptr` | selected document (`catalog`, `subcatalog`, `collection`, `item` or a URL) and object (JSON Pointer) |
+| `view` | `matrix` for the placement matrix |
+| `focus` | an extension whose fields are highlighted (others dimmed) |
+| `core=1`, `group=0`, `declared=0` | show STAC core fields; list fields one by one; ignore extensions declared by explored documents |
+
+## How it works
+
+Everything runs in the browser; schemas are fetched from their published URLs when selected. A Web Worker
+([src/engine.worker.ts](src/engine.worker.ts)) does the work with [Ajv](https://ajv.js.org).
+
+1. **Field discovery** ([src/lib/fields.ts](src/lib/fields.ts)). An extension's fields are the property keys its schema
+   defines at "container" level (object root, Item `properties`, assets, bands, `cube:variables` entries, Table columns
+   and so on), found by following `$ref`, `allOf`/`anyOf`/`oneOf`, `if`/`then`/`else` and `not`. The extension's own
+   prefixes come from the conventional `"patternProperties": {"^(?!cube:)": {}}`, or the most frequent prefix. Fields of
+   *other* extensions that a schema validates (for example `cf:cell_methods` in Table columns in the Observatory
+   extension) are reported too, attributed to the schema that validates them.
+2. **Example values** ([src/lib/sampler.ts](src/lib/sampler.ts)). A value valid against each field's subschema is
+   generated from the schema (with readable hints for well-known fields) and checked with Ajv.
+3. **Placement probing** ([src/lib/probe.ts](src/lib/probe.ts)). Starting from minimal valid Catalog, Collection and
+   Item documents with one link, provider, asset and item asset each, every field is tried in every object of the
+   document:
+   - The schema **validates** a field at a location if the document passes with a valid value there but fails with an
+     invalid one. Invalid values that the schema also rejects under an unknown key (every entry of `item_assets` must be
+     an object, for example) are not counted.
+   - A field's placement is **presence only** if the schema does not validate the value there, but the field's
+     presence satisfies the extension's "use at least one of my fields" rule (typical for `summaries`).
+   - Each extension is probed with its own fields removed from elsewhere, so each alternative of an
+     `anyOf` (Datacube in Item `properties` *or* in assets) is found.
+   - Fields that need company (`cube:variables` requires `cube:dimensions`) are tried together.
+   - Placed fields create new objects (`bands[0]`, `cube:variables` entries, Table columns), which are probed in
+     further rounds, as are earlier locations, since one placement can enable another: STAC 1.1.0 allows `bands` in
+     Item `properties` only when an asset has `bands`.
+   - Before a placement is accepted, every other schema must still accept the document; otherwise it is reported as a
+     conflict.
+
+### Limitations
+
+- Only what the schemas check is found. Prose rules of an extension's README that its schema does not enforce are
+  invisible; so is anything a schema accepts without looking at it. `summaries` may summarize any Item field, but only
+  fields whose schemas validate (or require) them there are shown.
+- The extreme case combines conditional placements. Each placement is valid in the context of the others, but not
+  necessarily on its own (see the `bands` example above).
+- Placement is probed in the objects of the example only. Schemas rarely distinguish assets by role, so one asset
+  stands for all; dimension entries do differ (`x`, `y`, `time`), which is why the example has three.
+- If no valid example value can be generated for a field, the field is listed under the extension in the sidebar and
+  may be missing from the results.
+- Exploring a URL needs the server to allow cross-origin requests (CORS), as do custom schema URLs.
+- In STAC 1.0.0 the example Collection has `item_assets` even without the Item Assets extension, which 1.0.0 core does
+  not validate.
+
+## Development
+
+Requires Node.js 22 and pnpm.
+
+```sh
+pnpm install
+pnpm dev          # development server
+pnpm test         # unit tests, using the schema snapshots in test/fixtures
+pnpm build        # type check and production build into dist/
+pnpm explore -- https://stac-extensions.github.io/cf/v1.0.0/schema.json   # print placements in the terminal
+```
+
+Tests and `pnpm explore` read schemas from [test/fixtures](test/fixtures); a schema missing there is downloaded once and
+saved. Delete a fixture to refresh it.
+
+## Deployment
+
+[.github/workflows/pages.yml](.github/workflows/pages.yml) tests, builds and deploys to GitHub Pages on every push to
+`main`. In the repository settings, set **Pages → Build and deployment → Source** to **GitHub Actions**. The build uses
+relative paths, so it also works from any other static host or subdirectory.
