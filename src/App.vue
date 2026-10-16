@@ -266,7 +266,6 @@ const findings = computed(() => {
 });
 
 const EXAMPLE_URLS = [
-    { label: 'HIKET STAC (FMI)', href: 'https://lake.fmi.fi/hiket-stac/catalog.json' },
     { label: 'Arctic TROPOMI CH4 Item', href: 'https://cardsmirror.blob.core.windows.net/arctic-tropomi-ch4-l3/stac/arctic-tropomi-ch4-l3-2021/arctic-tropomi-ch4-l3-2021.json' },
     { label: 'EOPF Sentinel-2 L1C (API)', href: 'https://stac.core.eopf.eodc.eu/collections/sentinel-2-l1c' },
     { label: 'Earth Search Sentinel-2 L2A (API)', href: 'https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a' },
