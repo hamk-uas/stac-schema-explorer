@@ -276,13 +276,13 @@
           "type": "string",
           "format": "iri-reference",
           "minLength": 1,
-          "title": "Link Reference",
+          "title": "Link reference",
           "description": "The actual link in the format of an URL. Relative and absolute links are both allowed."
         },
         "rel": {
           "type": "string",
           "minLength": 1,
-          "title": "Link Relation Type",
+          "title": "Link relation type",
           "description": "Relationship between the current document and the linked document."
         },
         "type": {
