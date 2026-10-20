@@ -122,6 +122,8 @@ translations of STAC core.
   that each copy validates exactly like its original (annotations removed, value lists turned back into `enum`), keeps
   every upstream title and description, documents every field, and lists each allowed value exactly once: a value listed
   twice fails the `oneOf`.
+- Fields that only a dependency defines (the GeoJSON `type` of an Item) are documented by an annotation-only property
+  in the STAC schema; such a property accepts anything, so the copy still validates exactly like the original.
 - Schemas whose own repositories document every field are not vendored: the Semantics extension
   ([hamk-uas/stac-semantics](https://github.com/hamk-uas/stac-semantics)) and the Observatory extension
   ([sklvarjo/observatory-stac-extension](https://github.com/sklvarjo/observatory-stac-extension)).
