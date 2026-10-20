@@ -196,7 +196,9 @@ export function documentationSites(schema, { core }) {
         if (propertyNames.slice(0, -1).includes('summaries')) return;
         const name = context.name;
         if (Object.keys(node).length === 0) return;
-        if (Object.keys(node).every((key) => CONSTRAINT_ONLY.has(key) || ANNOTATIONS.includes(key))) return;
+        // Constraint-only nodes (e.g. `stac_extensions` contains) are not field definitions, unless they carry a title.
+        if (Object.keys(node).every((key) => CONSTRAINT_ONLY.has(key) || ANNOTATIONS.includes(key))
+            && !ANNOTATIONS.some((key) => key in node)) return;
         if (!core) {
             const prefix = prefixOf(name);
             if (prefix && prefixes.length > 0 && !prefixes.includes(prefix)) return;

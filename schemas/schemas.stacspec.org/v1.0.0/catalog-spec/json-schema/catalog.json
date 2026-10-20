@@ -39,7 +39,8 @@
         },
         "type": {
           "title": "Type of STAC entity",
-          "const": "Catalog"
+          "const": "Catalog",
+          "description": "Set to `Catalog` if this Catalog only implements the Catalog spec."
         },
         "id": {
           "title": "Identifier",

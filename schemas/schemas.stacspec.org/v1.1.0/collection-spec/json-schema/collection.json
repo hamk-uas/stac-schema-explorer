@@ -46,7 +46,8 @@
         },
         "type": {
           "title": "Type of STAC entity",
-          "const": "Collection"
+          "const": "Collection",
+          "description": "Must be set to `Collection` to be a valid Collection."
         },
         "id": {
           "title": "Identifier",
@@ -148,7 +149,8 @@
                 "properties": {
                   "href": {
                     "title": "Disallow href",
-                    "not": {}
+                    "not": {},
+                    "description": "Item Asset Definitions must not have an `href`: they do not point to any data by themselves."
                   },
                   "title": {
                     "title": "Asset title",

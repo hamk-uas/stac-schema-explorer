@@ -37,6 +37,7 @@ export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     se('file', 'File Info', ['2.1.0']),
     se('zarr', 'Zarr', ['1.1.0']),
     se('scientific', 'Scientific', ['1.0.0']),
+    se('attribution', 'Attribution', ['0.1.0']),
     se('processing', 'Processing', ['1.2.0']),
     se('product', 'Product', ['1.0.0']),
     se('timestamps', 'Timestamps', ['1.1.0']),

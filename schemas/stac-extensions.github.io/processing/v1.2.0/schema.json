@@ -254,7 +254,8 @@
               "description": "The type of the expression that is specified in the `expression` property."
             },
             "expression": {
-              "description": "Any data type, depending on the format chosen."
+              "description": "Any data type, depending on the format chosen.",
+              "title": "Expression"
             }
           },
           "description": "An expression or processing chain that describes how the data has been processed. Alternatively, you can also link to a processing chain with the relation type `processing-expression`."

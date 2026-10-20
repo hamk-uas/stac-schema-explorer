@@ -37,6 +37,7 @@ export const VENDORED = [
     EXT('file', '2.1.0'),
     EXT('zarr', '1.1.0'),
     EXT('scientific', '1.0.0'),
+    EXT('attribution', '0.1.0'),
     EXT('processing', '1.2.0'),
     EXT('product', '1.0.0'),
     EXT('timestamps', '1.1.0'),

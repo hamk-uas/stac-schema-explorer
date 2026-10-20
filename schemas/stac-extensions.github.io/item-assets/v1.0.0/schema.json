@@ -27,7 +27,8 @@
         "properties": {
           "href": {
             "title": "Disallow href",
-            "not": {}
+            "not": {},
+            "description": "Item Asset Definitions must not have an `href`: they do not point to any data by themselves."
           },
           "title": {
             "title": "Asset title",

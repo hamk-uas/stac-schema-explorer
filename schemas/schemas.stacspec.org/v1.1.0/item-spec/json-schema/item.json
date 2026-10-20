@@ -291,7 +291,8 @@
             },
             "body": {
               "title": "Link body",
-              "$comment": "Any type is allowed."
+              "$comment": "Any type is allowed.",
+              "description": "The HTTP body to be sent to the target resource."
             }
           },
           "$comment": "Link with relationship `self` must be absolute URI",

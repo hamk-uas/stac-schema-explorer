@@ -42,7 +42,8 @@
         },
         "type": {
           "title": "Type of STAC entity",
-          "const": "Collection"
+          "const": "Collection",
+          "description": "Must be set to `Collection` to be a valid Collection."
         },
         "id": {
           "title": "Identifier",
