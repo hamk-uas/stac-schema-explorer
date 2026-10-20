@@ -13,7 +13,9 @@
   "then": {
     "properties": {
       "platform": {
-        "const": "https://{bucket}.s3.{region}.amazonaws.com"
+        "const": "https://{bucket}.s3.{region}.amazonaws.com",
+        "title": "Platform",
+        "description": "The cloud provider where data is stored as URI or URI template to the API."
       },
       "bucket": {
         "$comment": "See https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html",

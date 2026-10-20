@@ -84,6 +84,14 @@ export function canonicalize(schema) {
             node.enum = list.values.map((value) => value.const);
         }
     });
+    // A property schema with nothing but annotations accepts anything, exactly like an absent one. Such properties carry
+    // documentation for fields that only a dependency defines (the GeoJSON `type` of an Item).
+    walkSchemas(copy, (node) => {
+        if (!isObject(node.properties)) return;
+        for (const [key, value] of Object.entries(node.properties)) {
+            if (isObject(value) && Object.keys(value).length === 0) delete node.properties[key];
+        }
+    });
     return copy;
 }
 
@@ -130,7 +138,7 @@ const WIRING = new Set([
     'bands', 'providers', 'collection', 'features',
 ]);
 /** Keywords that only constrain a value: a node made of these is a condition or discriminator, not a definition. */
-const CONSTRAINT_ONLY = new Set(['const', 'contains', 'required', 'minItems', 'maxItems', 'minProperties', 'not', '$comment', 'minLength']);
+const CONSTRAINT_ONLY = new Set(['contains', 'required', 'minItems', 'maxItems', 'minProperties', 'not', '$comment', 'minLength']);
 
 /**
  * Where a `$ref`-only (or single-`allOf`) node points, so documentation can live on the referenced definition.
@@ -202,7 +210,9 @@ export function documentationSites(schema, { core }) {
         if (!core) {
             const prefix = prefixOf(name);
             if (prefix && prefixes.length > 0 && !prefixes.includes(prefix)) return;
-            if (!prefix && WIRING.has(name) && propertyNames.length <= 2) return;
+            // `type` inside a definition discriminates the extension's own objects (e.g. a temporal dimension): a field.
+            const ownType = name === 'type' && chain.some((p) => p.keyword === 'definitions' || p.keyword === '$defs');
+            if (!prefix && WIRING.has(name) && propertyNames.length <= 2 && !ownType) return;
         }
         const path = chain.flatMap((p) => (p.keyword === 'properties' || p.keyword === 'definitions' || p.keyword === '$defs') && p.name ? [p.name] : []);
         sites.push({ pointer, name, node, path });

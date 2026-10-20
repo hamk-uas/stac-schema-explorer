@@ -275,7 +275,9 @@
               "spatial",
               "geometry"
             ]
-          }
+          },
+          "title": "Dimension type",
+          "description": "Custom type of the dimension, never `spatial` or `geometry`."
         },
         "description": {
           "$ref": "#/definitions/description",
@@ -323,7 +325,8 @@
       ],
       "properties": {
         "type": {
-          "$ref": "#/definitions/type_spatial"
+          "$ref": "#/definitions/type_spatial",
+          "title": "Dimension type"
         },
         "axis": {
           "$ref": "#/definitions/axis_xy"
@@ -370,7 +373,8 @@
       ],
       "properties": {
         "type": {
-          "$ref": "#/definitions/type_spatial"
+          "$ref": "#/definitions/type_spatial",
+          "title": "Dimension type"
         },
         "axis": {
           "$ref": "#/definitions/axis_z"
@@ -409,7 +413,9 @@
       "properties": {
         "type": {
           "type": "string",
-          "const": "geometry"
+          "const": "geometry",
+          "title": "Dimension type",
+          "description": "Type of the dimension, always `geometry`."
         },
         "axes": {
           "type": "array",
@@ -526,7 +532,9 @@
       "properties": {
         "type": {
           "type": "string",
-          "const": "temporal"
+          "const": "temporal",
+          "title": "Dimension type",
+          "description": "Type of the dimension, always `temporal`."
         },
         "description": {
           "$ref": "#/definitions/description",
@@ -629,7 +637,9 @@
     },
     "type_spatial": {
       "type": "string",
-      "const": "spatial"
+      "const": "spatial",
+      "title": "Type",
+      "description": "Type of the dimension, always `spatial`."
     },
     "axis_xy": {
       "type": "string",

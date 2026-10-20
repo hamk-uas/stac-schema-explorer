@@ -94,6 +94,10 @@
               },
               "description": "A list of extensions the Item implements."
             },
+            "type": {
+              "title": "Type of GeoJSON Object",
+              "description": "Type of the GeoJSON Object. MUST be set to `Feature`."
+            },
             "id": {
               "title": "Provider ID",
               "description": "Provider item ID",

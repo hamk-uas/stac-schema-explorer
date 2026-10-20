@@ -208,7 +208,9 @@
                 "description": "Detailed multi-line description to explain the column. CommonMark 0.29 syntax MAY be used for rich text representation."
               },
               "type": {
-                "type": "string"
+                "type": "string",
+                "title": "Data Type",
+                "description": "Data type of the column. If using a file format with a type system (like Parquet), we recommend you use those types."
               }
             }
           },

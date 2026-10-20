@@ -129,7 +129,9 @@
                     ],
                     "properties": {
                       "rel": {
-                        "const": "icon"
+                        "const": "icon",
+                        "title": "Link relation type",
+                        "description": "Relationship of the logo link to the contact: always `icon`."
                       }
                     }
                   }
@@ -286,11 +288,13 @@
           "description": "Relationship between the current document and the linked document."
         },
         "type": {
-          "type": "string"
+          "type": "string",
+          "title": "Link type",
+          "description": "Media type of the referenced entity."
         },
         "title": {
           "type": "string",
-          "title": "Title",
+          "title": "Link title",
           "description": "A human readable title to be used in rendered displays of the link."
         }
       }

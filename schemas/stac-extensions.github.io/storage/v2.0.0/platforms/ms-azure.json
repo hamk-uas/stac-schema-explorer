@@ -13,7 +13,9 @@
   "then": {
     "properties": {
       "platform": {
-        "const": "https://{account}.blob.core.windows.net"
+        "const": "https://{account}.blob.core.windows.net",
+        "title": "Platform",
+        "description": "The cloud provider where data is stored as URI or URI template to the API."
       },
       "account": {
         "type": "string",

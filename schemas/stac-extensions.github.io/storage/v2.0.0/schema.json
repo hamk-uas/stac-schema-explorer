@@ -102,7 +102,8 @@
               "properties": {
                 "type": {
                   "title": "Type identifier",
-                  "type": "string"
+                  "type": "string",
+                  "description": "Type identifier for the platform."
                 },
                 "platform": {
                   "title": "Platform",
