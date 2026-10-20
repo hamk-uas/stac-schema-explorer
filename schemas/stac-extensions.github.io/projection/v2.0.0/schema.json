@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+  "title": "Projection Extension",
+  "description": "STAC Projection Extension for STAC Items.",
+  "$comment": "This schema succeeds if the proj: fields are not used at all, please keep this in mind.",
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/stac_extensions"
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "properties",
+            "assets"
+          ],
+          "properties": {
+            "type": {
+              "const": "Feature"
+            },
+            "properties": {
+              "$ref": "#/definitions/fields"
+            },
+            "assets": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/fields"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Collection"
+            },
+            "assets": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/fields"
+              }
+            },
+            "item_assets": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/fields"
+              }
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/stac_extensions"
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "stac_extensions": {
+      "type": "object",
+      "required": [
+        "stac_extensions"
+      ],
+      "properties": {
+        "stac_extensions": {
+          "type": "array",
+          "contains": {
+            "const": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+          }
+        }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "proj:code": {
+          "title": "Projection code",
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Authority and specific code of the data source (e.g., `EPSG:3857`)."
+        },
+        "proj:wkt2": {
+          "title": "Coordinate Reference System in WKT2 format",
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "WKT2 string representing the Coordinate Reference System (CRS) that the `proj:geometry` and `proj:bbox` fields represent."
+        },
+        "proj:projjson": {
+          "title": "Coordinate Reference System in PROJJSON format",
+          "oneOf": [
+            {
+              "$ref": "https://proj.org/schemas/v0.7/projjson.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "PROJJSON object representing the Coordinate Reference System (CRS) that the `proj:geometry` and `proj:bbox` fields represent."
+        },
+        "proj:geometry": {
+          "$ref": "https://geojson.org/schema/Geometry.json",
+          "title": "Footprint",
+          "description": "Defines the footprint of this Item."
+        },
+        "proj:bbox": {
+          "title": "Extent",
+          "type": "array",
+          "oneOf": [
+            {
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "minItems": 6,
+              "maxItems": 6
+            }
+          ],
+          "items": {
+            "type": "number"
+          },
+          "description": "Bounding box of the Item in the asset CRS in 2 or 3 dimensions."
+        },
+        "proj:centroid": {
+          "title": "Centroid",
+          "type": "object",
+          "required": [
+            "lat",
+            "lon"
+          ],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "title": "Latitude",
+              "description": "The latitude of the centroid."
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "title": "Longitude",
+              "description": "The longitude of the centroid."
+            }
+          },
+          "description": "Coordinates representing the centroid of the Item (in lat/long)."
+        },
+        "proj:shape": {
+          "title": "Shape",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer"
+          },
+          "description": "Number of pixels in Y and X directions for the default grid."
+        },
+        "proj:transform": {
+          "title": "Transform",
+          "type": "array",
+          "oneOf": [
+            {
+              "minItems": 6,
+              "maxItems": 6
+            },
+            {
+              "minItems": 9,
+              "maxItems": 9
+            }
+          ],
+          "items": {
+            "type": "number"
+          },
+          "description": "The affine transformation coefficients for the default grid."
+        }
+      },
+      "patternProperties": {
+        "^(?!proj:)": {}
+      },
+      "additionalProperties": false
+    }
+  }
+}

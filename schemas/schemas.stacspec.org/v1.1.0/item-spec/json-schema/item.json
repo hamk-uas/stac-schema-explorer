@@ -1,0 +1,374 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/item.json",
+  "title": "STAC Item",
+  "type": "object",
+  "description": "This object represents the metadata for an item in a SpatioTemporal Asset Catalog.",
+  "allOf": [
+    {
+      "$ref": "#/definitions/core"
+    }
+  ],
+  "definitions": {
+    "core": {
+      "allOf": [
+        {
+          "$ref": "https://geojson.org/schema/Feature.json"
+        },
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "geometry",
+                "bbox"
+              ],
+              "properties": {
+                "geometry": {
+                  "$ref": "https://geojson.org/schema/Geometry.json",
+                  "title": "Geometry",
+                  "description": "Defines the full footprint of the asset represented by this item, formatted according to RFC 7946, section 3.1 if a geometry is provided or section 3.2 if no geometry is provided."
+                },
+                "bbox": {
+                  "type": "array",
+                  "oneOf": [
+                    {
+                      "minItems": 4,
+                      "maxItems": 4
+                    },
+                    {
+                      "minItems": 6,
+                      "maxItems": 6
+                    }
+                  ],
+                  "items": {
+                    "type": "number"
+                  },
+                  "title": "Bounding Box",
+                  "description": "REQUIRED if `geometry` is not `null`, prohibited if `geometry` is `null`. Bounding Box of the asset represented by this Item, formatted according to RFC 7946, section 5."
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "geometry"
+              ],
+              "properties": {
+                "geometry": {
+                  "type": "null",
+                  "title": "Geometry",
+                  "description": "Defines the full footprint of the asset represented by this item, formatted according to RFC 7946, section 3.1 if a geometry is provided or section 3.2 if no geometry is provided."
+                },
+                "bbox": {
+                  "not": {}
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "stac_version",
+            "id",
+            "links",
+            "assets",
+            "properties"
+          ],
+          "properties": {
+            "stac_version": {
+              "title": "STAC version",
+              "type": "string",
+              "const": "1.1.0",
+              "description": "The STAC version the Item implements."
+            },
+            "stac_extensions": {
+              "title": "STAC extensions",
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "title": "Reference to a JSON Schema",
+                "type": "string",
+                "format": "iri"
+              },
+              "description": "A list of extensions the Item implements."
+            },
+            "id": {
+              "title": "Provider ID",
+              "description": "Provider item ID",
+              "type": "string",
+              "minLength": 1
+            },
+            "links": {
+              "$ref": "#/definitions/links"
+            },
+            "assets": {
+              "$ref": "#/definitions/assets"
+            },
+            "properties": {
+              "allOf": [
+                {
+                  "$ref": "common.json"
+                },
+                {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "datetime"
+                      ],
+                      "properties": {
+                        "datetime": {
+                          "not": {
+                            "type": "null"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "required": [
+                        "datetime",
+                        "start_datetime",
+                        "end_datetime"
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "title": "Properties",
+              "description": "A dictionary of additional metadata for the Item."
+            }
+          },
+          "$comment": "Rules enforcement for STAC Item",
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "links": {
+                    "contains": {
+                      "required": [
+                        "rel"
+                      ],
+                      "properties": {
+                        "rel": {
+                          "const": "collection"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "collection"
+                ],
+                "properties": {
+                  "collection": {
+                    "title": "Collection ID",
+                    "description": "The ID of the STAC Collection this Item references to.",
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "else": {
+                "properties": {
+                  "collection": {
+                    "not": {}
+                  }
+                }
+              }
+            },
+            {
+              "$comment": "The if-then-else below checks whether the bands field is given in assets or not. If not, allows bands in properties (then), otherwise, disallows bands in properties (else).",
+              "if": {
+                "$comment": "If there is no asset with bands...",
+                "required": [
+                  "assets"
+                ],
+                "properties": {
+                  "assets": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "properties": {
+                        "bands": false
+                      }
+                    }
+                  }
+                }
+              },
+              "then": {
+                "$comment": "... then bands are not allowed in properties...",
+                "properties": {
+                  "properties": {
+                    "properties": {
+                      "bands": false
+                    },
+                    "title": "Properties",
+                    "description": "A dictionary of additional metadata for the Item."
+                  }
+                }
+              },
+              "else": {
+                "$comment": "... otherwise bands are allowed in properties.",
+                "properties": {
+                  "properties": {
+                    "$ref": "bands.json",
+                    "title": "Properties",
+                    "description": "A dictionary of additional metadata for the Item."
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "links": {
+      "title": "Item links",
+      "description": "Links to item relations",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/link"
+      }
+    },
+    "link": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "rel",
+            "href"
+          ],
+          "properties": {
+            "href": {
+              "title": "Link reference",
+              "type": "string",
+              "format": "iri-reference",
+              "minLength": 1,
+              "description": "The actual link in the format of an URL. Relative and absolute links are both allowed. Trailing slashes are significant."
+            },
+            "rel": {
+              "title": "Link relation type",
+              "type": "string",
+              "minLength": 1,
+              "description": "Relationship between the current document and the linked document."
+            },
+            "type": {
+              "title": "Link type",
+              "type": "string",
+              "description": "Media type of the referenced entity."
+            },
+            "title": {
+              "title": "Link title",
+              "type": "string",
+              "description": "A human readable title to be used in rendered displays of the link."
+            },
+            "method": {
+              "title": "Link method",
+              "type": "string",
+              "pattern": "^[A-Z]+$",
+              "default": "GET",
+              "description": "The HTTP method that shall be used for the request to the target resource, in uppercase. `GET` by default."
+            },
+            "headers": {
+              "title": "Link headers",
+              "type": "object",
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              "description": "The HTTP headers to be sent for the request to the target resource."
+            },
+            "body": {
+              "title": "Link body",
+              "$comment": "Any type is allowed."
+            }
+          },
+          "$comment": "Link with relationship `self` must be absolute URI",
+          "if": {
+            "properties": {
+              "rel": {
+                "const": "self"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "href": {
+                "format": "iri",
+                "title": "Link Reference",
+                "description": "The actual link in the format of an URL. Relative and absolute links are both allowed. Trailing slashes are significant."
+              }
+            }
+          }
+        },
+        {
+          "$ref": "common.json"
+        }
+      ]
+    },
+    "assets": {
+      "title": "Asset links",
+      "description": "Links to assets",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/asset"
+      }
+    },
+    "asset": {
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "href"
+          ],
+          "properties": {
+            "href": {
+              "title": "Asset reference",
+              "type": "string",
+              "format": "iri-reference",
+              "minLength": 1,
+              "description": "URI to the asset object. Relative and absolute URI are both allowed. Trailing slashes are significant."
+            },
+            "title": {
+              "title": "Asset title",
+              "type": "string",
+              "description": "The displayed title for clients and users."
+            },
+            "description": {
+              "title": "Asset description",
+              "type": "string",
+              "description": "A description of the Asset providing additional details, such as how it was processed or created. CommonMark 0.29 syntax MAY be used for rich text representation."
+            },
+            "type": {
+              "title": "Asset type",
+              "type": "string",
+              "description": "Media type of the asset."
+            },
+            "roles": {
+              "title": "Asset roles",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The semantic roles of the asset, similar to the use of `rel` in links."
+            }
+          }
+        },
+        {
+          "$ref": "common.json"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,309 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.stacspec.org/v1.0.0/collection-spec/json-schema/collection.json",
+  "title": "STAC Collection Specification",
+  "description": "This object represents Collections in a SpatioTemporal Asset Catalog.",
+  "allOf": [
+    {
+      "$ref": "#/definitions/collection"
+    }
+  ],
+  "definitions": {
+    "collection": {
+      "title": "STAC Collection",
+      "description": "These are the fields specific to a STAC Collection. All other fields are inherited from STAC Catalog.",
+      "type": "object",
+      "required": [
+        "stac_version",
+        "type",
+        "id",
+        "description",
+        "license",
+        "extent",
+        "links"
+      ],
+      "properties": {
+        "stac_version": {
+          "title": "STAC version",
+          "type": "string",
+          "const": "1.0.0",
+          "description": "The STAC version the Collection implements."
+        },
+        "stac_extensions": {
+          "title": "STAC extensions",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "title": "Reference to a JSON Schema",
+            "type": "string",
+            "format": "iri"
+          },
+          "description": "A list of extension identifiers the Collection implements."
+        },
+        "type": {
+          "title": "Type of STAC entity",
+          "const": "Collection"
+        },
+        "id": {
+          "title": "Identifier",
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier for the Collection that is unique across the provider."
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "description": "A short descriptive one-line title for the Collection."
+        },
+        "description": {
+          "title": "Description",
+          "type": "string",
+          "minLength": 1,
+          "description": "Detailed multi-line description to fully explain the Collection. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "keywords": {
+          "title": "Keywords",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of keywords describing the Collection."
+        },
+        "license": {
+          "title": "Collection License Name",
+          "type": "string",
+          "pattern": "^[\\w\\-\\.\\+]+$",
+          "description": "Collection's license(s), either a SPDX License identifier, `various` if multiple licenses apply or `proprietary` for all other cases."
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "title": "Organization name",
+                "type": "string",
+                "description": "The name of the organization or the individual."
+              },
+              "description": {
+                "title": "Organization description",
+                "type": "string",
+                "description": "Multi-line description to add further provider information such as processing details for processors and producers, hosting details for hosts or basic contact information. CommonMark 0.29 syntax MAY be used for rich text representation."
+              },
+              "roles": {
+                "title": "Organization roles",
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "oneOf": [
+                    {
+                      "const": "producer",
+                      "title": "Producer"
+                    },
+                    {
+                      "const": "licensor",
+                      "title": "Licensor"
+                    },
+                    {
+                      "const": "processor",
+                      "title": "Processor"
+                    },
+                    {
+                      "const": "host",
+                      "title": "Host"
+                    }
+                  ]
+                },
+                "description": "Roles of the provider. Any of `licensor`, `producer`, `processor` or `host`."
+              },
+              "url": {
+                "title": "Organization homepage",
+                "type": "string",
+                "format": "iri",
+                "description": "Homepage on which the provider describes the dataset and publishes contact information."
+              }
+            }
+          },
+          "title": "Providers",
+          "description": "A list of providers, which may include all organizations capturing or processing the data or the hosting provider. Providers should be listed in chronological order with the most recent provider being the last element of the list."
+        },
+        "extent": {
+          "title": "Extents",
+          "type": "object",
+          "required": [
+            "spatial",
+            "temporal"
+          ],
+          "properties": {
+            "spatial": {
+              "title": "Spatial extent object",
+              "type": "object",
+              "required": [
+                "bbox"
+              ],
+              "properties": {
+                "bbox": {
+                  "title": "Spatial extents",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "title": "Spatial extent",
+                    "type": "array",
+                    "oneOf": [
+                      {
+                        "minItems": 4,
+                        "maxItems": 4
+                      },
+                      {
+                        "minItems": 6,
+                        "maxItems": 6
+                      }
+                    ],
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "description": "Potential spatial extents covered by the Collection."
+                }
+              },
+              "description": "Potential spatial extents covered by the Collection."
+            },
+            "temporal": {
+              "title": "Temporal extent object",
+              "type": "object",
+              "required": [
+                "interval"
+              ],
+              "properties": {
+                "interval": {
+                  "title": "Temporal extents",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "title": "Temporal extent",
+                    "type": "array",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time",
+                      "pattern": "(\\+00:00|Z)$"
+                    }
+                  },
+                  "description": "Potential temporal extents covered by the Collection."
+                }
+              },
+              "description": "Potential temporal extents covered by the Collection."
+            }
+          },
+          "description": "Spatial and temporal extents."
+        },
+        "assets": {
+          "$ref": "../../item-spec/json-schema/item.json#/definitions/assets"
+        },
+        "links": {
+          "title": "Links",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/link"
+          },
+          "description": "A list of references to other documents."
+        },
+        "summaries": {
+          "$ref": "#/definitions/summaries"
+        }
+      }
+    },
+    "link": {
+      "type": "object",
+      "required": [
+        "rel",
+        "href"
+      ],
+      "properties": {
+        "href": {
+          "title": "Link reference",
+          "type": "string",
+          "format": "iri-reference",
+          "minLength": 1,
+          "description": "The actual link in the format of an URL. Relative and absolute links are both allowed."
+        },
+        "rel": {
+          "title": "Link relation type",
+          "type": "string",
+          "minLength": 1,
+          "description": "Relationship between the current document and the linked document."
+        },
+        "type": {
+          "title": "Link type",
+          "type": "string",
+          "description": "Media type of the referenced entity."
+        },
+        "title": {
+          "title": "Link title",
+          "type": "string",
+          "description": "A human readable title to be used in rendered displays of the link."
+        }
+      }
+    },
+    "summaries": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "title": "JSON Schema",
+            "type": "object",
+            "minProperties": 1,
+            "allOf": [
+              {
+                "$ref": "http://json-schema.org/draft-07/schema"
+              }
+            ]
+          },
+          {
+            "title": "Range",
+            "type": "object",
+            "required": [
+              "minimum",
+              "maximum"
+            ],
+            "properties": {
+              "minimum": {
+                "title": "Minimum value",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "description": "Minimum value."
+              },
+              "maximum": {
+                "title": "Maximum value",
+                "type": [
+                  "number",
+                  "string"
+                ],
+                "description": "Maximum value."
+              }
+            }
+          },
+          {
+            "title": "Set of values",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "description": "For each field only the original data type of the property can occur (except for arrays), but we can't validate that in JSON Schema yet. See the sumamry description in the STAC specification for details."
+            }
+          }
+        ]
+      },
+      "title": "Summaries",
+      "description": "A map of property summaries, either a set of values, a range of values or a JSON Schema."
+    }
+  }
+}

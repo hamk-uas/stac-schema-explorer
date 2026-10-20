@@ -2,7 +2,8 @@ import type { ValidateFunction } from 'ajv';
 
 import { baseDocument, isProbeableLocation } from './base-docs';
 import { describeUrl, normalizeSchemaUrl } from './extensions';
-import { collectFields } from './fields';
+import { fieldDoc, type FieldDoc } from './field-docs';
+import { collectFields, collectNamedFields, type FieldSchemaRef } from './fields';
 import {
     CORE, STAC_TYPES, type Conflict, type Json, type JsonObject, type Placement, type PlacementKind, type ProbeProgress,
     type ProbeResult, type SourceInfo, type SourceKey, type StacType, type TypeTemplate,
@@ -75,7 +76,18 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
         samples: new Map(coreFields.map((f) => [f, CORE_FIELD_SAMPLES[f]])),
         validators: coreValidators,
     });
-    infos.push({ key: CORE, url: coreSchemaUrl('Catalog', stacVersion).replace(/catalog-spec.*$/, ''), title: 'STAC core', prefixes: [], version: stacVersion, fields: coreFields, unsampled: [] });
+    const coreRefs = new Map<string, FieldSchemaRef[]>();
+    for (const type of ['Feature', 'Collection', 'Catalog'] as const) {
+        for (const [field, refs] of collectNamedFields(store, coreSchemaUrl(type, stacVersion), new Set(coreFields))) {
+            coreRefs.set(field, [...(coreRefs.get(field) ?? []), ...refs]);
+        }
+    }
+    // The general meaning of a Common Metadata field comes first; assets document their own variant.
+    for (const refs of coreRefs.values()) refs.sort((a, b) => Number(/asset/i.test(a.pointer)) - Number(/asset/i.test(b.pointer)));
+    infos.push({
+        key: CORE, url: coreSchemaUrl('Catalog', stacVersion).replace(/catalog-spec.*$/, ''), title: 'STAC core', prefixes: [], version: stacVersion,
+        fields: coreFields, unsampled: [], docs: documentFields(store, coreRefs),
+    });
 
     const unique = [...new Set(urls.map(normalizeSchemaUrl))];
     const loaded = await Promise.all(unique.map(async (url) => {
@@ -91,7 +103,7 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
         const schema = store.getDocument(entry.url) as { title?: unknown } | undefined;
         const title = !known && typeof schema?.title === 'string' ? schema.title.replace(/ Extension$/i, '') : name;
         if (!entry.validator) {
-            infos.push({ key: entry.url, url: entry.url, title: name, prefixes: [], version, fields: [], unsampled: [], error: entry.error });
+            infos.push({ key: entry.url, url: entry.url, title: name, prefixes: [], version, fields: [], unsampled: [], docs: {}, error: entry.error });
             continue;
         }
         const { prefixes, fields } = collectFields(store, entry.url);
@@ -111,9 +123,18 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
         const validators: Partial<Record<StacType, ValidateFunction>> = {};
         for (const type of STAC_TYPES) validators[type] = entry.validator;
         sources.push({ key: entry.url, declaration, fields: [...fields.keys()], samples, validators });
-        infos.push({ key: entry.url, url: entry.url, title, prefixes, version, fields: [...fields.keys()], unsampled });
+        infos.push({ key: entry.url, url: entry.url, title, prefixes, version, fields: [...fields.keys()], unsampled, docs: documentFields(store, fields) });
     }
     return { sources, infos };
+}
+
+function documentFields(store: SchemaStore, fields: ReadonlyMap<string, FieldSchemaRef[]>): Record<string, FieldDoc> {
+    const docs: Record<string, FieldDoc> = {};
+    for (const [field, refs] of fields) {
+        const doc = fieldDoc(store, refs);
+        if (doc) docs[field] = doc;
+    }
+    return docs;
 }
 
 interface FieldResult {

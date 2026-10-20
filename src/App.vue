@@ -3,17 +3,22 @@ import { computed, markRaw, onMounted, reactive, ref, shallowRef, watch } from '
 
 import DocCard from './components/DocCard.vue';
 import ExtensionPicker from './components/ExtensionPicker.vue';
+import FieldInfo, { type FieldPlace } from './components/FieldInfo.vue';
 import JsonView from './components/JsonView.vue';
 import Legend from './components/Legend.vue';
 import MatrixView from './components/MatrixView.vue';
+import { isProbeableLocation } from './lib/base-docs';
 import { colorOf, sourceLabel } from './lib/colors';
 import { TYPE_LABEL, type DocEntry } from './lib/docs';
 import { Engine } from './lib/engine';
 import { normalizeSchemaUrl } from './lib/extensions';
-import { STAC_TYPES, STAC_VERSIONS, type ProbeProgress, type ProbeResult, type StacType } from './lib/model';
+import { conceptPath } from './lib/matrix';
+import { STAC_TYPES, STAC_VERSIONS, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
+import { objectLocations } from './lib/pointer';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
 import { documentView, fieldIndex, templateView } from './lib/tree';
 import { readState, writeState, type AppState } from './lib/url-state';
+import { isVendored } from './lib/vendored';
 
 const state = reactive<AppState>(readState(location.search));
 watch(() => writeState(state), (search) => {
@@ -247,6 +252,57 @@ function toggleFocus(source: string) {
     state.focus = state.focus === source ? '' : source;
 }
 
+// ---- Field information --------------------------------------------------------------------------------------------
+
+/** Sources of the document whose field was clicked (a real document may declare extensions beyond the selection). */
+const fieldContext = shallowRef<SourceInfo[]>();
+
+function openField(source: string, name: string, context?: SourceInfo[]) {
+    fieldContext.value = context ? markRaw(context) : undefined;
+    state.field = `${source}|${name}`;
+    jsonOpen.value = true;
+}
+
+const fieldPanel = computed(() => {
+    if (!state.field) return undefined;
+    const at = state.field.indexOf('|');
+    const source = state.field.slice(0, at);
+    const name = state.field.slice(at + 1);
+    const pools = [fieldContext.value, sources.value, selectedEntry.value?.sources].filter((p): p is SourceInfo[] => !!p);
+    const pool = pools.find((p) => p.some((s) => s.key === source && s.docs[name])) ?? pools[0] ?? [];
+    const doc = pool.find((s) => s.key === source)?.docs[name];
+    const places: FieldPlace[] = [];
+    const probed = result.value;
+    if (probed?.sources.some((s) => s.key === source)) {
+        for (const type of STAC_TYPES) {
+            const template = probed.templates[type];
+            const locations = new Set(objectLocations(template.doc).filter(isProbeableLocation));
+            const byLabel = new Map<string, FieldPlace>();
+            for (const p of template.placements) {
+                if (p.source !== source || p.field !== name) continue;
+                const label = [TYPE_LABEL[type], ...conceptPath(p.location, locations)].join(' › ');
+                const place = byLabel.get(label) ?? { label, type, locations: [], kind: p.kind };
+                place.locations.push(p.location);
+                if (p.kind === 'validated') place.kind = 'validated';
+                byLabel.set(label, place);
+            }
+            places.push(...byLabel.values());
+        }
+    }
+    return { source, name, doc, places, sources: pool, vendored: source === 'core' ? true : isVendored(source) };
+});
+
+function showPlace(place: FieldPlace) {
+    if (state.mode !== 'example') setMode('example');
+    select(EXAMPLE_KEYS[place.type as StacType], place.locations);
+}
+
+const fullAppUrl = computed(() => {
+    const url = new URL(location.href);
+    url.searchParams.delete('embed');
+    return url.toString();
+});
+
 const findings = computed(() => {
     const probed = result.value;
     if (!probed) return [];
@@ -277,8 +333,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app" :class="{ 'no-json': !jsonOpen }">
-    <header class="top">
+  <div class="app" :class="{ 'no-json': !jsonOpen, embed: state.embed }">
+    <header v-if="!state.embed" class="top">
       <div class="brand">
         <h1>STAC Schema Explorer</h1>
         <p>Where can each field of STAC core and STAC extensions go? Derived by probing the JSON Schemas themselves.</p>
@@ -320,6 +376,11 @@ onMounted(() => {
     </aside>
 
     <main class="main">
+      <p v-if="state.embed" class="embed-bar">
+        <strong>STAC Schema Explorer</strong>
+        <button type="button" class="link" @click="jsonOpen = !jsonOpen">{{ jsonOpen ? 'hide JSON' : 'show JSON' }}</button>
+        <a :href="fullAppUrl" target="_blank" rel="noopener">open full app ↗</a>
+      </p>
       <div v-if="busy" class="progress" role="status">
         <div class="bar" :style="{ width: `${Math.round(100 * (progress?.done ?? 0) / (progress?.total || 1))}%` }" />
         <span>Probing schemas… {{ progress?.label }}</span>
@@ -347,6 +408,7 @@ onMounted(() => {
             :selected-pointers="selectedPointers"
             @select="select"
             @toggle="toggle"
+            @field="openField"
           />
           <details v-if="findings.length" class="findings" open>
             <summary>Findings ({{ findings.length }})</summary>
@@ -355,7 +417,14 @@ onMounted(() => {
             </ul>
           </details>
         </div>
-        <MatrixView v-else-if="state.view === 'matrix' && result" :result="result" :show-core="state.showCore" :focus="state.focus" @select="selectFromMatrix" />
+        <MatrixView
+          v-else-if="state.view === 'matrix' && result"
+          :result="result"
+          :show-core="state.showCore"
+          :focus="state.focus"
+          @select="selectFromMatrix"
+          @field="(s: string, n: string) => openField(s, n)"
+        />
       </template>
 
       <template v-else>
@@ -383,6 +452,7 @@ onMounted(() => {
             @select="select"
             @toggle="toggle"
             @more="loadMore"
+            @field="openField"
           />
           <template v-if="detached && !find(hrefRoot, detached.key)">
             <h3 class="detached">Selected document (outside the loaded tree)</h3>
@@ -396,21 +466,34 @@ onMounted(() => {
               @select="select"
               @toggle="toggle"
               @more="loadMore"
+              @field="openField"
             />
           </template>
         </div>
       </template>
     </main>
 
-    <JsonView
-      v-if="jsonOpen"
-      class="json"
-      :doc="selectedEntry?.doc"
-      :title="jsonTitle"
-      :href="selectedEntry?.href"
-      :index="jsonIndex"
-      :pointers="selectedPointers"
-    />
+    <div v-if="jsonOpen" class="json">
+      <FieldInfo
+        v-if="fieldPanel"
+        :name="fieldPanel.name"
+        :source="fieldPanel.source"
+        :sources="fieldPanel.sources"
+        :doc="fieldPanel.doc"
+        :places="fieldPanel.places"
+        :vendored="fieldPanel.vendored"
+        @close="state.field = ''"
+        @place="showPlace"
+      />
+      <JsonView
+        class="json-view"
+        :doc="selectedEntry?.doc"
+        :title="jsonTitle"
+        :href="selectedEntry?.href"
+        :index="jsonIndex"
+        :pointers="selectedPointers"
+      />
+    </div>
   </div>
 </template>
 
@@ -532,6 +615,31 @@ onMounted(() => {
 .json {
   grid-area: json;
   border-left: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.json-view {
+  flex: 1;
+  min-height: 0;
+}
+.app.embed {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'side main json';
+  grid-template-columns: 260px minmax(0, 1fr) minmax(300px, 40%);
+}
+.app.embed.no-json {
+  grid-template-columns: 260px minmax(0, 1fr) 0;
+}
+.embed-bar {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.embed-bar a {
+  color: #4f46e5;
 }
 .toolbar {
   display: flex;

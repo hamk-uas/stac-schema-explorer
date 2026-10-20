@@ -10,7 +10,7 @@ import { escapePointerSegment, splitPointer } from './pointer';
 
 export type FetchJson = (url: string) => Promise<unknown>;
 
-export const defaultFetchJson: FetchJson = async (url) => {
+export const networkFetchJson: FetchJson = async (url) => {
     const response = await fetch(url, { headers: { accept: 'application/schema+json, application/json' } });
     if (!response.ok) throw new Error(`${response.status} ${response.statusText} (${url})`);
     return response.json();
@@ -51,7 +51,7 @@ export class SchemaStore {
     private readonly validators = new Map<string, Promise<ValidateFunction>>();
     private readonly subValidators = new Map<string, ValidateFunction | null>();
 
-    constructor(private readonly fetchJson: FetchJson = defaultFetchJson) {}
+    constructor(private readonly fetchJson: FetchJson = networkFetchJson) {}
 
     async load(url: string): Promise<unknown> {
         const key = normalizeSchemaUrl(url);
@@ -152,6 +152,26 @@ export class SchemaStore {
     }
 }
 
+/**
+ * Replaces the errors of a failed value list (`oneOf` of titled constants: one `const` error per allowed value plus
+ * a `oneOf` error) with one `enum`-like error listing the allowed values.
+ */
+export function collapseValueListErrors(errors: readonly ErrorObject[]): ErrorObject[] {
+    const out: ErrorObject[] = [];
+    const consumed = new Set<ErrorObject>();
+    for (const error of errors) {
+        if (error.keyword !== 'oneOf' && error.keyword !== 'anyOf') continue;
+        const prefix = `${error.schemaPath}/`;
+        const branches = errors.filter((e) => e !== error && e.schemaPath.startsWith(prefix) && e.instancePath === error.instancePath);
+        if (branches.length === 0 || !branches.every((e) => e.keyword === 'const' && /^\d+\/const$/.test(e.schemaPath.slice(prefix.length)))) continue;
+        const allowedValues = branches.map((e) => e.params.allowedValue);
+        consumed.add(error);
+        branches.forEach((e) => consumed.add(e));
+        out.push({ ...error, keyword: 'enum', params: { allowedValues }, message: `must be one of ${allowedValues.map((v) => JSON.stringify(v)).join(', ')}` });
+    }
+    return [...errors.filter((e) => !consumed.has(e)), ...out];
+}
+
 export function formatErrors(errors: readonly ErrorObject[] | null | undefined, source: string): string[] {
-    return (errors ?? []).slice(0, 5).map((e) => `${source === CORE ? 'core' : source}: ${e.instancePath || '/'} ${e.message ?? e.keyword}`);
+    return collapseValueListErrors(errors ?? []).slice(0, 5).map((e) => `${source === CORE ? 'core' : source}: ${e.instancePath || '/'} ${e.message ?? e.keyword}`);
 }

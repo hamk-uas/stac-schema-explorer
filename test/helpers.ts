@@ -4,10 +4,17 @@ import { fileURLToPath } from 'node:url';
 
 import { SchemaStore, type FetchJson } from '../src/lib/schemas';
 
-const fixtures = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const fixtures = join(root, 'test', 'fixtures');
 
-/** Reads schemas from test/fixtures; a missing one is downloaded once and saved there. */
+/**
+ * Vendored schemas (schemas/) first, then test/fixtures; a schema missing from both is downloaded once and saved in
+ * test/fixtures (only non-vendored extensions such as Semantics and Observatory live there).
+ */
 export const fixtureFetch: FetchJson = async (url) => {
+    const { host, pathname } = new URL(url);
+    const vendored = join(root, 'schemas', host, pathname);
+    if (existsSync(vendored)) return JSON.parse(readFileSync(vendored, 'utf8'));
     const file = join(fixtures, url.replace(/^https?:\/\//, '').replace(/[^a-zA-Z0-9.-]+/g, '_'));
     if (existsSync(file)) return JSON.parse(readFileSync(file, 'utf8'));
     const response = await fetch(url);

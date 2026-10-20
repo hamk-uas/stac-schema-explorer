@@ -1,0 +1,199 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+  "title": "File Info Extension",
+  "description": "STAC File Info Extension for STAC Items, STAC Catalogs, and STAC Collections.",
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "assets"
+          ],
+          "properties": {
+            "type": {
+              "const": "Feature"
+            },
+            "assets": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/fields"
+              }
+            },
+            "links": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/fields"
+              }
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/stac_extensions"
+        }
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Catalogs.",
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Catalog"
+            },
+            "links": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/fields"
+              }
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/stac_extensions"
+        }
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Collection"
+            },
+            "assets": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/fields"
+              }
+            },
+            "links": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/fields"
+              }
+            },
+            "item_assets": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/fields"
+              }
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/stac_extensions"
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "stac_extensions": {
+      "type": "object",
+      "required": [
+        "stac_extensions"
+      ],
+      "properties": {
+        "stac_extensions": {
+          "type": "array",
+          "contains": {
+            "const": "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+          }
+        }
+      }
+    },
+    "fields": {
+      "$comment": "Add your new fields here. Don't require them here, do that above in the item schema.",
+      "type": "object",
+      "properties": {
+        "file:byte_order": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "big-endian",
+              "title": "Big Endian"
+            },
+            {
+              "const": "little-endian",
+              "title": "Little Endian"
+            }
+          ],
+          "title": "File Byte Order",
+          "description": "The byte order of integer values in the file. One of `big-endian` or `little-endian`."
+        },
+        "file:checksum": {
+          "type": "string",
+          "pattern": "^[a-f0-9]+$",
+          "title": "File Checksum (Multihash)",
+          "description": "Provides a way to specify file checksums (e.g. BLAKE2, MD5, SHA1, SHA2, SHA3). The hashes are self-identifying hashes as described in the Multihash specification and must be encoded as hexadecimal (base 16) string with lowercase letters."
+        },
+        "file:header_size": {
+          "type": "integer",
+          "minimum": 0,
+          "title": "File Header Size",
+          "description": "The header size of the file, specified in bytes."
+        },
+        "file:size": {
+          "type": "integer",
+          "minimum": 0,
+          "title": "File Size",
+          "description": "The file size, specified in bytes."
+        },
+        "file:values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "values",
+              "summary"
+            ],
+            "properties": {
+              "values": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "description": "Any data type is allowed"
+                },
+                "title": "Values",
+                "description": "The value(s) in the file. At least one array element is required."
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "title": "Summary",
+                "description": "A short description of the value(s)."
+              }
+            }
+          },
+          "title": "Map of Values",
+          "description": "Lists the value that are in the file and describes their meaning. See the Mapping Object chapter for an example. If given, at least one array element is required."
+        },
+        "file:local_path": {
+          "type": "string",
+          "pattern": "^[^\\r\\n\\t\\\\:'\"/]+(/[^\\r\\n\\t\\\\:'\"/]+)*/?$",
+          "title": "Relative File Path",
+          "description": "A relative local path for the asset/link."
+        }
+      },
+      "patternProperties": {
+        "^(?!file:)": {
+          "$comment": "Above, change `template` to the prefix of this extension"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

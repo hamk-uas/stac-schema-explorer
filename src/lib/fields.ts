@@ -128,6 +128,21 @@ export function collectFields(store: SchemaStore, schemaUrl: string): CollectedF
     return { prefixes, fields: new Map(ownFirst) };
 }
 
+/** Where a schema (typically STAC core) defines the given field names; links are skipped (their `title` differs). */
+export function collectNamedFields(store: SchemaStore, schemaUrl: string, names: ReadonlySet<string>): Map<string, FieldSchemaRef[]> {
+    const fields = new Map<string, FieldSchemaRef[]>();
+    walk(store, schemaUrl, '', 'container', {
+        isContainer: (key) => !names.has(key) && key !== 'links' && key !== 'linkTemplates',
+        onKey: (key, ref) => {
+            if (!names.has(key)) return;
+            const refs = fields.get(key) ?? [];
+            if (!refs.some((r) => r.schemaUrl === ref.schemaUrl && r.pointer === ref.pointer)) refs.push(ref);
+            fields.set(key, refs);
+        },
+    }, new Set());
+    return fields;
+}
+
 /**
  * Prefixes from the conventional `"patternProperties": {"^(?!cube:)": {}}` or `"^(?!(obs|in_situ):)"`. A schema may
  * also restrict fields of other extensions this way (`^(?!(obs|cf):)` where it re-validates CF fields), so only

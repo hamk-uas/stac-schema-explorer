@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/instrument.json",
+  "title": "Instrument Fields",
+  "type": "object",
+  "properties": {
+    "platform": {
+      "title": "Platform",
+      "type": "string",
+      "description": "Unique name of the specific platform to which the instrument is attached."
+    },
+    "instruments": {
+      "title": "Instruments",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Name of instrument or sensor used (e.g., MODIS, ASTER, OLI, Canon F-1)."
+    },
+    "constellation": {
+      "title": "Constellation",
+      "type": "string",
+      "description": "Name of the constellation to which the platform belongs."
+    },
+    "mission": {
+      "title": "Mission",
+      "type": "string",
+      "description": "Name of the mission for which data is collected."
+    },
+    "gsd": {
+      "title": "Ground Sample Distance",
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Ground Sample Distance at the sensor, in meters (m), must be greater than 0."
+    }
+  }
+}

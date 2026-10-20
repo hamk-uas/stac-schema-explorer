@@ -1,0 +1,202 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/sat/v1.2.0/schema.json",
+  "title": "Satellite Extension",
+  "description": "STAC Sat Extension to a STAC Item.",
+  "type": "object",
+  "required": [
+    "stac_extensions"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/sat/v1.2.0/schema.json"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "type": "object",
+      "required": [
+        "type",
+        "properties",
+        "assets"
+      ],
+      "properties": {
+        "type": {
+          "const": "Feature"
+        },
+        "properties": {
+          "allOf": [
+            {
+              "anyOf": [
+                {
+                  "required": [
+                    "sat:platform_international_designator"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:orbit_state"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:absolute_orbit"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:relative_orbit"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:anx_datetime"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:orbit_cycle"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:orbit_state_vectors"
+                  ]
+                },
+                {
+                  "required": [
+                    "sat:acquisition_station"
+                  ]
+                }
+              ]
+            },
+            {
+              "$ref": "#/definitions/fields"
+            }
+          ]
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        }
+      }
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Collection"
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        },
+        "item_assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "fields": {
+      "type": "object",
+      "properties": {
+        "sat:platform_international_designator": {
+          "type": "string",
+          "title": "Int. Designator",
+          "description": "The International Designator, also known as COSPAR ID, and NSSDCA ID."
+        },
+        "sat:orbit_state": {
+          "title": "Orbit State",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "ascending",
+              "title": "Ascending"
+            },
+            {
+              "const": "descending",
+              "title": "Descending"
+            },
+            {
+              "const": "geostationary",
+              "title": "Geostationary"
+            },
+            {
+              "const": "crossing",
+              "title": "Crossing"
+            }
+          ],
+          "description": "The state of the orbit. Either `ascending` or `descending` for polar orbiting satellites, `geostationary` for geosynchronous satellites, or `crossing` when the acquisition spans a polar crossing."
+        },
+        "sat:absolute_orbit": {
+          "title": "Absolute Orbit",
+          "description": "The absolute orbit number at the start of acquisition. When the orbit changes during data acquisition (i.e., the acquisition spans multiple orbits), use the absolute orbit number at the start of the acquisition.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "sat:relative_orbit": {
+          "title": "Relative Orbit",
+          "description": "The relative orbit number at the start of acquisition. When the orbit changes during data acquisition (i.e., the acquisition spans multiple orbits), use the relative orbit number at the start of the acquisition.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "sat:anx_datetime": {
+          "type": "string",
+          "format": "date-time",
+          "title": "ANX Time",
+          "description": "The Ascending Node Crossing (ANX) time, in UTC. It is formatted according to RFC 3339, section 5.6."
+        },
+        "sat:orbit_cycle": {
+          "type": "integer",
+          "minimum": 1,
+          "title": "Orbit Cycle",
+          "description": "The number of repeat cycle done by the satellite at the time of the acquisition. Repeat cycle is the time between two successive identical orbits."
+        },
+        "sat:orbit_state_vectors": {
+          "type": "object",
+          "$comment": "The key is a date-time string, and the value is an array of numbers.",
+          "patternProperties": {
+            "^(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d\\.\\d+([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))|(\\d{4}-[01]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z))$": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 6,
+              "maxItems": 9
+            }
+          },
+          "additionalProperties": false,
+          "title": "Orbit State Vectors",
+          "description": "The state vectors of the satellite at the time of acquisition."
+        },
+        "sat:acquisition_station": {
+          "type": "string",
+          "title": "Acquisition Station",
+          "description": "The acquisition station (ground station) where the satellite data was downlinked. Equivalent to `eop:acquisition_station` in OGC 10-157r4 and OGC 17-003r2."
+        }
+      },
+      "patternProperties": {
+        "^(?!sat:)": {
+          "$comment": "Do not allow unspecified fields prefixed with sat:"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

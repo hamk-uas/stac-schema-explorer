@@ -6,7 +6,7 @@ import { buildMatrix, TYPE_LABEL, type MatrixCell } from '../lib/matrix';
 import { STAC_TYPES, type ProbeResult } from '../lib/model';
 
 const props = defineProps<{ result: ProbeResult; showCore: boolean; focus: string }>();
-const emit = defineEmits<{ select: [type: string, pointers: string[]] }>();
+const emit = defineEmits<{ select: [type: string, pointers: string[]]; field: [source: string, name: string] }>();
 
 const matrix = computed(() => buildMatrix(props.result.templates, props.result.sources, props.showCore));
 const typeSpans = computed(() => STAC_TYPES.map((type) => ({ type, count: matrix.value.columns.filter((c) => c.type === type).length })).filter((t) => t.count > 0));
@@ -28,6 +28,11 @@ function cell(source: string, field: string, column: string): MatrixCell | undef
 function cellTitle(field: string, c: MatrixCell): string {
     const how = c.kind === 'validated' ? 'validated by the schema' : 'presence satisfies the extension requirement (value not validated)';
     return `${field}: ${how}${c.partial ? `\nonly in some of these objects:\n${c.locations.join('\n')}` : `\n${c.locations.join('\n')}`}`;
+}
+
+function fieldTitle(source: string, field: string): string {
+    const doc = props.result.sources.find((s) => s.key === source)?.docs[field];
+    return [doc?.title, doc?.type, 'Click for details.'].filter(Boolean).join('\n');
 }
 </script>
 
@@ -58,7 +63,9 @@ function cellTitle(field: string, c: MatrixCell): string {
               <th :colspan="matrix.columns.length + 1" :style="{ '--c': colorOf(row.source) }">{{ row.header }}</th>
             </tr>
             <tr v-else :class="{ dimmed: focus && focus !== row.source }">
-              <th class="field" :style="{ '--c': colorOf(row.source) }">{{ row.field }}</th>
+              <th class="field" :style="{ '--c': colorOf(row.source) }">
+                <button type="button" :title="fieldTitle(row.source, row.field!)" @click="emit('field', row.source, row.field!)">{{ row.field }}</button>
+              </th>
               <td v-for="col in matrix.columns" :key="col.key" :class="`type-${col.type}`">
                 <button
                   v-if="cell(row.source, row.field!, col.key)"
@@ -157,10 +164,19 @@ th.field {
   left: 0;
   background: white;
   text-align: left;
-  font: 500 12px var(--mono);
   padding: 2px 8px 2px 16px;
   white-space: nowrap;
+}
+th.field button {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: 500 12px var(--mono);
   color: color-mix(in srgb, var(--c) 80%, black);
+}
+th.field button:hover {
+  text-decoration: underline;
 }
 td {
   text-align: center;

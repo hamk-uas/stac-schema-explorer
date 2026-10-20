@@ -12,7 +12,7 @@ const props = defineProps<{
     focus: string;
     selected: string[];
 }>();
-const emit = defineEmits<{ select: [pointers: string[]] }>();
+const emit = defineEmits<{ select: [pointers: string[]]; field: [source: string, name: string] }>();
 
 const ARRAY_KINDS = new Set(['link', 'provider', 'band', 'column']);
 
@@ -28,7 +28,7 @@ function isSelected(): boolean {
       <span class="label">{{ node.label }}</span>
       <span v-if="node.kind === 'properties'" class="tag geojson" title="Item properties are the properties of a GeoJSON Feature">GeoJSON Feature properties</span>
       <span v-if="node.kind === 'summaries'" class="tag" title="Collection summaries: values are sets, ranges or JSON Schemas of fields used in the Items">summaries of Item fields</span>
-      <FieldChips :fields="node.fields" :sources="sources" :group="group" :focus="focus" />
+      <FieldChips :fields="node.fields" :sources="sources" :group="group" :focus="focus" @field="(s: string, n: string) => emit('field', s, n)" />
     </div>
     <div v-if="node.children.length" class="children">
       <ObjectNode
@@ -40,6 +40,7 @@ function isSelected(): boolean {
         :focus="focus"
         :selected="selected"
         @select="(p: string[]) => emit('select', p)"
+        @field="(s: string, n: string) => emit('field', s, n)"
       />
     </div>
   </div>

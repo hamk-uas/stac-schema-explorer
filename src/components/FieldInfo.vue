@@ -1,0 +1,189 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+
+import { colorOf, sourceLabel } from '../lib/colors';
+import { inlineMarkdown } from '../lib/markdown';
+import type { FieldDoc, SourceInfo } from '../lib/model';
+
+export interface FieldPlace {
+    label: string;
+    type: string;
+    locations: string[];
+    kind: 'validated' | 'presence';
+}
+
+const props = defineProps<{
+    name: string;
+    source: string;
+    sources: SourceInfo[];
+    doc?: FieldDoc;
+    places: FieldPlace[];
+    vendored: boolean;
+}>();
+const emit = defineEmits<{ close: []; place: [place: FieldPlace] }>();
+
+const schemaLink = computed(() => props.doc?.definedAt.split('#')[0]);
+const vendoredLink = computed(() => {
+    if (!props.vendored || !schemaLink.value) return undefined;
+    const { host, pathname } = new URL(schemaLink.value);
+    return `https://github.com/hamk-uas/stac-schema-explorer/blob/main/schemas/${host}${pathname}`;
+});
+</script>
+
+<template>
+  <section class="field-info" :style="{ '--c': colorOf(source) }">
+    <header>
+      <code class="name">{{ name }}</code>
+      <span v-if="doc?.title" class="title">{{ doc.title }}</span>
+      <button type="button" class="close" aria-label="Close field information" @click="emit('close')">×</button>
+    </header>
+    <p class="source">
+      <span class="dot" />{{ sourceLabel(source, sources) }}
+      <a v-if="schemaLink" :href="schemaLink" target="_blank" rel="noopener" title="Published JSON Schema">schema ↗</a>
+      <a v-if="vendoredLink" :href="vendoredLink" target="_blank" rel="noopener" title="Copy with titles and descriptions, vendored by this app">documented copy ↗</a>
+    </p>
+    <template v-if="doc">
+      <p class="type"><span class="label">Type</span> <code>{{ doc.type }}</code></p>
+      <!-- v-html is safe: inlineMarkdown escapes everything except the code spans and links it creates. -->
+      <p v-if="doc.description" class="description" v-html="inlineMarkdown(doc.description)" />
+      <p v-else class="missing">The schema has no description for this field.</p>
+      <table v-if="doc.values?.length" class="values">
+        <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr v-for="v in doc.values" :key="JSON.stringify(v.value)">
+            <td><code>{{ JSON.stringify(v.value) }}</code></td>
+            <td><strong v-if="v.title">{{ v.title }}</strong><span v-if="v.title && v.description"> — </span><span v-if="v.description" v-html="inlineMarkdown(v.description)" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </template>
+    <p v-else class="missing">No schema information found for this field.</p>
+    <div v-if="places.length" class="places">
+      <span class="label">Allowed in</span>
+      <ul>
+        <li v-for="place in places" :key="`${place.type} ${place.label}`">
+          <button type="button" :class="place.kind" :title="place.locations.join('\n')" @click="emit('place', place)">{{ place.label }}</button>
+        </li>
+      </ul>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.field-info {
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  background: color-mix(in srgb, var(--c) 5%, white);
+  border-left: 4px solid var(--c);
+  max-height: 45vh;
+  overflow: auto;
+  font-size: 13px;
+}
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.name {
+  font: 700 14px var(--mono);
+  color: color-mix(in srgb, var(--c) 80%, black);
+}
+.title {
+  font: 600 14px var(--sans);
+  color: #1e293b;
+}
+.close {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #64748b;
+}
+.source {
+  margin: 4px 0 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: #475569;
+  flex-wrap: wrap;
+}
+.source a {
+  color: #4f46e5;
+}
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--c);
+  display: inline-block;
+  margin-right: -2px;
+}
+.label {
+  font: 600 11px var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-right: 6px;
+}
+.type {
+  margin: 0 0 6px;
+}
+.type code {
+  font-size: 12px;
+}
+.description {
+  margin: 0 0 8px;
+  line-height: 1.5;
+  color: #1e293b;
+}
+.missing {
+  color: #b45309;
+  font-size: 12px;
+}
+.values {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+.values th {
+  text-align: left;
+  font: 600 11px var(--sans);
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 2px 6px 2px 0;
+}
+.values td {
+  padding: 3px 6px 3px 0;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+.places ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.places button {
+  font: 500 11px var(--sans);
+  border: 1.5px solid var(--c);
+  border-radius: 999px;
+  background: white;
+  padding: 1px 8px;
+  cursor: pointer;
+  color: #334155;
+}
+.places button.presence {
+  border-style: dashed;
+}
+:deep(code) {
+  font-family: var(--mono);
+  background: #f1f5f9;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+</style>

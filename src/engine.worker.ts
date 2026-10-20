@@ -1,7 +1,8 @@
 /// <reference lib="webworker" />
 import { CORE, type JsonObject, type ProbeProgress, type ProbeResult, type StacType } from './lib/model';
 import { probe } from './lib/probe';
-import { coreSchemaUrl, formatErrors, SchemaStore } from './lib/schemas';
+import { coreSchemaUrl, formatErrors, networkFetchJson, SchemaStore } from './lib/schemas';
+import { withVendored } from './lib/vendored';
 
 export type EngineRequest =
     | { id: number; kind: 'probe'; stacVersion: string; urls: string[] }
@@ -13,7 +14,7 @@ export type EngineResponse =
     | { id: number; kind: 'validate'; errors: string[] }
     | { id: number; kind: 'error'; message: string };
 
-const store = new SchemaStore();
+const store = new SchemaStore(withVendored(networkFetchJson));
 const probes = new Map<string, Promise<ProbeResult>>();
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 

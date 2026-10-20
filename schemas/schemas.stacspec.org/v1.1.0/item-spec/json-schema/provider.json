@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/provider.json",
+  "title": "Provider Fields",
+  "type": "object",
+  "properties": {
+    "providers": {
+      "title": "Providers",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "title": "Organization name",
+            "type": "string",
+            "minLength": 1,
+            "description": "The name of the organization or the individual."
+          },
+          "description": {
+            "title": "Organization description",
+            "type": "string",
+            "description": "Multi-line description to add further provider information such as processing details for processors and producers, hosting details for hosts or basic contact information. CommonMark 0.29 syntax MAY be used for rich text representation."
+          },
+          "roles": {
+            "title": "Organization roles",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "oneOf": [
+                {
+                  "const": "producer",
+                  "title": "Producer"
+                },
+                {
+                  "const": "licensor",
+                  "title": "Licensor"
+                },
+                {
+                  "const": "processor",
+                  "title": "Processor"
+                },
+                {
+                  "const": "host",
+                  "title": "Host"
+                }
+              ]
+            },
+            "description": "Roles of the provider. Any of `licensor`, `producer`, `processor` or `host`."
+          },
+          "url": {
+            "title": "Organization homepage",
+            "type": "string",
+            "format": "iri",
+            "description": "Homepage on which the provider describes the dataset and publishes contact information."
+          }
+        }
+      },
+      "description": "A list of providers, which may include all organizations capturing or processing the data or the hosting provider. Providers should be listed in chronological order with the most recent provider being the last element of the list."
+    }
+  }
+}

@@ -1,0 +1,483 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/eo/v2.0.0/schema.json",
+  "title": "EO Extension",
+  "description": "STAC EO Extension for STAC Items and STAC Collections.",
+  "type": "object",
+  "required": [
+    "stac_extensions",
+    "type"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/eo/v2.0.0/schema.json"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "Items",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "Feature"
+          }
+        }
+      },
+      "then": {
+        "allOf": [
+          {
+            "properties": {
+              "properties": {
+                "$ref": "#/definitions/validate_properties"
+              }
+            }
+          },
+          {
+            "$ref": "#/definitions/validate_assets"
+          }
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "properties"
+            ],
+            "properties": {
+              "properties": {
+                "$ref": "#/definitions/require_properties"
+              }
+            }
+          },
+          {
+            "$ref": "#/definitions/require_assets"
+          }
+        ]
+      }
+    },
+    {
+      "$comment": "Collections",
+      "if": {
+        "properties": {
+          "type": {
+            "const": "Collection"
+          }
+        }
+      },
+      "then": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/validate_bands"
+          },
+          {
+            "$ref": "#/definitions/validate_assets"
+          },
+          {
+            "properties": {
+              "item_assets": {
+                "additionalProperties": {
+                  "$ref": "#/definitions/validate_properties"
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "summaries": {
+                "type": "object",
+                "$comment": "We can't properly validate summary objects types (min/max or schemas) yet.",
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/validate_bands"
+                  },
+                  {
+                    "properties": {
+                      "eo:cloud_cover": {
+                        "type": [
+                          "array",
+                          "object"
+                        ],
+                        "items": {
+                          "$ref": "#/definitions/eo:cloud_cover"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "eo:snow_cover": {
+                        "type": [
+                          "array",
+                          "object"
+                        ],
+                        "items": {
+                          "$ref": "#/definitions/eo:snow_cover"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "eo:common_name": {
+                        "type": [
+                          "array",
+                          "object"
+                        ],
+                        "items": {
+                          "$ref": "#/definitions/eo:common_name"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "eo:center_wavelength": {
+                        "type": [
+                          "array",
+                          "object"
+                        ],
+                        "items": {
+                          "$ref": "#/definitions/eo:center_wavelength"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "eo:full_width_half_max": {
+                        "type": [
+                          "array",
+                          "object"
+                        ],
+                        "items": {
+                          "$ref": "#/definitions/eo:full_width_half_max"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "eo:solar_illumination": {
+                        "type": [
+                          "array",
+                          "object"
+                        ],
+                        "items": {
+                          "$ref": "#/definitions/eo:solar_illumination"
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "anyOf": [
+          {
+            "$ref": "#/definitions/require_in_bands"
+          },
+          {
+            "$ref": "#/definitions/require_assets"
+          },
+          {
+            "required": [
+              "item_assets"
+            ],
+            "properties": {
+              "item_assets": {
+                "$ref": "#/definitions/asset_contains"
+              }
+            }
+          },
+          {
+            "required": [
+              "summaries"
+            ],
+            "properties": {
+              "summaries": {
+                "$ref": "#/definitions/require_properties"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "definitions": {
+    "require_properties": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/require_fields"
+        },
+        {
+          "$ref": "#/definitions/require_in_bands"
+        }
+      ]
+    },
+    "validate_bands": {
+      "type": "object",
+      "properties": {
+        "bands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/fields"
+          }
+        }
+      }
+    },
+    "validate_properties": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/fields"
+        },
+        {
+          "$ref": "#/definitions/validate_bands"
+        }
+      ]
+    },
+    "require_assets": {
+      "required": [
+        "assets"
+      ],
+      "properties": {
+        "assets": {
+          "$ref": "#/definitions/asset_contains"
+        }
+      }
+    },
+    "validate_assets": {
+      "properties": {
+        "assets": {
+          "additionalProperties": {
+            "$ref": "#/definitions/validate_properties"
+          }
+        }
+      }
+    },
+    "asset_contains": {
+      "type": "object",
+      "not": {
+        "additionalProperties": {
+          "not": {
+            "$ref": "#/definitions/require_properties"
+          }
+        }
+      }
+    },
+    "require_in_bands": {
+      "required": [
+        "bands"
+      ],
+      "properties": {
+        "bands": {
+          "type": "array",
+          "contains": {
+            "$ref": "#/definitions/require_fields"
+          }
+        }
+      }
+    },
+    "require_fields": {
+      "anyOf": [
+        {
+          "required": [
+            "eo:cloud_cover"
+          ]
+        },
+        {
+          "required": [
+            "eo:snow_cover"
+          ]
+        },
+        {
+          "required": [
+            "eo:common_name"
+          ]
+        },
+        {
+          "required": [
+            "eo:center_wavelength"
+          ]
+        },
+        {
+          "required": [
+            "eo:full_width_half_max"
+          ]
+        },
+        {
+          "required": [
+            "eo:solar_illumination"
+          ]
+        }
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "eo:cloud_cover": {
+          "$ref": "#/definitions/eo:cloud_cover"
+        },
+        "eo:snow_cover": {
+          "$ref": "#/definitions/eo:snow_cover"
+        },
+        "eo:common_name": {
+          "$ref": "#/definitions/eo:common_name"
+        },
+        "eo:center_wavelength": {
+          "$ref": "#/definitions/eo:center_wavelength"
+        },
+        "eo:full_width_half_max": {
+          "$ref": "#/definitions/eo:full_width_half_max"
+        },
+        "eo:solar_illumination": {
+          "$ref": "#/definitions/eo:solar_illumination"
+        }
+      },
+      "patternProperties": {
+        "^(?!eo:)": {}
+      },
+      "additionalProperties": false
+    },
+    "eo:cloud_cover": {
+      "title": "Cloud Cover",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Estimate of cloud cover as a percentage (0-100)."
+    },
+    "eo:snow_cover": {
+      "title": "Snow and Ice Cover",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Estimate of snow and ice cover as a percentage (0-100)."
+    },
+    "eo:common_name": {
+      "title": "Common Name of the band",
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "pan",
+          "title": "Panchromatic",
+          "description": "Wavelength range 0.40 - 1.00 μm."
+        },
+        {
+          "const": "coastal",
+          "title": "Coastal aerosol",
+          "description": "Wavelength range 0.40 - 0.45 μm."
+        },
+        {
+          "const": "blue",
+          "title": "Blue",
+          "description": "Wavelength range 0.45 - 0.53 μm."
+        },
+        {
+          "const": "green",
+          "title": "Green",
+          "description": "Wavelength range 0.51 - 0.60 μm."
+        },
+        {
+          "const": "green05",
+          "title": "Green (0.5 μm)",
+          "description": "Wavelength range 0.51 - 0.55 μm."
+        },
+        {
+          "const": "yellow",
+          "title": "Yellow",
+          "description": "Wavelength range 0.58 - 0.62 μm."
+        },
+        {
+          "const": "red",
+          "title": "Red",
+          "description": "Wavelength range 0.62 - 0.69 μm."
+        },
+        {
+          "const": "rededge",
+          "title": "Red edge",
+          "description": "Wavelength range 0.69 - 0.79 μm."
+        },
+        {
+          "const": "rededge071",
+          "title": "Red edge (0.71 μm)",
+          "description": "Wavelength range 0.69 - 0.73 μm."
+        },
+        {
+          "const": "rededge075",
+          "title": "Red edge (0.75 μm)",
+          "description": "Wavelength range 0.73 - 0.76 μm."
+        },
+        {
+          "const": "rededge078",
+          "title": "Red edge (0.78 μm)",
+          "description": "Wavelength range 0.76 - 0.79 μm."
+        },
+        {
+          "const": "nir",
+          "title": "Near infrared (NIR)",
+          "description": "Wavelength range 0.76 - 1.00 μm."
+        },
+        {
+          "const": "nir08",
+          "title": "Near infrared (0.8 μm)",
+          "description": "Wavelength range 0.80 - 0.90 μm."
+        },
+        {
+          "const": "nir09",
+          "title": "Near infrared (0.9 μm)",
+          "description": "Wavelength range 0.90 - 1.00 μm."
+        },
+        {
+          "const": "cirrus",
+          "title": "Cirrus",
+          "description": "Wavelength range 1.35 - 1.40 μm."
+        },
+        {
+          "const": "swir16",
+          "title": "Short-wave infrared (1.6 μm)",
+          "description": "Wavelength range 1.55 - 1.75 μm."
+        },
+        {
+          "const": "swir22",
+          "title": "Short-wave infrared (2.2 μm)",
+          "description": "Wavelength range 2.08 - 2.35 μm."
+        },
+        {
+          "const": "lwir",
+          "title": "Long-wave infrared (thermal)",
+          "description": "Wavelength range 10.4 - 12.5 μm."
+        },
+        {
+          "const": "lwir11",
+          "title": "Long-wave infrared (11 μm)",
+          "description": "Wavelength range 10.5 - 11.5 μm."
+        },
+        {
+          "const": "lwir12",
+          "title": "Long-wave infrared (12 μm)",
+          "description": "Wavelength range 11.5 - 12.5 μm."
+        }
+      ],
+      "description": "The name commonly used to refer to the band to make it easier to search for bands across instruments."
+    },
+    "eo:center_wavelength": {
+      "title": "Center Wavelength",
+      "type": "number",
+      "minimumExclusive": 0,
+      "description": "The center wavelength of the band, in micrometers (μm)."
+    },
+    "eo:full_width_half_max": {
+      "title": "Full Width Half Max (FWHM)",
+      "type": "number",
+      "minimumExclusive": 0,
+      "description": "Full width at half maximum (FWHM). The width of the band, as measured at half the maximum transmission, in micrometers (μm)."
+    },
+    "eo:solar_illumination": {
+      "title": "Solar Illumination",
+      "type": "number",
+      "minimum": 0,
+      "description": "The solar illumination of the band, as measured at half the maximum transmission, in W/m2/micrometers."
+    }
+  }
+}

@@ -23,6 +23,9 @@ asking the schemas themselves.
   shows its populated fields highlighted within all fields the schemas would allow at the same place: dotted chips are
   allowed but absent, red chips are present but not placed there by any selected schema. Documents are validated
   against STAC core and the extensions they declare.
+- **Field information**: click any field (a chip, or a row of the matrix) to see what it means: its title, description
+  and type, the allowed values with their meanings, and every place it can go. The text comes from the schemas; see
+  [Vendored schemas](#vendored-schemas).
 
 Extensions are chosen from quick-select buttons (the extensions discussed in the
 [Observatory](https://github.com/hamk-uas/observatory) project) or added as any JSON Schema URL or `name@version`
@@ -39,12 +42,27 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | `sel`, `ptr` | selected document (`catalog`, `subcatalog`, `collection`, `item` or a URL) and object (JSON Pointer) |
 | `view` | `matrix` for the placement matrix |
 | `focus` | an extension whose fields are highlighted (others dimmed) |
+| `field` | field shown in the field information panel: `<extension>\|<field>`, e.g. `cf@1.0.0\|cf:cell_methods`, or `core\|license` |
 | `core=1`, `group=0`, `declared=0` | show STAC core fields; list fields one by one; ignore extensions declared by explored documents |
+| `embed=1` | embedded in another app: no page header, a link to open the full app instead |
+
+### Embedding
+
+Other apps can show a STAC document in the explorer in an `<iframe>` (the Observatory plans this for its `?debug` mode):
+
+```text
+https://hamk-uas.github.io/stac-schema-explorer/?embed=1&mode=href&href=<URL-encoded STAC document URL>
+```
+
+The explorer then loads the document and its children, compares them with the extensions they declare (add `ext`
+parameters to compare with more) and keeps its state in its own URL. Use `noext=1` to start without the default
+extensions. The document's server must allow cross-origin requests.
 
 ## How it works
 
-Everything runs in the browser; schemas are fetched from their published URLs when selected. A Web Worker
-([src/engine.worker.ts](src/engine.worker.ts)) does the work with [Ajv](https://ajv.js.org).
+Everything runs in the browser. Vendored schemas (below) are bundled; other schemas are fetched from their published
+URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) does the work with
+[Ajv](https://ajv.js.org).
 
 1. **Field discovery** ([src/lib/fields.ts](src/lib/fields.ts)). An extension's fields are the property keys its schema
    defines at "container" level (object root, Item `properties`, assets, bands, `cube:variables` entries, Table columns
@@ -70,6 +88,9 @@ Everything runs in the browser; schemas are fetched from their published URLs wh
      Item `properties` only when an asset has `bands`.
    - Before a placement is accepted, every other schema must still accept the document; otherwise it is reported as a
      conflict.
+4. **Field documentation** ([src/lib/field-docs.ts](src/lib/field-docs.ts)). Title and description are the nearest ones
+   along the field's `$ref` chain; the type is computed from the schema (`array of (string or null)`,
+   `object: name → Variable Object`); allowed values come from `oneOf` lists of titled constants (or `enum`).
 
 ### Limitations
 
@@ -86,6 +107,40 @@ Everything runs in the browser; schemas are fetched from their published URLs wh
 - In STAC 1.0.0 the example Collection has `item_assets` even without the Item Assets extension, which 1.0.0 core does
   not validate.
 
+## Vendored schemas
+
+Most published STAC schemas have no descriptions and list allowed values without explaining them; the explanations are
+in the extensions' READMEs. This repository therefore vendors STAC core (1.0.0 and 1.1.0) and the extensions of the
+quick-select list in [schemas/](schemas), as copies that add a title and a description to every field and turn every
+`enum` into a `oneOf` of titled (and, where documented, described) constants. The
+[Observatory](https://github.com/hamk-uas/observatory) uses these copies, adding its own Finnish and Swedish
+translations of STAC core.
+
+- [schemas/](schemas)`/<host>/<path>` is the documented copy of `https://<host>/<path>`; its `$id` is that URL (upstream
+  ids end in `#` or, for v1.1.0 `common.json`, have a typo). Dependencies (GeoJSON, PROJJSON) are unmodified.
+- [upstream/](upstream) holds the published originals. The tests ([test/vendored.test.ts](test/vendored.test.ts)) check
+  that each copy validates exactly like its original (annotations removed, value lists turned back into `enum`), keeps
+  every upstream title and description, documents every field, and lists each allowed value exactly once: a value listed
+  twice fails the `oneOf`.
+- Schemas whose own repositories document every field are not vendored: the Semantics extension
+  ([hamk-uas/stac-semantics](https://github.com/hamk-uas/stac-semantics)) and the Observatory extension
+  ([sklvarjo/observatory-stac-extension](https://github.com/sklvarjo/observatory-stac-extension)).
+- The texts come from the extensions' and the STAC specification's README tables (Apache License 2.0) and, for titles,
+  from [stac-utils/stac-fields](https://github.com/stac-utils/stac-fields), with corrections where the READMEs are wrong
+  (for example the Raster histogram `max`) and notes where README and schema disagree (Datacube `type` versus
+  `variable_type`).
+
+To vendor another schema, add it to [scripts/manifest.mjs](scripts/manifest.mjs), then:
+
+```sh
+node scripts/fetch-upstream.mjs     # download the original (and what it references) into upstream/ and schemas/
+node scripts/draft-docs.mjs <name>  # draft missing titles and descriptions from the README tables; never overwrites
+node scripts/report.mjs             # list what is still undocumented
+node scripts/review.mjs <name>      # print the added texts for review
+```
+
+Edit the files in `schemas/` directly to improve the texts; `pnpm test` keeps them honest.
+
 ## Development
 
 Requires Node.js 22 and pnpm.
@@ -93,13 +148,14 @@ Requires Node.js 22 and pnpm.
 ```sh
 pnpm install
 pnpm dev          # development server
-pnpm test         # unit tests, using the schema snapshots in test/fixtures
+pnpm test         # unit tests, including the vendored-schema checks
 pnpm build        # type check and production build into dist/
-pnpm explore -- https://stac-extensions.github.io/cf/v1.0.0/schema.json   # print placements in the terminal
+pnpm explore -- cf@1.0.0   # print placements in the terminal
 ```
 
-Tests and `pnpm explore` read schemas from [test/fixtures](test/fixtures); a schema missing there is downloaded once and
-saved. Delete a fixture to refresh it.
+Tests and `pnpm explore` read schemas from [schemas/](schemas), then [test/fixtures](test/fixtures) (non-vendored
+schemas such as Semantics); a schema missing from both is downloaded once into `test/fixtures`. Delete a fixture to
+refresh it.
 
 ## Deployment
 

@@ -11,11 +11,14 @@ const props = defineProps<{
     group: boolean;
     focus: string;
 }>();
+const emit = defineEmits<{ field: [source: string, name: string] }>();
 
 const expanded = ref(new Set<string>());
 const groups = computed(() => groupFields(props.fields, props.sources));
 
-function toggle(source: string) {
+function toggle(group: FieldGroup) {
+    if (group.fields.length === 1) return emit('field', group.source, group.fields[0].name);
+    const source = group.source;
     const next = new Set(expanded.value);
     if (next.has(source)) next.delete(source);
     else next.add(source);
@@ -32,7 +35,22 @@ function fieldTitle(field: FieldView): string {
     const how = field.kind === 'presence'
         ? 'the schema does not validate the value here, but its presence satisfies the extension\'s "at least one field" requirement'
         : field.kind === 'validated' ? 'validated here by the schema' : '';
-    return [`${field.name}`, sourceLabel(field.source, props.sources), STATE_TEXT[field.state], how].filter(Boolean).join('\n');
+    const doc = docOf(field);
+    const about = doc ? [`${doc.title ?? ''}${doc.title ? ' — ' : ''}${doc.type}`, firstSentence(doc.description)] : [];
+    return [field.name, ...about, '', sourceLabel(field.source, props.sources), STATE_TEXT[field.state], how, '', 'Click for details.']
+        .filter((line, i, all) => line !== undefined && !(line === '' && all[i - 1] === ''))
+        .join('\n');
+}
+
+function docOf(field: FieldView) {
+    return props.sources.find((s) => s.key === field.source)?.docs[field.name];
+}
+
+function firstSentence(text: string | undefined): string | undefined {
+    if (!text) return undefined;
+    const end = text.search(/\.\s/);
+    if (end > 0 && end < 200) return text.slice(0, end + 1);
+    return text.length > 200 ? `${text.slice(0, 197)}…` : text;
 }
 
 function groupState(group: FieldGroup): string {
@@ -43,7 +61,12 @@ function groupState(group: FieldGroup): string {
 }
 
 function groupTitle(group: FieldGroup): string {
-    return `${sourceLabel(group.source, props.sources)}\n${group.fields.map((f) => `• ${f.name}${f.kind === 'presence' ? ' (presence only)' : ''} — ${STATE_TEXT[f.state]}`).join('\n')}\n\nClick to ${expanded.value.has(group.source) ? 'collapse' : 'expand'}.`;
+    if (group.fields.length === 1) return fieldTitle(group.fields[0]);
+    const lines = group.fields.map((f) => {
+        const title = docOf(f)?.title;
+        return `• ${f.name}${title ? ` (${title})` : ''}${f.kind === 'presence' ? ', presence only' : ''} — ${STATE_TEXT[f.state]}`;
+    });
+    return `${sourceLabel(group.source, props.sources)}\n${lines.join('\n')}\n\nClick to ${expanded.value.has(group.source) ? 'collapse' : 'list the fields'}.`;
 }
 
 function counts(group: FieldGroup): string {
@@ -70,36 +93,40 @@ function dimmed(source: string): boolean {
           :class="[`state-${groupState(g)}`, { presence: g.fields.every((f) => f.kind === 'presence'), dimmed: dimmed(g.source), open: expanded.has(g.source) }]"
           :style="{ '--c': colorOf(g.source) }"
           :title="groupTitle(g)"
-          @click.stop="toggle(g.source)"
+          @click.stop="toggle(g)"
         >
           <span class="name">{{ g.label }}</span>
           <span v-if="counts(g)" class="count">{{ counts(g) }}</span>
           <span v-if="version(g.source)" class="ver">v{{ version(g.source) }}</span>
         </button>
         <template v-if="expanded.has(g.source)">
-          <span
+          <button
             v-for="f in g.fields"
             :key="f.name"
+            type="button"
             class="chip field sub"
             :class="[`state-${f.state}`, { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
             :style="{ '--c': colorOf(f.source) }"
             :title="fieldTitle(f)"
-          >{{ f.name }}</span>
+            @click.stop="emit('field', f.source, f.name)"
+          >{{ f.name }}</button>
         </template>
       </template>
     </template>
     <template v-else>
-      <span
+      <button
         v-for="f in fields"
         :key="`${f.source}|${f.name}`"
+        type="button"
         class="chip field"
         :class="[`state-${f.state}`, { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
         :style="{ '--c': colorOf(f.source) }"
         :title="fieldTitle(f)"
+        @click.stop="emit('field', f.source, f.name)"
       >
         <span class="name">{{ f.name }}</span>
         <span v-if="version(f.source)" class="ver">v{{ version(f.source) }}</span>
-      </span>
+      </button>
     </template>
   </span>
 </template>
@@ -131,6 +158,9 @@ function dimmed(source: string): boolean {
 }
 button.chip {
   cursor: pointer;
+}
+button.chip:hover {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 25%, transparent);
 }
 button.chip.open {
   background: color-mix(in srgb, var(--c) 22%, white);

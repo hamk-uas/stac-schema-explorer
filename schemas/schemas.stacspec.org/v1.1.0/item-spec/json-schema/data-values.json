@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.stacspec.org/v1.1.0/item-spec/json-schema/data-values.json",
+  "title": "Fields related to data values",
+  "type": "object",
+  "properties": {
+    "data_type": {
+      "title": "Data type of the values",
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "int8",
+          "title": "int8"
+        },
+        {
+          "const": "int16",
+          "title": "int16"
+        },
+        {
+          "const": "int32",
+          "title": "int32"
+        },
+        {
+          "const": "int64",
+          "title": "int64"
+        },
+        {
+          "const": "uint8",
+          "title": "uint8"
+        },
+        {
+          "const": "uint16",
+          "title": "uint16"
+        },
+        {
+          "const": "uint32",
+          "title": "uint32"
+        },
+        {
+          "const": "uint64",
+          "title": "uint64"
+        },
+        {
+          "const": "float16",
+          "title": "float16"
+        },
+        {
+          "const": "float32",
+          "title": "float32"
+        },
+        {
+          "const": "float64",
+          "title": "float64"
+        },
+        {
+          "const": "cint16",
+          "title": "cint16"
+        },
+        {
+          "const": "cint32",
+          "title": "cint32"
+        },
+        {
+          "const": "cfloat32",
+          "title": "cfloat32"
+        },
+        {
+          "const": "cfloat64",
+          "title": "cfloat64"
+        },
+        {
+          "const": "other",
+          "title": "Other"
+        }
+      ],
+      "description": "The data type of the values."
+    },
+    "nodata": {
+      "title": "No data value",
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "nan",
+              "title": "NaN (not a number)"
+            },
+            {
+              "const": "inf",
+              "title": "Positive infinity"
+            },
+            {
+              "const": "-inf",
+              "title": "Negative infinity"
+            }
+          ]
+        }
+      ],
+      "description": "Value used to identify no-data."
+    },
+    "statistics": {
+      "title": "Statistics",
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "minimum": {
+          "title": "Minimum value of all the data values",
+          "type": "number",
+          "description": "Minimum value of the values in the band. If not present, the minimum value of the given data type or negative infinity can be assumed."
+        },
+        "maximum": {
+          "title": "Maximum value of all the data values",
+          "type": "number",
+          "description": "Maximum value of the values in the band. If not present, the maximum value of the given data type or positive infinity can be assumed."
+        },
+        "mean": {
+          "title": "Mean value of all the data values",
+          "type": "number",
+          "description": "Mean value of all the values in the band."
+        },
+        "stddev": {
+          "title": "Standard deviation value of all the data values",
+          "type": "number",
+          "description": "Standard deviation value of the values in the band."
+        },
+        "count": {
+          "title": "Total number of all data values",
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of all data values (>= 0)."
+        },
+        "valid_percent": {
+          "title": "Percentage of valid (not nodata) values",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of valid (not `nodata`) values (0-100)."
+        }
+      },
+      "description": "Statistics of all the values."
+    },
+    "unit": {
+      "title": "Unit denomination of the data value",
+      "type": "string",
+      "description": "Unit of measurement of the value."
+    }
+  }
+}

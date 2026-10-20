@@ -9,8 +9,8 @@
     <li><span class="chip unexpected">foo:bar</span> populated, but no selected schema places it there</li>
   </ul>
   <p class="note">
-    Click a field group to list its fields, an object to highlight it in the JSON, an extension name to highlight its fields
-    everywhere.
+    Click a field to see its meaning, type and allowed values, a field group to list its fields, an object to highlight it
+    in the JSON, an extension name to highlight its fields everywhere.
   </p>
 </template>
 

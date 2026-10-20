@@ -1,0 +1,239 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/table/v1.3.0/schema.json",
+  "title": "Table Extension",
+  "description": "STAC Table Extension for STAC Items and STAC Collections.",
+  "type": "object",
+  "required": [
+    "stac_extensions"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/table/v1.3.0/schema.json"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items. Remove this object if this extension only applies to Collections.",
+      "type": "object",
+      "required": [
+        "type",
+        "properties",
+        "assets"
+      ],
+      "properties": {
+        "type": {
+          "const": "Feature"
+        },
+        "properties": {
+          "$ref": "#/definitions/fields"
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        }
+      }
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Collection"
+        },
+        "item_assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        },
+        "summaries": {
+          "type": "object",
+          "properties": {
+            "table:row_count": {
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/json_schema"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/definitions/table:row_count"
+                  }
+                }
+              ]
+            },
+            "table:primary_geometry": {
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/json_schema"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/definitions/table:primary_geometry"
+                  }
+                }
+              ]
+            },
+            "table:primary_datetime": {
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/json_schema"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/definitions/table:primary_datetime"
+                  }
+                }
+              ]
+            },
+            "table:columns": {
+              "oneOf": [
+                {
+                  "$ref": "#/definitions/json_schema"
+                },
+                {
+                  "type": "array",
+                  "uniqueItems": true,
+                  "items": {
+                    "$ref": "#/definitions/table:columns"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/fields"
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "fields": {
+      "type": "object",
+      "properties": {
+        "table:row_count": {
+          "$ref": "#/definitions/table:row_count"
+        },
+        "table:primary_geometry": {
+          "$ref": "#/definitions/table:primary_geometry"
+        },
+        "table:primary_datetime": {
+          "$ref": "#/definitions/table:primary_datetime"
+        },
+        "table:columns": {
+          "$ref": "#/definitions/table:columns"
+        },
+        "table:storage_options": {
+          "$ref": "#/definitions/table:storage_options"
+        },
+        "table:tables": {
+          "$ref": "#/definitions/table:tables"
+        }
+      },
+      "patternProperties": {
+        "^(?!table:)": {}
+      },
+      "additionalProperties": false
+    },
+    "table:tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The table name."
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Detailed multi-line description to explain the table. CommonMark 0.29 syntax MAY be used for rich text representation."
+          }
+        }
+      },
+      "title": "Tables",
+      "description": "Deprecated. A list of Table Objects."
+    },
+    "table:storage_options": {
+      "type": "object",
+      "title": "Storage Options",
+      "description": "Deprecated. Additional keywords for opening the dataset."
+    },
+    "table:columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name",
+            "description": "The column name."
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Description",
+            "description": "Detailed multi-line description to explain the column. CommonMark 0.29 syntax MAY be used for rich text representation."
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "title": "Columns",
+      "description": "A list of Column Objects describing each column."
+    },
+    "table:primary_geometry": {
+      "type": "string",
+      "title": "Primary Geometry Column",
+      "description": "The primary geometry column name."
+    },
+    "table:primary_datetime": {
+      "type": "string",
+      "title": "Primary Datetime Column",
+      "description": "The primary date/time column name."
+    },
+    "table:row_count": {
+      "type": "number",
+      "minimum": 0,
+      "title": "Rows",
+      "description": "The number of rows in the dataset."
+    },
+    "json_schema": {
+      "$comment": "JSON Schema",
+      "type": "object"
+    }
+  }
+}

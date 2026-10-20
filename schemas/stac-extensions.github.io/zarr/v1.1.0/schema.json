@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/zarr/v1.1.0/schema.json",
+  "title": "Zarr Extension",
+  "description": "STAC Zarr Extension for STAC Assets.",
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items. Remove this object if this extension only applies to Collections.",
+      "allOf": [
+        {
+          "$ref": "#/definitions/stac_extensions"
+        },
+        {
+          "type": "object",
+          "required": [
+            "type",
+            "assets"
+          ],
+          "properties": {
+            "type": {
+              "const": "Feature"
+            },
+            "assets": {
+              "$comment": "This validates the fields in Item Assets, but does not require them.",
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/fields"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "allOf": [
+        {
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Collection"
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/stac_extensions"
+        }
+      ],
+      "anyOf": [
+        {
+          "$comment": "This validates the fields in Collection Assets, but does not require them.",
+          "required": [
+            "assets"
+          ],
+          "properties": {
+            "assets": {
+              "type": "object",
+              "not": {
+                "additionalProperties": {
+                  "not": {
+                    "$ref": "#/definitions/fields"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "stac_extensions": {
+      "type": "object",
+      "required": [
+        "stac_extensions"
+      ],
+      "properties": {
+        "stac_extensions": {
+          "type": "array",
+          "contains": {
+            "const": "https://stac-extensions.github.io/zarr/v1.1.0/schema.json"
+          }
+        }
+      }
+    },
+    "require_any_field": {
+      "anyOf": [
+        {
+          "required": [
+            "zarr:consolidated"
+          ]
+        },
+        {
+          "required": [
+            "zarr:node_type"
+          ]
+        },
+        {
+          "required": [
+            "zarr:zarr_format"
+          ]
+        }
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "zarr:consolidated": {
+          "type": "boolean",
+          "title": "Consolidated Metadata",
+          "description": "Whether the Zarr store includes consolidated metadata."
+        },
+        "zarr:node_type": {
+          "oneOf": [
+            {
+              "const": "array",
+              "title": "Array"
+            },
+            {
+              "const": "group",
+              "title": "Group"
+            }
+          ],
+          "title": "Node Type",
+          "description": "Type of Zarr hierarchy node element. Must be `group` or `array`."
+        },
+        "zarr:zarr_format": {
+          "oneOf": [
+            {
+              "const": 2,
+              "title": "2"
+            },
+            {
+              "const": 3,
+              "title": "3"
+            }
+          ],
+          "title": "Zarr Version",
+          "description": "Zarr format of the store (currently 2 or 3)."
+        }
+      },
+      "patternProperties": {
+        "^(?!zarr:)": {
+          "$comment": ""
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

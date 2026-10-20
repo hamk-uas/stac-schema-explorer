@@ -1,0 +1,218 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/view/v1.1.0/schema.json",
+  "title": "View Geometry Extension",
+  "description": "STAC View Geometry for STAC Items and STAC Collections.",
+  "type": "object",
+  "required": [
+    "stac_extensions"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/view/v1.1.0/schema.json"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Feature"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "properties"
+          ],
+          "properties": {
+            "properties": {
+              "$ref": "#/definitions/requirements_and_fields"
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/assets"
+        }
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Collection"
+        }
+      },
+      "anyOf": [
+        {
+          "$ref": "#/definitions/assets"
+        },
+        {
+          "required": [
+            "item_assets"
+          ],
+          "properties": {
+            "item_assets": {
+              "$ref": "#/definitions/asset_contains"
+            }
+          }
+        },
+        {
+          "$comment": "This is the schema for the fields in Summaries. By default, only checks the existence of the properties, but not the schema of the summaries.",
+          "required": [
+            "summaries"
+          ],
+          "properties": {
+            "summaries": {
+              "$ref": "#/definitions/require_any_field"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "assets": {
+      "required": [
+        "assets"
+      ],
+      "properties": {
+        "assets": {
+          "$ref": "#/definitions/asset_contains"
+        }
+      }
+    },
+    "asset_contains": {
+      "type": "object",
+      "not": {
+        "additionalProperties": {
+          "not": {
+            "$ref": "#/definitions/requirements_and_fields"
+          }
+        }
+      }
+    },
+    "requirements_and_fields": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/require_any_field"
+        },
+        {
+          "$ref": "#/definitions/fields"
+        }
+      ]
+    },
+    "require_any_field": {
+      "$comment": "Please list all fields here so that we can force the existence of one of them in other parts of the schemas.",
+      "anyOf": [
+        {
+          "required": [
+            "view:off_nadir"
+          ]
+        },
+        {
+          "required": [
+            "view:incidence_angle"
+          ]
+        },
+        {
+          "required": [
+            "view:azimuth"
+          ]
+        },
+        {
+          "required": [
+            "view:sun_azimuth"
+          ]
+        },
+        {
+          "required": [
+            "view:sun_elevation"
+          ]
+        },
+        {
+          "required": [
+            "view:moon_azimuth"
+          ]
+        },
+        {
+          "required": [
+            "view:moon_elevation"
+          ]
+        }
+      ]
+    },
+    "fields": {
+      "$comment": "Add your new fields here. Don't require them here, do that above in the item schema.",
+      "type": "object",
+      "properties": {
+        "view:off_nadir": {
+          "title": "Off Nadir",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "The angle from the sensor between nadir (straight down) and the scene center. Measured in degrees (0-90)."
+        },
+        "view:incidence_angle": {
+          "title": "Center incidence angle",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "The incidence angle is the angle between the vertical (normal) to the intercepting surface and the line of sight back to the satellite at the scene center. Measured in degrees (0-90)."
+        },
+        "view:azimuth": {
+          "title": "Azimuth angle",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Viewing azimuth angle. The angle measured from the sub-satellite point (point on the ground below the platform) between the scene center and true north. Measured clockwise from north in degrees (0-360)."
+        },
+        "view:sun_azimuth": {
+          "title": "Sun Azimuth",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Sun azimuth angle. From the scene center point on the ground, this is the angle between truth north and the sun. Measured clockwise in degrees (0-360)."
+        },
+        "view:sun_elevation": {
+          "title": "Sun Elevation",
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "description": "Sun elevation angle. The angle from the tangent of the scene center point to the sun. Measured from the horizon in degrees (`-90`-`90`). Negative values indicate the sun is below the horizon, e.g. sun elevation of -10° means the data was captured during nautical twilight."
+        },
+        "view:moon_azimuth": {
+          "title": "Moon Azimuth",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 360,
+          "description": "Moon azimuth angle. From the scene center point on the ground, this is the angle between truth north and the moon. Measured clockwise in degrees (0-360)."
+        },
+        "view:moon_elevation": {
+          "title": "Moon Elevation",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 90,
+          "description": "Moon elevation angle. The angle from the tangent of the scene center point to the moon. Measured from the horizon in degrees (`0`-`90`)."
+        }
+      },
+      "patternProperties": {
+        "^(?!view:)": {
+          "$comment": "Do not allow unspecified fields prefixed with view:"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

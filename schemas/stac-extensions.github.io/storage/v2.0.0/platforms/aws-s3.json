@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/storage/v2.0.0/platforms/aws-s3.json",
+  "title": "AWS S3",
+  "type": "object",
+  "if": {
+    "properties": {
+      "type": {
+        "const": "aws-s3"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "platform": {
+        "const": "https://{bucket}.s3.{region}.amazonaws.com"
+      },
+      "bucket": {
+        "$comment": "See https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html",
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-.]{1,61}[a-z0-9]$",
+        "title": "Bucket",
+        "description": "The bucket name."
+      },
+      "region": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$",
+        "title": "Region",
+        "description": "The region where the data is stored. Relevant to speed of access and inter region egress costs (as defined by PaaS provider)."
+      }
+    }
+  }
+}

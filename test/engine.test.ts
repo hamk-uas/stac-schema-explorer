@@ -5,6 +5,7 @@ import { buildMatrix } from '../src/lib/matrix';
 import type { ProbeResult, StacType } from '../src/lib/model';
 import { probe } from '../src/lib/probe';
 import { stringFromRegex } from '../src/lib/sampler';
+import { formatErrors } from '../src/lib/schemas';
 import { documentView, groupFields, shapeOf, templateView, type ObjectView } from '../src/lib/tree';
 import { readState, writeState } from '../src/lib/url-state';
 import { fixtureStore } from './helpers';
@@ -143,6 +144,36 @@ describe('schemas that validate fields of other extensions', () => {
         expect(dimension.label).toMatch(/of 11 obs:\)/);
         const column = groupFields(fieldsAt('/assets/data/table:columns/0'), result.sources)[0];
         expect(column.label).toContain('cf:cell_methods');
+    });
+});
+
+describe('field documentation', () => {
+    it('describes fields with title, description, readable type and titled values', async () => {
+        const result = await defaultProbe();
+        const cf = result.sources.find((s) => s.key === CF)!;
+        expect(cf.docs['cf:cell_methods']).toMatchObject({ title: 'Cell Methods', type: 'array of (string or null)' });
+        expect(cf.docs['cf:cell_methods'].description).toMatch(/method/);
+        const datacube = result.sources.find((s) => s.key === DATACUBE)!;
+        expect(datacube.docs['cube:variables'].type).toBe('object: name → Variable Object');
+        const core = result.sources.find((s) => s.key === 'core')!;
+        expect(core.docs.title.description).toBe('A human-readable title describing the entity.');
+        expect(core.docs.data_type.values?.find((v) => v.value === 'float32')).toBeDefined();
+        expect(core.docs.nodata.type).toBe('number or "nan" or "inf" or "-inf"');
+        expect(core.docs.nodata.values?.map((v) => v.title)).toEqual(['NaN (not a number)', 'Positive infinity', 'Negative infinity']);
+    });
+
+    it('reports a failed value list as one error listing the allowed values', async () => {
+        const store = fixtureStore();
+        const raster = 'https://stac-extensions.github.io/raster/v2.0.0/schema.json';
+        const validate = await store.validator(raster);
+        const doc = {
+            type: 'Feature', stac_version: '1.1.0', stac_extensions: [raster], id: 'x', geometry: null, properties: { datetime: '2024-01-01T00:00:00Z' }, links: [],
+            assets: { a: { href: 'a.tif', 'raster:sampling': 'center' } },
+        };
+        expect(validate(doc)).toBe(false);
+        const messages = formatErrors(validate.errors, raster);
+        expect(messages.join('\n')).toContain('must be one of "area", "point"');
+        expect(messages.join('\n')).not.toMatch(/constant|match exactly one/);
     });
 });
 

@@ -21,6 +21,7 @@ const emit = defineEmits<{
     select: [key: string, pointers: string[]];
     toggle: [entry: DocEntry];
     more: [entry: DocEntry];
+    field: [source: string, name: string, sources: SourceInfo[]];
 }>();
 
 const docSources = computed(() => props.entry.sources ?? props.sources);
@@ -66,7 +67,7 @@ const validityTitle = computed(() => {
     <div v-if="entry.view && !entry.compact" class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">top level</span>
-        <FieldChips :fields="entry.view.fields" :sources="docSources" :group="group" :focus="focus" />
+        <FieldChips :fields="entry.view.fields" :sources="docSources" :group="group" :focus="focus" @field="(s: string, n: string) => emit('field', s, n, docSources)" />
       </div>
       <ObjectNode
         v-for="child in entry.view.children"
@@ -77,6 +78,7 @@ const validityTitle = computed(() => {
         :focus="focus"
         :selected="pointers"
         @select="(p: string[]) => emit('select', entry.key, p)"
+        @field="(s: string, n: string) => emit('field', s, n, docSources)"
       />
       <div v-if="notApplicable.length && !entry.href" class="na" title="These selected extensions define no field for this object type">
         not applicable: {{ notApplicable.join(', ') }}
@@ -95,6 +97,7 @@ const validityTitle = computed(() => {
         @select="(k: string, p: string[]) => emit('select', k, p)"
         @toggle="(e: DocEntry) => emit('toggle', e)"
         @more="(e: DocEntry) => emit('more', e)"
+        @field="(s: string, n: string, src: SourceInfo[]) => emit('field', s, n, src)"
       />
       <button v-if="entry.remaining.length || entry.itemsHref" type="button" class="more" @click="emit('more', entry)">
         {{ entry.remaining.length ? `Show more (${entry.remaining.length} not loaded)` : 'Load items' }}

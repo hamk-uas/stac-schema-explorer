@@ -1,0 +1,847 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json",
+  "title": "Datacube Extension",
+  "description": "STAC Datacube Extension for STAC Items and STAC Collections.",
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "allOf": [
+        {
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Feature"
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/stac_extensions"
+        }
+      ],
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "properties"
+          ],
+          "properties": {
+            "properties": {
+              "allOf": [
+                {
+                  "$ref": "#/definitions/require_field"
+                },
+                {
+                  "$ref": "#/definitions/fields"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$comment": "This validates the fields in Item Assets.",
+          "required": [
+            "assets"
+          ],
+          "properties": {
+            "assets": {
+              "type": "object",
+              "not": {
+                "additionalProperties": {
+                  "not": {
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/require_field"
+                      },
+                      {
+                        "$ref": "#/definitions/fields"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "allOf": [
+        {
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "Collection"
+            }
+          }
+        },
+        {
+          "$ref": "#/definitions/stac_extensions"
+        }
+      ],
+      "anyOf": [
+        {
+          "$comment": "This is the schema for the top-level fields in a Collection.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/require_field"
+            },
+            {
+              "$ref": "#/definitions/fields"
+            }
+          ]
+        },
+        {
+          "$comment": "This validates the fields in Collection Assets.",
+          "required": [
+            "assets"
+          ],
+          "properties": {
+            "assets": {
+              "type": "object",
+              "not": {
+                "additionalProperties": {
+                  "not": {
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/require_field"
+                      },
+                      {
+                        "$ref": "#/definitions/fields"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "$comment": "This is the schema for the fields in Item Asset Definitions.",
+          "required": [
+            "item_assets"
+          ],
+          "properties": {
+            "item_assets": {
+              "type": "object",
+              "not": {
+                "additionalProperties": {
+                  "not": {
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/require_any_field"
+                      },
+                      {
+                        "$ref": "#/definitions/fields"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "$comment": "This is the schema for the fields in Summaries. By default, only checks the existance of the properties, but not the schema of the summaries.",
+          "required": [
+            "summaries"
+          ],
+          "properties": {
+            "summaries": {
+              "$ref": "#/definitions/require_any_field"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "stac_extensions": {
+      "type": "object",
+      "required": [
+        "stac_extensions"
+      ],
+      "properties": {
+        "stac_extensions": {
+          "type": "array",
+          "contains": {
+            "const": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+          }
+        }
+      }
+    },
+    "require_any_field": {
+      "$comment": "Please list all fields here so that we can force the existance of one of them in other parts of the schemas.",
+      "anyOf": [
+        {
+          "required": [
+            "cube:dimensions"
+          ]
+        },
+        {
+          "required": [
+            "cube:variables"
+          ]
+        }
+      ]
+    },
+    "require_field": {
+      "required": [
+        "cube:dimensions"
+      ]
+    },
+    "fields": {
+      "$comment": "Add your new fields here. Don't require them here, do that above in the corresponding schema.",
+      "type": "object",
+      "properties": {
+        "cube:dimensions": {
+          "$ref": "#/definitions/cube:dimensions"
+        },
+        "cube:variables": {
+          "$ref": "#/definitions/cube:variables"
+        }
+      },
+      "patternProperties": {
+        "^(?!cube:)": {}
+      },
+      "additionalProperties": false
+    },
+    "cube:dimensions": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/vector_dimension"
+          },
+          {
+            "$ref": "#/definitions/horizontal_spatial_dimension"
+          },
+          {
+            "$ref": "#/definitions/vertical_spatial_dimension"
+          },
+          {
+            "$ref": "#/definitions/temporal_dimension"
+          },
+          {
+            "$ref": "#/definitions/additional_dimension"
+          }
+        ]
+      },
+      "title": "Dimensions",
+      "description": "Uniquely named dimensions of the datacube."
+    },
+    "cube:variables": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/variable"
+      },
+      "title": "Variables",
+      "description": "Uniquely named variables of the datacube."
+    },
+    "additional_dimension": {
+      "title": "Additional Dimension Object",
+      "type": "object",
+      "anyOf": [
+        {
+          "required": [
+            "type",
+            "extent"
+          ]
+        },
+        {
+          "required": [
+            "type",
+            "values"
+          ]
+        }
+      ],
+      "not": {
+        "required": [
+          "axis"
+        ]
+      },
+      "properties": {
+        "type": {
+          "type": "string",
+          "not": {
+            "enum": [
+              "spatial",
+              "geometry"
+            ]
+          }
+        },
+        "description": {
+          "$ref": "#/definitions/description",
+          "title": "Description",
+          "description": "Detailed multi-line description to explain the dimension. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "extent": {
+          "$ref": "#/definitions/extent_open"
+        },
+        "values": {
+          "$ref": "#/definitions/values"
+        },
+        "step": {
+          "$ref": "#/definitions/step",
+          "title": "Step",
+          "description": "If the dimension consists of interval values, the space between the values. Use `null` for irregularly spaced steps."
+        },
+        "unit": {
+          "$ref": "#/definitions/unit"
+        },
+        "reference_system": {
+          "type": "string",
+          "title": "Reference System",
+          "description": "The reference system for the data and datacube metadata (`extent`, `values` and `step`)."
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string"
+            ]
+          },
+          "title": "Dimensions",
+          "description": "Names of dimensions (keys in `cube:dimensions`). The schema allows this field on additional dimensions, but the extension README documents it only for variables."
+        }
+      }
+    },
+    "horizontal_spatial_dimension": {
+      "title": "Horizontal Spatial Raster Dimension Object",
+      "type": "object",
+      "required": [
+        "type",
+        "axis",
+        "extent"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/type_spatial"
+        },
+        "axis": {
+          "$ref": "#/definitions/axis_xy"
+        },
+        "description": {
+          "$ref": "#/definitions/description",
+          "title": "Description",
+          "description": "Detailed multi-line description to explain the dimension. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "extent": {
+          "$ref": "#/definitions/extent_closed"
+        },
+        "values": {
+          "$ref": "#/definitions/values_numeric"
+        },
+        "step": {
+          "$ref": "#/definitions/step",
+          "title": "Step",
+          "description": "The space between the values. Use `null` for irregularly spaced steps."
+        },
+        "reference_system": {
+          "$ref": "#/definitions/reference_system_spatial",
+          "title": "Reference System",
+          "description": "The spatial reference system for the data and datacube metadata (`extent`, `values` and `step`), specified as numerical EPSG code, WKT2 (ISO 19162) string or PROJJSON object. Defaults to EPSG code 4326."
+        }
+      }
+    },
+    "vertical_spatial_dimension": {
+      "title": "Vertical Spatial Dimension Object",
+      "type": "object",
+      "anyOf": [
+        {
+          "required": [
+            "type",
+            "axis",
+            "extent"
+          ]
+        },
+        {
+          "required": [
+            "type",
+            "axis",
+            "values"
+          ]
+        }
+      ],
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/type_spatial"
+        },
+        "axis": {
+          "$ref": "#/definitions/axis_z"
+        },
+        "description": {
+          "$ref": "#/definitions/description",
+          "title": "Description",
+          "description": "Detailed multi-line description to explain the dimension. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "extent": {
+          "$ref": "#/definitions/extent_open"
+        },
+        "values": {
+          "$ref": "#/definitions/values"
+        },
+        "step": {
+          "$ref": "#/definitions/step",
+          "title": "Step",
+          "description": "If the dimension consists of interval values, the space between the values. Use `null` for irregularly spaced steps."
+        },
+        "unit": {
+          "$ref": "#/definitions/unit"
+        },
+        "reference_system": {
+          "$ref": "#/definitions/reference_system_spatial",
+          "title": "Reference System",
+          "description": "The spatial reference system for the data and datacube metadata (`extent`, `values` and `step`), specified as numerical EPSG code, WKT2 (ISO 19162) string or PROJJSON object. Defaults to EPSG code 4326."
+        }
+      }
+    },
+    "vector_dimension": {
+      "title": "Spatial Vector Dimension Object",
+      "type": "object",
+      "required": [
+        "type",
+        "bbox"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "geometry"
+        },
+        "axes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "oneOf": [
+              {
+                "const": "x",
+                "title": "x"
+              },
+              {
+                "const": "y",
+                "title": "y"
+              },
+              {
+                "const": "z",
+                "title": "z"
+              }
+            ]
+          },
+          "title": "Axes",
+          "description": "Axes of the vector dimension as an ordered set of `x`, `y` and `z`. Defaults to `x` and `y`."
+        },
+        "description": {
+          "$ref": "#/definitions/description",
+          "title": "Description",
+          "description": "Detailed multi-line description to explain the dimension. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "bbox": {
+          "title": "Spatial extent",
+          "type": "array",
+          "oneOf": [
+            {
+              "minItems": 4,
+              "maxItems": 4
+            },
+            {
+              "minItems": 6,
+              "maxItems": 6
+            }
+          ],
+          "items": {
+            "type": "number"
+          },
+          "description": "A single bounding box of the geometries as defined for STAC Collections, but not nested."
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "description": "WKT or Identifier",
+            "type": "string"
+          },
+          "title": "Values",
+          "description": "Optionally, a representation of the geometries. This could be a list of WKT strings or other identifiers."
+        },
+        "geometry_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "oneOf": [
+              {
+                "const": "Point",
+                "title": "Point"
+              },
+              {
+                "const": "MultiPoint",
+                "title": "MultiPoint"
+              },
+              {
+                "const": "LineString",
+                "title": "LineString"
+              },
+              {
+                "const": "MultiLineString",
+                "title": "MultiLineString"
+              },
+              {
+                "const": "Polygon",
+                "title": "Polygon"
+              },
+              {
+                "const": "MultiPolygon",
+                "title": "MultiPolygon"
+              },
+              {
+                "const": "GeometryCollection",
+                "title": "GeometryCollection"
+              }
+            ]
+          },
+          "title": "Geometry Types",
+          "description": "A set of geometry types. If not present, mixed geometry types must be assumed."
+        },
+        "reference_system": {
+          "$ref": "#/definitions/reference_system_spatial",
+          "title": "Reference System",
+          "description": "The spatial reference system for the data and datacube metadata (`bbox` and `values`), specified as numerical EPSG code, WKT2 (ISO 19162) string or PROJJSON object. Defaults to EPSG code 4326."
+        }
+      }
+    },
+    "temporal_dimension": {
+      "title": "Temporal Dimension Object",
+      "type": "object",
+      "required": [
+        "type",
+        "extent"
+      ],
+      "not": {
+        "required": [
+          "axis"
+        ]
+      },
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "temporal"
+        },
+        "description": {
+          "$ref": "#/definitions/description",
+          "title": "Description",
+          "description": "Detailed multi-line description to explain the dimension. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "title": "Values",
+          "description": "If the dimension consists of an ordered list of specific values they can be listed here. The dates and/or times must be strings compliant to ISO 8601."
+        },
+        "extent": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": "Extent",
+          "description": "Extent (lower and upper bounds) of the dimension as two-element array. The dates and/or times must be strings compliant to ISO 8601. `null` is allowed for open date ranges."
+        },
+        "step": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Step",
+          "description": "The space between the temporal instances as ISO 8601 duration, e.g. `P1D`. Use `null` for irregularly spaced steps."
+        }
+      }
+    },
+    "variable": {
+      "title": "Variable Object",
+      "type": "object",
+      "required": [
+        "dimensions"
+      ],
+      "properties": {
+        "variable_type": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "data",
+              "title": "Data",
+              "description": "A variable indicating some measured value, for example \"precipitation\" or \"temperature\"."
+            },
+            {
+              "const": "auxiliary",
+              "title": "Auxiliary",
+              "description": "A variable that contains coordinate data, but is not a dimension in `cube:dimensions`."
+            }
+          ],
+          "title": "Variable Type",
+          "description": "Type of the variable, either `data` or `auxiliary`. The extension README calls this field `type`, but the schema validates `variable_type`."
+        },
+        "description": {
+          "$ref": "#/definitions/description",
+          "title": "Description",
+          "description": "Detailed multi-line description to explain the variable. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Dimensions",
+          "description": "The dimensions of the variable. This should refer to keys in the `cube:dimensions` object or be an empty list if the variable has no dimensions."
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "title": "Values",
+          "description": "An (ordered) list of all values, especially useful for nominal values."
+        },
+        "extent": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": [
+              "string",
+              "number",
+              "null"
+            ]
+          },
+          "title": "Extent",
+          "description": "If the variable consists of ordinal values, the extent (lower and upper bounds) of the values as two-element array. Use `null` for open intervals."
+        },
+        "unit": {
+          "$ref": "#/definitions/unit"
+        },
+        "nodata": {
+          "$ref": "#/definitions/nodata"
+        },
+        "data_type": {
+          "$ref": "#/definitions/data_type"
+        }
+      }
+    },
+    "type_spatial": {
+      "type": "string",
+      "const": "spatial"
+    },
+    "axis_xy": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "x",
+          "title": "x"
+        },
+        {
+          "const": "y",
+          "title": "y"
+        }
+      ],
+      "title": "Axis",
+      "description": "Axis of the spatial raster dimension (`x`, `y`)."
+    },
+    "axis_z": {
+      "type": "string",
+      "const": "z",
+      "title": "Axis",
+      "description": "Axis of the spatial dimension, always `z`."
+    },
+    "extent_closed": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "number"
+      },
+      "title": "Extent",
+      "description": "Extent (lower and upper bounds) of the dimension as two-element array. Open intervals with `null` are not allowed."
+    },
+    "extent_open": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "title": "Extent",
+      "description": "If the dimension consists of ordinal values, the extent (lower and upper bounds) of the values as two-element array. Use `null` for open intervals."
+    },
+    "values_numeric": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "number"
+      },
+      "title": "Values",
+      "description": "Optionally, an ordered list of all values."
+    },
+    "values": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "title": "Values",
+      "description": "An ordered list of all values, especially useful for nominal values."
+    },
+    "step": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "unit": {
+      "$comment": "The schema is from common metadata, see https://github.com/radiantearth/stac-spec/blob/v1.1.0/item-spec/json-schema/data-values.json",
+      "type": "string",
+      "title": "Unit of Values",
+      "description": "The unit of measurement for the data, preferably compliant to UDUNITS-2 (unit symbol or singular unit name) or UCUM."
+    },
+    "data_type": {
+      "$comment": "The schema is from common metadata, see https://github.com/radiantearth/stac-spec/blob/v1.1.0/item-spec/json-schema/data-values.json",
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "int8",
+          "title": "int8"
+        },
+        {
+          "const": "int16",
+          "title": "int16"
+        },
+        {
+          "const": "int32",
+          "title": "int32"
+        },
+        {
+          "const": "int64",
+          "title": "int64"
+        },
+        {
+          "const": "uint8",
+          "title": "uint8"
+        },
+        {
+          "const": "uint16",
+          "title": "uint16"
+        },
+        {
+          "const": "uint32",
+          "title": "uint32"
+        },
+        {
+          "const": "uint64",
+          "title": "uint64"
+        },
+        {
+          "const": "float16",
+          "title": "float16"
+        },
+        {
+          "const": "float32",
+          "title": "float32"
+        },
+        {
+          "const": "float64",
+          "title": "float64"
+        },
+        {
+          "const": "cint16",
+          "title": "cint16"
+        },
+        {
+          "const": "cint32",
+          "title": "cint32"
+        },
+        {
+          "const": "cfloat32",
+          "title": "cfloat32"
+        },
+        {
+          "const": "cfloat64",
+          "title": "cfloat64"
+        },
+        {
+          "const": "other",
+          "title": "Other"
+        }
+      ],
+      "title": "Data Type of Values",
+      "description": "The data type of the values in the datacube."
+    },
+    "nodata": {
+      "$comment": "The schema is from common metadata, see https://github.com/radiantearth/stac-spec/blob/v1.1.0/item-spec/json-schema/data-values.json",
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "nan",
+              "title": "NaN (not a number)"
+            },
+            {
+              "const": "inf",
+              "title": "Positive infinity"
+            },
+            {
+              "const": "-inf",
+              "title": "Negative infinity"
+            }
+          ]
+        }
+      ],
+      "title": "No-Data Values",
+      "description": "Value used to identify no-data."
+    },
+    "reference_system_spatial": {
+      "oneOf": [
+        {
+          "description": "WKT2",
+          "type": "string"
+        },
+        {
+          "description": "EPSG code",
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "$ref": "https://proj.org/schemas/v0.7/projjson.schema.json"
+        }
+      ],
+      "default": 4326
+    },
+    "description": {
+      "type": "string"
+    }
+  }
+}

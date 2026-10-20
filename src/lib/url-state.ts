@@ -19,6 +19,10 @@ export interface AppState {
     view: 'tree' | 'matrix';
     /** Schema whose fields are emphasized; other fields are dimmed. */
     focus: string;
+    /** Field shown in the field information panel: `<source key>|<field name>`. */
+    field: string;
+    /** Embedded in another app (an iframe): no page header. */
+    embed: boolean;
 }
 
 export function defaultState(): AppState {
@@ -34,6 +38,8 @@ export function defaultState(): AppState {
         includeDeclared: true,
         view: 'tree',
         focus: '',
+        field: '',
+        embed: false,
     };
 }
 
@@ -54,6 +60,13 @@ export function readState(search: string): AppState {
     state.view = params.get('view') === 'matrix' ? 'matrix' : 'tree';
     const focus = params.get('focus');
     state.focus = focus ? (focus === 'core' ? 'core' : fromShortId(focus)) : '';
+    const field = params.get('field');
+    if (field && field.includes('|')) {
+        const at = field.indexOf('|');
+        const source = field.slice(0, at);
+        state.field = `${source === 'core' ? 'core' : fromShortId(source)}|${field.slice(at + 1)}`;
+    }
+    state.embed = params.get('embed') === '1';
     return state;
 }
 
@@ -71,5 +84,11 @@ export function writeState(state: AppState): string {
     if (!state.includeDeclared) params.set('declared', '0');
     if (state.view === 'matrix') params.set('view', 'matrix');
     if (state.focus) params.set('focus', state.focus === 'core' ? 'core' : toShortId(state.focus));
-    return `?${params.toString().replaceAll('%40', '@').replaceAll('%2F', '/').replaceAll('%3A', ':')}`;
+    if (state.field) {
+        const at = state.field.indexOf('|');
+        const source = state.field.slice(0, at);
+        params.set('field', `${source === 'core' ? 'core' : toShortId(source)}|${state.field.slice(at + 1)}`);
+    }
+    if (state.embed) params.set('embed', '1');
+    return `?${params.toString().replaceAll('%40', '@').replaceAll('%2F', '/').replaceAll('%3A', ':').replaceAll('%7C', '|')}`;
 }
