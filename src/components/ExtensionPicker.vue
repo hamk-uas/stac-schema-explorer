@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf } from '../lib/colors';
-import { DEFAULT_EXTENSIONS, describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, toShortId } from '../lib/extensions';
+import { DEFAULT_EXTENSIONS, describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, repoUrl, toShortId } from '../lib/extensions';
 import type { SourceInfo } from '../lib/model';
 
 const props = defineProps<{ modelValue: string[]; sources: SourceInfo[] }>();
@@ -56,7 +56,16 @@ function add() {
           <span v-if="label(url).version" class="ver">v{{ label(url).version }}</span>
           <code v-for="p in label(url).prefixes" :key="p" class="prefix">{{ p }}:</code>
         </button>
-        <a :href="url" target="_blank" rel="noopener" class="icon" title="Open the JSON Schema">↗</a>
+        <a
+          v-if="repoUrl(url)"
+          :href="repoUrl(url)"
+          target="_blank"
+          rel="noopener"
+          class="icon text"
+          :title="`Open the GitHub repository (README)\n${repoUrl(url)}`"
+          :aria-label="`GitHub repository of ${label(url).title}`"
+        >site ↗</a>
+        <a :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
         <button type="button" class="icon" :title="`Remove ${toShortId(url)}`" @click="toggle(url)">×</button>
         <div v-if="info(url)?.error" class="error">{{ info(url)?.error }}</div>
         <div v-else-if="info(url)?.unsampled.length" class="warn" title="No example value valid against the schema could be generated, so these fields may be missing from the results.">
@@ -162,6 +171,9 @@ function add() {
   font-size: 14px;
   text-decoration: none;
   padding: 0 2px;
+}
+.icon.text {
+  font-size: 11px;
 }
 .error,
 .warn {

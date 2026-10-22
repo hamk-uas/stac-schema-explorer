@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_EXTENSIONS, fromShortId, toShortId } from '../src/lib/extensions';
+import { DEFAULT_EXTENSIONS, fromShortId, repoUrl, toShortId } from '../src/lib/extensions';
 import { buildMatrix } from '../src/lib/matrix';
 import type { ProbeResult, StacType } from '../src/lib/model';
 import { probe } from '../src/lib/probe';
@@ -31,6 +31,14 @@ describe('extension ids', () => {
         expect(fromShortId('cf@1.0.0')).toBe(CF);
         expect(fromShortId('datacube@v2.3.0')).toBe(DATACUBE);
         expect(toShortId(SEMANTICS)).toBe(SEMANTICS);
+    });
+
+    it('derives GitHub repositories from schema URLs', () => {
+        expect(repoUrl(CF)).toBe('https://github.com/stac-extensions/cf');
+        expect(repoUrl(SEMANTICS)).toBe('https://github.com/hamk-uas/stac-semantics');
+        expect(repoUrl('https://sklvarjo.github.io/observatory-stac-extension/schema.json')).toBe('https://github.com/sklvarjo/observatory-stac-extension');
+        expect(repoUrl('https://raw.githubusercontent.com/owner/repo/main/schema.json')).toBe('https://github.com/owner/repo');
+        expect(repoUrl('https://example.com/ext/v1.0.0/schema.json')).toBeUndefined();
     });
 });
 

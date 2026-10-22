@@ -86,6 +86,30 @@ export function fromShortId(id: string): string {
     return normalizeSchemaUrl(trimmed);
 }
 
+/**
+ * GitHub repository (whose page shows the README) of a schema published on GitHub Pages or GitHub,
+ * e.g. `https://stac-extensions.github.io/cf/v1.0.0/schema.json` → `https://github.com/stac-extensions/cf`.
+ */
+export function repoUrl(url: string): string | undefined {
+    let parsed: URL;
+    try {
+        parsed = new URL(normalizeSchemaUrl(url));
+    } catch {
+        return undefined;
+    }
+    const host = parsed.hostname.toLowerCase();
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    const pages = /^([a-z0-9-]+)\.github\.io$/.exec(host);
+    if (pages) {
+        const repo = parts.length > 1 ? parts[0] : `${pages[1]}.github.io`;
+        return `https://github.com/${pages[1]}/${repo}`;
+    }
+    if ((host === 'github.com' || host === 'raw.githubusercontent.com') && parts.length >= 2) {
+        return `https://github.com/${parts[0]}/${parts[1]}`;
+    }
+    return undefined;
+}
+
 /** Best-effort name and version of an extension from its schema URL; `known` for quick-select extensions. */
 export function describeUrl(url: string): { name: string; version?: string; known: boolean } {
     const normalized = normalizeSchemaUrl(url);
