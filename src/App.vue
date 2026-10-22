@@ -7,6 +7,7 @@ import FieldInfo, { type FieldPlace } from './components/FieldInfo.vue';
 import JsonView from './components/JsonView.vue';
 import Legend from './components/Legend.vue';
 import MatrixView from './components/MatrixView.vue';
+import Splitter from './components/Splitter.vue';
 import { isProbeableLocation } from './lib/base-docs';
 import { colorOf, sourceLabel } from './lib/colors';
 import { TYPE_LABEL, type DocEntry } from './lib/docs';
@@ -202,6 +203,45 @@ watch(() => state.showCore, () => {
 const selectedPointers = ref<string[]>([state.pointer || '']);
 const jsonOpen = ref(true);
 
+// ---- Pane widths -------------------------------------------------------------------------------------------------
+
+const MIN_SIDE = 180;
+const MIN_MAIN = 240;
+const MIN_JSON = 260;
+const PANES_KEY = `stac-schema-explorer:panes${state.embed ? ':embed' : ''}`;
+
+const appEl = ref<HTMLElement>();
+const sideEl = ref<HTMLElement>();
+const jsonEl = ref<HTMLElement>();
+
+function loadPanes(): { side?: number; json?: number } {
+    try {
+        const stored = JSON.parse(localStorage.getItem(PANES_KEY) ?? '{}') as Record<string, unknown>;
+        const width = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined);
+        return { side: width(stored.side), json: width(stored.json) };
+    } catch {
+        return {};
+    }
+}
+const storedPanes = loadPanes();
+const sideWidth = ref<number | undefined>(storedPanes.side);
+const jsonWidth = ref<number | undefined>(storedPanes.json);
+watch([sideWidth, jsonWidth], ([side, json]) => {
+    try {
+        localStorage.setItem(PANES_KEY, JSON.stringify({ side, json }));
+    } catch {
+        // Storage may be unavailable, e.g. in a sandboxed embed; widths then last for the page only.
+    }
+});
+
+const widthOf = (el: HTMLElement | undefined) => el?.getBoundingClientRect().width ?? 0;
+const maxSide = () => widthOf(appEl.value) - (jsonOpen.value ? widthOf(jsonEl.value) : 0) - MIN_MAIN;
+const maxJson = () => widthOf(appEl.value) - widthOf(sideEl.value) - MIN_MAIN;
+const paneStyle = computed(() => ({
+    ...(sideWidth.value === undefined ? {} : { '--side-col': `min(${sideWidth.value}px, 50vw)` }),
+    ...(jsonWidth.value === undefined || !jsonOpen.value ? {} : { '--json-col': `min(${jsonWidth.value}px, 70vw)` }),
+}));
+
 function select(key: string, pointers: string[]) {
     state.selected = key;
     selectedPointers.value = pointers;
@@ -333,7 +373,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app" :class="{ 'no-json': !jsonOpen, embed: state.embed }">
+  <div ref="appEl" class="app" :class="{ 'no-json': !jsonOpen, embed: state.embed }" :style="paneStyle">
     <header v-if="!state.embed" class="top">
       <div class="brand">
         <h1>STAC Schema Explorer</h1>
@@ -347,7 +387,7 @@ onMounted(() => {
       <a class="gh" href="https://github.com/hamk-uas/stac-schema-explorer" target="_blank" rel="noopener">About / source</a>
     </header>
 
-    <aside class="side">
+    <aside id="side-pane" ref="sideEl" class="side">
       <section>
         <h2>STAC version</h2>
         <select v-model="state.stacVersion" :disabled="state.mode === 'href'" aria-label="STAC version">
@@ -473,7 +513,7 @@ onMounted(() => {
       </template>
     </main>
 
-    <div v-if="jsonOpen" class="json">
+    <div v-if="jsonOpen" id="json-pane" ref="jsonEl" class="json">
       <FieldInfo
         v-if="fieldPanel"
         :name="fieldPanel.name"
@@ -494,13 +534,37 @@ onMounted(() => {
         :pointers="selectedPointers"
       />
     </div>
+
+    <Splitter
+      v-model="sideWidth"
+      class="split split-side"
+      label="Resize sidebar"
+      controls="side-pane"
+      :direction="1"
+      :min="MIN_SIDE"
+      :max="maxSide"
+      :measure="() => widthOf(sideEl)"
+    />
+    <Splitter
+      v-if="jsonOpen"
+      v-model="jsonWidth"
+      class="split split-json"
+      label="Resize JSON panel"
+      controls="json-pane"
+      :direction="-1"
+      :min="MIN_JSON"
+      :max="maxJson"
+      :measure="() => widthOf(jsonEl)"
+    />
   </div>
 </template>
 
 <style scoped>
 .app {
+  --side-col: 300px;
+  --json-col: minmax(320px, 38%);
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) minmax(320px, 38%);
+  grid-template-columns: var(--side-col) minmax(0, 1fr) var(--json-col);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas: 'top top top' 'side main json';
   height: 100vh;
@@ -548,7 +612,7 @@ onMounted(() => {
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
 }
 .app.no-json {
-  grid-template-columns: 300px minmax(0, 1fr) 0;
+  --json-col: 0;
 }
 .json-toggle {
   margin-left: auto;
@@ -624,12 +688,27 @@ onMounted(() => {
   min-height: 0;
 }
 .app.embed {
+  --side-col: 260px;
+  --json-col: minmax(300px, 40%);
   grid-template-rows: minmax(0, 1fr);
   grid-template-areas: 'side main json';
-  grid-template-columns: 260px minmax(0, 1fr) minmax(300px, 40%);
 }
 .app.embed.no-json {
-  grid-template-columns: 260px minmax(0, 1fr) 0;
+  --json-col: 0;
+}
+.split {
+  align-self: stretch;
+}
+/* Hit areas extend right of each border, away from the sidebar and main-pane scrollbars. */
+.split-side {
+  grid-area: side;
+  justify-self: end;
+  margin-right: -8px;
+}
+.split-json {
+  grid-area: json;
+  justify-self: start;
+  margin-left: -1px;
 }
 .embed-bar {
   display: flex;
@@ -755,6 +834,9 @@ onMounted(() => {
   }
   .json {
     height: 70vh;
+  }
+  .split {
+    display: none;
   }
 }
 </style>

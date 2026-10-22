@@ -97,8 +97,11 @@ components rather than introducing another design library.
   compact hierarchy (currently mostly 11-14px) but do not further shrink text
   to solve overflow. Preserve zoomability, wrapping and scan-friendly alignment.
 - **Layout:** toolbar, extension sidebar, flexible main view and JSON/details
-  pane. Desktop panes scroll independently; the existing <=1100px layout stacks
-  sections and constrains the JSON pane. Embedded mode removes site chrome,
+  pane. Desktop panes scroll independently; `Splitter.vue` handles resize the
+  sidebar and JSON pane (pointer or keyboard, persisted per full/embedded mode
+  in `localStorage`, not share URLs). The existing <=1100px layout stacks
+  sections, hides the splitters and constrains the JSON pane. Embedded mode
+  removes site chrome,
   not core navigation/inspection capability. Avoid fixed widths that defeat
   the narrow-screen mode.
 - **Components:** reuse `DocCard`, `ExtensionPicker`, `FieldChips`, `FieldInfo`,
