@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/xarray/v0.1.0/schema.json",
+  "title": "xarray Zarr encoding",
+  "description": "Attributes with which xarray (https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html) records the netCDF data model in Zarr v2, which has no dimension names of its own. Undeclared: recognised from the attributes. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "properties": {
+    "attributes": {
+      "title": "Attributes",
+      "description": "Attributes of a Zarr v2 array.",
+      "type": "object",
+      "properties": {
+        "_ARRAY_DIMENSIONS": {
+          "title": "Dimension names",
+          "description": "Name of each dimension of the array, as in netCDF. Zarr v3 stores them in `dimension_names` instead.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

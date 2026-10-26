@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/eopf/v0.1.0/schema.json",
+  "title": "EOPF Zarr product",
+  "description": "Attributes of Sentinel products of the ESA Earth Observation Processing Framework (EOPF, https://cpm.pages.eopf.copernicus.eu/eopf-cpm/main/) in Zarr. Undeclared: recognised from the attributes. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "properties": {
+    "attributes": {
+      "title": "Attributes",
+      "description": "Attributes of the product root group or of one of its arrays.",
+      "type": "object",
+      "properties": {
+        "stac_discovery": {
+          "title": "STAC discovery metadata",
+          "description": "A STAC Item describing the product, embedded in the product root group; its asset hrefs point into the Zarr hierarchy.",
+          "type": "object"
+        },
+        "other_metadata": {
+          "title": "Other metadata",
+          "description": "Product metadata not covered by the STAC Item, such as band descriptions and processing parameters.",
+          "type": "object"
+        },
+        "processing_history": {
+          "title": "Processing history",
+          "description": "Processors, inputs and outputs of each processing level that led to the product.",
+          "type": [
+            "object",
+            "array"
+          ]
+        },
+        "_eopf_attrs": {
+          "title": "EOPF variable attributes",
+          "description": "Attributes of a variable as recorded by EOPF, such as its dimensions, data type, scaling and units, duplicating its CF-style attributes.",
+          "type": "object"
+        }
+      }
+    }
+  }
+}

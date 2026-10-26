@@ -1,0 +1,666 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json",
+  "title": "Zarr v3 node metadata",
+  "description": "The `zarr.json` document of a Zarr v3 group or array (Zarr core specification 3.1, https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html), including the consolidated metadata written by zarr-python. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "required": [
+    "zarr_format",
+    "node_type"
+  ],
+  "properties": {
+    "zarr_format": {
+      "title": "Zarr format",
+      "description": "Version of the Zarr format: 3.",
+      "const": 3
+    },
+    "node_type": {
+      "title": "Node type",
+      "description": "Whether the node is an array or a group.",
+      "oneOf": [
+        {
+          "const": "array",
+          "title": "Array",
+          "description": "An n-dimensional array stored as chunks, with its own data type, chunking and codecs."
+        },
+        {
+          "const": "group",
+          "title": "Group",
+          "description": "A container of arrays and other groups."
+        }
+      ]
+    },
+    "attributes": {
+      "title": "Attributes",
+      "description": "Arbitrary user metadata of the node as a JSON object. Conventions (Zarr conventions declared in `zarr_conventions`, CF and ACDD declared in `Conventions`) define their fields here.",
+      "type": "object"
+    },
+    "shape": {
+      "title": "Shape",
+      "description": "Length of each dimension of the array.",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "data_type": {
+      "title": "Data type",
+      "description": "Type of the array elements: a core data type, `r<N>` for N raw bits, or a registered extension data type.",
+      "anyOf": [
+        {
+          "oneOf": [
+            {
+              "const": "bool",
+              "title": "Boolean",
+              "description": "True or false, one byte per value."
+            },
+            {
+              "const": "int8",
+              "title": "8-bit signed integer"
+            },
+            {
+              "const": "int16",
+              "title": "16-bit signed integer"
+            },
+            {
+              "const": "int32",
+              "title": "32-bit signed integer"
+            },
+            {
+              "const": "int64",
+              "title": "64-bit signed integer"
+            },
+            {
+              "const": "uint8",
+              "title": "8-bit unsigned integer"
+            },
+            {
+              "const": "uint16",
+              "title": "16-bit unsigned integer"
+            },
+            {
+              "const": "uint32",
+              "title": "32-bit unsigned integer"
+            },
+            {
+              "const": "uint64",
+              "title": "64-bit unsigned integer"
+            },
+            {
+              "const": "float16",
+              "title": "16-bit floating point",
+              "description": "IEEE 754 half precision."
+            },
+            {
+              "const": "float32",
+              "title": "32-bit floating point",
+              "description": "IEEE 754 single precision."
+            },
+            {
+              "const": "float64",
+              "title": "64-bit floating point",
+              "description": "IEEE 754 double precision."
+            },
+            {
+              "const": "complex64",
+              "title": "64-bit complex",
+              "description": "Two 32-bit floats: real and imaginary part."
+            },
+            {
+              "const": "complex128",
+              "title": "128-bit complex",
+              "description": "Two 64-bit floats: real and imaginary part."
+            }
+          ]
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "title": "Name",
+              "description": "Name of the extension, registered in zarr-developers/zarr-extensions or a URL.",
+              "type": "string"
+            },
+            "configuration": {
+              "title": "Configuration",
+              "description": "Parameters of the extension.",
+              "type": "object"
+            },
+            "must_understand": {
+              "title": "Must understand",
+              "description": "False when a reader that does not know the extension may ignore it.",
+              "type": "boolean"
+            }
+          }
+        }
+      ]
+    },
+    "chunk_grid": {
+      "title": "Chunk grid",
+      "description": "How the array is divided into chunks.",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "title": "Grid type",
+          "description": "Kind of chunk grid.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "regular",
+                  "title": "Regular",
+                  "description": "Chunks of one fixed shape (core)."
+                },
+                {
+                  "const": "rectilinear",
+                  "title": "Rectilinear",
+                  "description": "Chunks of varying size along each dimension (registered extension)."
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "configuration": {
+          "title": "Configuration",
+          "description": "Parameters of the chunk grid.",
+          "type": "object",
+          "properties": {
+            "chunk_shape": {
+              "title": "Chunk shape",
+              "description": "Shape of each chunk of a regular grid.",
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "chunk_key_encoding": {
+      "title": "Chunk key encoding",
+      "description": "How chunk grid coordinates become storage keys.",
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "title": "Encoding",
+          "description": "Name of the chunk key encoding.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "default",
+                  "title": "Default",
+                  "description": "Keys like `c/0/1/2` (core)."
+                },
+                {
+                  "const": "v2",
+                  "title": "Zarr v2",
+                  "description": "Keys like `0.1.2`, as in Zarr v2 (core)."
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "configuration": {
+          "title": "Configuration",
+          "description": "Parameters of the chunk key encoding.",
+          "type": "object",
+          "properties": {
+            "separator": {
+              "title": "Separator",
+              "description": "Character between chunk coordinates in a key.",
+              "oneOf": [
+                {
+                  "const": "/",
+                  "title": "Slash"
+                },
+                {
+                  "const": ".",
+                  "title": "Dot"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "fill_value": {
+      "title": "Fill value",
+      "description": "Value of elements that have not been written: missing chunks are read as filled with it. Its JSON form depends on the data type: a number, true/false, \"NaN\", \"Infinity\", \"-Infinity\" or a hexadecimal bit pattern for floats, or a two-element array for complex numbers.",
+      "type": [
+        "number",
+        "string",
+        "boolean",
+        "array",
+        "null"
+      ]
+    },
+    "codecs": {
+      "title": "Codecs",
+      "description": "Chain of codecs that encode each chunk, applied in order when writing.",
+      "type": "array",
+      "items": {
+        "title": "Codec",
+        "description": "One step of the chain that encodes chunks: array → array codecs, exactly one array → bytes codec, then bytes → bytes codecs.",
+        "anyOf": [
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "bytes",
+                "title": "Bytes codec",
+                "description": "Serializes array elements to bytes in a fixed byte order (array → bytes; core)."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the bytes codec.",
+                "type": "object",
+                "properties": {
+                  "endian": {
+                    "title": "Byte order",
+                    "description": "Byte order of multi-byte values.",
+                    "oneOf": [
+                      {
+                        "const": "little",
+                        "title": "Little-endian"
+                      },
+                      {
+                        "const": "big",
+                        "title": "Big-endian"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "transpose",
+                "title": "Transpose codec",
+                "description": "Permutes the dimensions of each chunk before encoding (array → array; core)."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the transpose codec.",
+                "type": "object",
+                "properties": {
+                  "order": {
+                    "title": "Dimension order",
+                    "description": "Permutation of the chunk dimensions.",
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "gzip",
+                "title": "Gzip codec",
+                "description": "Gzip compression (bytes → bytes; core)."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the gzip codec.",
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "title": "Compression level",
+                    "description": "Gzip compression level, 0–9.",
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "zstd",
+                "title": "Zstandard codec",
+                "description": "Zstandard compression (bytes → bytes; registered extension)."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the zstandard codec.",
+                "type": "object",
+                "properties": {
+                  "level": {
+                    "title": "Compression level",
+                    "description": "Zstandard compression level.",
+                    "type": "integer"
+                  },
+                  "checksum": {
+                    "title": "Checksum",
+                    "description": "Whether a checksum is stored with each compressed chunk.",
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "blosc",
+                "title": "Blosc codec",
+                "description": "Blosc meta-compression, optionally with byte or bit shuffling (bytes → bytes; core)."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the blosc codec.",
+                "type": "object",
+                "properties": {
+                  "cname": {
+                    "title": "Compressor",
+                    "description": "Compressor used inside Blosc, for example lz4, zstd or zlib.",
+                    "type": "string"
+                  },
+                  "clevel": {
+                    "title": "Compression level",
+                    "description": "Compression level, 0–9.",
+                    "type": "integer"
+                  },
+                  "shuffle": {
+                    "title": "Shuffle",
+                    "description": "Shuffle filter applied before compression: noshuffle, shuffle (bytes) or bitshuffle.",
+                    "type": "string"
+                  },
+                  "typesize": {
+                    "title": "Element size",
+                    "description": "Size of an element in bytes, used by the shuffle filter.",
+                    "type": "integer"
+                  },
+                  "blocksize": {
+                    "title": "Block size",
+                    "description": "Size of the blocks compressed independently, in bytes; 0 chooses automatically.",
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "crc32c",
+                "title": "CRC32C checksum codec",
+                "description": "Appends a CRC32C checksum to detect corrupted chunks (bytes → bytes; core)."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the crc32c checksum codec.",
+                "type": "object",
+                "properties": {}
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "sharding_indexed",
+                "title": "Sharding codec",
+                "description": "Stores many inner chunks in one storage object (a shard) with an index of their byte ranges, so that small chunks can be read with range requests (array → bytes; core)."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the sharding codec.",
+                "type": "object",
+                "properties": {
+                  "chunk_shape": {
+                    "title": "Inner chunk shape",
+                    "description": "Shape of the inner chunks of a shard.",
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "codecs": {
+                    "title": "Inner codecs",
+                    "description": "Codecs applied to each inner chunk.",
+                    "type": "array"
+                  },
+                  "index_codecs": {
+                    "title": "Index codecs",
+                    "description": "Codecs applied to the shard index.",
+                    "type": "array"
+                  },
+                  "index_location": {
+                    "title": "Index location",
+                    "description": "Whether the shard index is at the start or the end of the shard.",
+                    "oneOf": [
+                      {
+                        "const": "start",
+                        "title": "Start"
+                      },
+                      {
+                        "const": "end",
+                        "title": "End"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "jpeg",
+                "title": "JPEG codec",
+                "description": "Lossy JPEG encoding of 8-bit image chunks (array → bytes). Not registered in zarr-developers/zarr-extensions; written by hamk-uas/cards-zarr-optim and read by Observatory."
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the jpeg codec.",
+                "type": "object",
+                "properties": {
+                  "quality": {
+                    "title": "Quality",
+                    "description": "JPEG quality, 1–100.",
+                    "type": "integer"
+                  },
+                  "subsampling": {
+                    "title": "Chroma subsampling",
+                    "description": "Chroma subsampling of colour images, for example 4:2:0.",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "title": "Name",
+                "description": "Name of the extension, registered in zarr-developers/zarr-extensions or a URL.",
+                "type": "string"
+              },
+              "configuration": {
+                "title": "Configuration",
+                "description": "Parameters of the extension.",
+                "type": "object"
+              },
+              "must_understand": {
+                "title": "Must understand",
+                "description": "False when a reader that does not know the extension may ignore it.",
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "dimension_names": {
+      "title": "Dimension names",
+      "description": "Name of each dimension, or null for an unnamed one. Shared names relate the dimensions of different arrays, like netCDF dimensions.",
+      "type": "array",
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "storage_transformers": {
+      "title": "Storage transformers",
+      "description": "Transformations between the logical chunk keys and the store.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Name of the extension, registered in zarr-developers/zarr-extensions or a URL.",
+            "type": "string"
+          },
+          "configuration": {
+            "title": "Configuration",
+            "description": "Parameters of the extension.",
+            "type": "object"
+          },
+          "must_understand": {
+            "title": "Must understand",
+            "description": "False when a reader that does not know the extension may ignore it.",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "consolidated_metadata": {
+      "title": "Consolidated metadata",
+      "description": "Metadata of all nodes below a group, copied into its `zarr.json` so that one request describes the whole hierarchy. Written by zarr-python 3; not part of the Zarr 3.1 core specification.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "description": "Where the consolidated metadata is stored.",
+          "oneOf": [
+            {
+              "const": "inline",
+              "title": "Inline",
+              "description": "In this `zarr.json` document."
+            }
+          ]
+        },
+        "must_understand": {
+          "title": "Must understand",
+          "description": "False: readers that do not know consolidated metadata may ignore it.",
+          "type": "boolean"
+        },
+        "metadata": {
+          "title": "Node metadata",
+          "description": "The `zarr.json` content of each descendant node, by path relative to this group.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "array"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "shape",
+          "data_type",
+          "chunk_grid",
+          "chunk_key_encoding",
+          "fill_value",
+          "codecs"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": {
+    "type": "object",
+    "required": [
+      "must_understand"
+    ],
+    "properties": {
+      "must_understand": {
+        "title": "Must understand",
+        "description": "False: readers that do not know this extension field may ignore it. Other extensions of the node metadata are not allowed.",
+        "const": false
+      }
+    }
+  }
+}

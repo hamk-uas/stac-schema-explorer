@@ -1,0 +1,249 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+  "title": "Spatial Coordinate Convention (spatial:)",
+  "description": "Schema for spatial coordinate information in Zarr. Properties use the 'spatial:' namespace prefix. This convention defines the relationship between array indices and spatial coordinates.",
+  "type": "object",
+  "properties": {
+    "zarr_format": {
+      "type": "integer",
+      "description": "Zarr format version",
+      "title": "Zarr format"
+    },
+    "node_type": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "array",
+          "title": "Array",
+          "description": "A Zarr array node: an n-dimensional array with its own chunks and codecs."
+        },
+        {
+          "const": "group",
+          "title": "Group",
+          "description": "A Zarr group node: a container of arrays and other groups."
+        }
+      ],
+      "description": "Type of Zarr node",
+      "title": "Node type"
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Zarr attributes containing convention metadata and spatial: prefixed properties",
+      "properties": {
+        "zarr_conventions": {
+          "type": "array",
+          "description": "Array of convention metadata objects",
+          "contains": {
+            "$ref": "#/$defs/conventionMetadata"
+          },
+          "title": "Declared conventions"
+        }
+      },
+      "required": [
+        "zarr_conventions"
+      ],
+      "$ref": "#/$defs/spatialAttributes",
+      "title": "Attributes"
+    }
+  },
+  "required": [
+    "zarr_format",
+    "node_type",
+    "attributes"
+  ],
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "array"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "required": [
+              "spatial:dimensions"
+            ],
+            "title": "Attributes",
+            "description": "Zarr attributes containing convention metadata and spatial: prefixed properties"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "conventionMetadata": {
+      "type": "object",
+      "description": "Spatial coordinate convention metadata object for use in zarr_conventions array",
+      "properties": {
+        "schema_url": {
+          "type": "string",
+          "const": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+          "description": "URL to the JSON Schema definition for this convention",
+          "title": "Schema URL"
+        },
+        "spec_url": {
+          "type": "string",
+          "const": "https://github.com/zarr-conventions/spatial/blob/v0.1/README.md",
+          "description": "URL to the full specification document",
+          "title": "Specification URL"
+        },
+        "uuid": {
+          "type": "string",
+          "const": "689b58e2-cf7b-45e0-9fff-9cfc0883d6b4",
+          "description": "UUID that permanently identifies this convention",
+          "title": "Convention UUID"
+        },
+        "name": {
+          "type": "string",
+          "const": "spatial",
+          "description": "Human-readable name of the convention",
+          "title": "Convention name"
+        },
+        "description": {
+          "type": "string",
+          "const": "Spatial coordinate information",
+          "description": "Brief description of the convention's purpose and usage",
+          "title": "Convention description"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "schema_url"
+          ]
+        },
+        {
+          "required": [
+            "spec_url"
+          ]
+        },
+        {
+          "required": [
+            "uuid"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "spatialAttributes": {
+      "type": "object",
+      "description": "Spatial coordinate properties using spatial: key prefix",
+      "properties": {
+        "zarr_conventions": true,
+        "spatial:dimensions": {
+          "type": "array",
+          "description": "Names of the two spatial (X/Y) dimensions, in row-major order (e.g., [\"y\", \"x\"]).",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "string"
+          },
+          "title": "Spatial dimensions"
+        },
+        "spatial:bbox": {
+          "type": "array",
+          "description": "2D bounding box in coordinate space: [xmin, ymin, xmax, ymax].",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "number"
+          },
+          "title": "Spatial bounding box"
+        },
+        "spatial:transform_type": {
+          "type": "string",
+          "description": "Type of transformation used to map array indices to coordinates. Defaults to 'affine' if not specified. Currently defined types: 'affine'. Additional transform types may be defined in future versions (e.g., 'rpc', 'polynomial', 'lookup'). Custom types are allowed for extensibility.",
+          "title": "Transform type"
+        },
+        "spatial:transform": {
+          "type": "array",
+          "description": "2D affine transformation coefficients [a, b, c, d, e, f] mapping array indices to coordinates, where x = a*col_index + b*row_index + c and y = d*col_index + e*row_index + f. Used when transform_type is 'affine' (default).",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "number"
+          },
+          "title": "Affine transform"
+        },
+        "spatial:shape": {
+          "type": "array",
+          "description": "Shape of the two spatial dimensions [height, width], corresponding to [y, x].",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": "Spatial shape"
+        },
+        "spatial:registration": {
+          "type": "string",
+          "description": "Grid cell registration type. 'node' (grid-registered) means cells are centered on coordinate points with footprints extending 1/2 cell width outside the range. 'pixel' (cell-registered) means cell boundaries align with coordinate points. Defaults to 'pixel' if not specified.",
+          "oneOf": [
+            {
+              "const": "node",
+              "title": "Node (grid-registered)",
+              "description": "Coordinates are cell centres; cell footprints extend half a cell beyond the coordinate range."
+            },
+            {
+              "const": "pixel",
+              "title": "Pixel (cell-registered)",
+              "description": "Coordinates are cell edges; cell boundaries align with the coordinate points."
+            }
+          ],
+          "title": "Grid registration"
+        },
+        "multiscales": {
+          "type": "object",
+          "description": "When composing with multiscales convention, spatial: properties can be added to layout items",
+          "properties": {
+            "layout": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "spatial:shape": {
+                    "type": "array",
+                    "description": "Shape override for this resolution level [height, width]",
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "title": "Level spatial shape"
+                  },
+                  "spatial:transform": {
+                    "type": "array",
+                    "description": "2D affine transform override for this resolution level [a, b, c, d, e, f]",
+                    "minItems": 6,
+                    "maxItems": 6,
+                    "items": {
+                      "type": "number"
+                    },
+                    "title": "Level affine transform"
+                  }
+                },
+                "additionalProperties": true
+              },
+              "title": "Layout (spatial additions)",
+              "description": "Resolution levels of the multiscales convention, to which this convention adds the absolute position (spatial:transform) and size (spatial:shape) of each level."
+            }
+          },
+          "additionalProperties": true,
+          "title": "Multiscales (spatial additions)"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

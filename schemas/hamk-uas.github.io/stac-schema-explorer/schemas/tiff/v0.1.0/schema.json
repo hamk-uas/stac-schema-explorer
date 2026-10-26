@@ -1,0 +1,631 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/tiff/v0.1.0/schema.json",
+  "title": "TIFF node metadata",
+  "description": "A TIFF or BigTIFF file (`node_type` file) or one of its images (`node_type` image, one Image File Directory) as JSON. Tags are named as in the TIFF 6.0 specification and its extensions; an unknown tag is named by its number. Long arrays such as tile offsets are summarised by their value count, because reading them is not needed to describe the image. GeoTIFF keys and GDAL metadata are decoded into `geo_keys` and `gdal_metadata` and documented by the GeoTIFF and GDAL convention schemas. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "required": [
+    "node_type"
+  ],
+  "properties": {
+    "node_type": {
+      "title": "Node type",
+      "description": "Whether the node is the file or one of its images.",
+      "oneOf": [
+        {
+          "const": "file",
+          "title": "File",
+          "description": "The TIFF file: its header and file-level structure."
+        },
+        {
+          "const": "image",
+          "title": "Image",
+          "description": "One image (Image File Directory): the full-resolution image, an overview or a mask."
+        }
+      ]
+    },
+    "byte_order": {
+      "title": "Byte order",
+      "description": "Byte order of the file, from its header.",
+      "oneOf": [
+        {
+          "const": "little-endian",
+          "title": "Little-endian",
+          "description": "Header `II` (Intel)."
+        },
+        {
+          "const": "big-endian",
+          "title": "Big-endian",
+          "description": "Header `MM` (Motorola)."
+        }
+      ]
+    },
+    "bigtiff": {
+      "title": "BigTIFF",
+      "description": "True for a BigTIFF file, which uses 64-bit offsets and can exceed 4 GiB.",
+      "type": "boolean"
+    },
+    "image_count": {
+      "title": "Image count",
+      "description": "Number of images (Image File Directories) in the file.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "index": {
+      "title": "Image index",
+      "description": "Position of the image in the file, from 0.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "TIFF tags of the image by name.",
+      "type": "object",
+      "properties": {
+        "NewSubfileType": {
+          "title": "Subfile type",
+          "description": "Bit flags describing the image: 1 = reduced-resolution version (overview) of another image, 2 = one page of a multi-page image, 4 = transparency mask.",
+          "type": "integer"
+        },
+        "ImageWidth": {
+          "title": "Image width",
+          "description": "Number of columns (pixels per row).",
+          "type": "integer"
+        },
+        "ImageLength": {
+          "title": "Image length",
+          "description": "Number of rows.",
+          "type": "integer"
+        },
+        "BitsPerSample": {
+          "title": "Bits per sample",
+          "description": "Number of bits of each sample (band) of a pixel.",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          ]
+        },
+        "Compression": {
+          "title": "Compression",
+          "description": "Compression of the image data.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 1,
+                  "title": "None"
+                },
+                {
+                  "const": 5,
+                  "title": "LZW"
+                },
+                {
+                  "const": 6,
+                  "title": "Old-style JPEG"
+                },
+                {
+                  "const": 7,
+                  "title": "JPEG"
+                },
+                {
+                  "const": 8,
+                  "title": "Deflate",
+                  "description": "zlib (Adobe Deflate)."
+                },
+                {
+                  "const": 32773,
+                  "title": "PackBits"
+                },
+                {
+                  "const": 32946,
+                  "title": "Deflate (obsolete code)"
+                },
+                {
+                  "const": 34887,
+                  "title": "LERC"
+                },
+                {
+                  "const": 34925,
+                  "title": "LZMA"
+                },
+                {
+                  "const": 50000,
+                  "title": "Zstandard"
+                },
+                {
+                  "const": 50001,
+                  "title": "WebP"
+                },
+                {
+                  "const": 50002,
+                  "title": "JPEG XL"
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "PhotometricInterpretation": {
+          "title": "Photometric interpretation",
+          "description": "Colour space of the pixel values.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "White is zero"
+                },
+                {
+                  "const": 1,
+                  "title": "Black is zero",
+                  "description": "Greyscale or data values."
+                },
+                {
+                  "const": 2,
+                  "title": "RGB"
+                },
+                {
+                  "const": 3,
+                  "title": "Palette colour"
+                },
+                {
+                  "const": 4,
+                  "title": "Transparency mask"
+                },
+                {
+                  "const": 5,
+                  "title": "Separated (CMYK)"
+                },
+                {
+                  "const": 6,
+                  "title": "YCbCr"
+                },
+                {
+                  "const": 8,
+                  "title": "CIE L*a*b*"
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "SamplesPerPixel": {
+          "title": "Samples per pixel",
+          "description": "Number of samples (bands) of each pixel.",
+          "type": "integer"
+        },
+        "PlanarConfiguration": {
+          "title": "Planar configuration",
+          "description": "How the samples of a pixel are stored.",
+          "oneOf": [
+            {
+              "const": 1,
+              "title": "Chunky (pixel interleaved)",
+              "description": "The samples of each pixel are stored together."
+            },
+            {
+              "const": 2,
+              "title": "Planar (band separate)",
+              "description": "Each sample (band) is stored in its own plane."
+            }
+          ]
+        },
+        "Predictor": {
+          "title": "Predictor",
+          "description": "Transformation applied before compression to improve it.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 1,
+                  "title": "None"
+                },
+                {
+                  "const": 2,
+                  "title": "Horizontal differencing",
+                  "description": "For integers."
+                },
+                {
+                  "const": 3,
+                  "title": "Floating point",
+                  "description": "For floating-point values."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "SampleFormat": {
+          "title": "Sample format",
+          "description": "How to interpret the bits of each sample.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 1,
+                  "title": "Unsigned integer"
+                },
+                {
+                  "const": 2,
+                  "title": "Signed integer"
+                },
+                {
+                  "const": 3,
+                  "title": "IEEE floating point"
+                },
+                {
+                  "const": 4,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 5,
+                  "title": "Complex signed integer"
+                },
+                {
+                  "const": 6,
+                  "title": "Complex IEEE floating point"
+                }
+              ]
+            },
+            {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "ExtraSamples": {
+          "title": "Extra samples",
+          "description": "Meaning of samples beyond the colour channels, such as alpha.",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          ]
+        },
+        "TileWidth": {
+          "title": "Tile width",
+          "description": "Number of columns in each tile.",
+          "type": "integer"
+        },
+        "TileLength": {
+          "title": "Tile length",
+          "description": "Number of rows in each tile.",
+          "type": "integer"
+        },
+        "TileOffsets": {
+          "title": "Tile offsets",
+          "description": "Byte offset of each tile in the file.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "title": "Value count",
+                  "description": "Number of values; the values themselves are not read.",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "TileByteCounts": {
+          "title": "Tile byte counts",
+          "description": "Size in bytes of each compressed tile.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "title": "Value count",
+                  "description": "Number of values; the values themselves are not read.",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "RowsPerStrip": {
+          "title": "Rows per strip",
+          "description": "Number of rows in each strip of a striped (untiled) image.",
+          "type": "integer"
+        },
+        "StripOffsets": {
+          "title": "Strip offsets",
+          "description": "Byte offset of each strip in the file.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "title": "Value count",
+                  "description": "Number of values; the values themselves are not read.",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "StripByteCounts": {
+          "title": "Strip byte counts",
+          "description": "Size in bytes of each compressed strip.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "title": "Value count",
+                  "description": "Number of values; the values themselves are not read.",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "XResolution": {
+          "title": "Horizontal resolution",
+          "description": "Pixels per resolution unit in the horizontal direction (for printing, not georeferencing).",
+          "type": [
+            "number",
+            "array"
+          ]
+        },
+        "YResolution": {
+          "title": "Vertical resolution",
+          "description": "Pixels per resolution unit in the vertical direction (for printing, not georeferencing).",
+          "type": [
+            "number",
+            "array"
+          ]
+        },
+        "ResolutionUnit": {
+          "title": "Resolution unit",
+          "description": "Unit of the horizontal and vertical resolution.",
+          "oneOf": [
+            {
+              "const": 1,
+              "title": "None"
+            },
+            {
+              "const": 2,
+              "title": "Inch"
+            },
+            {
+              "const": 3,
+              "title": "Centimetre"
+            }
+          ]
+        },
+        "ColorMap": {
+          "title": "Colour map",
+          "description": "Palette of a palette-colour image: red, green and blue values for each index.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "title": "Value count",
+                  "description": "Number of values; the values themselves are not read.",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "JPEGTables": {
+          "title": "JPEG tables",
+          "description": "Quantization and Huffman tables shared by the JPEG-compressed tiles.",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "count"
+              ],
+              "properties": {
+                "count": {
+                  "title": "Value count",
+                  "description": "Number of values; the values themselves are not read.",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          ]
+        },
+        "YCbCrSubSampling": {
+          "title": "YCbCr subsampling",
+          "description": "Subsampling factors of the chroma channels.",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          ]
+        },
+        "ImageDescription": {
+          "title": "Image description",
+          "description": "Free-text description of the image.",
+          "type": "string"
+        },
+        "Software": {
+          "title": "Software",
+          "description": "Name and version of the software that created the image.",
+          "type": "string"
+        },
+        "DateTime": {
+          "title": "Date and time",
+          "description": "When the image was created, as YYYY:MM:DD HH:MM:SS.",
+          "type": "string"
+        },
+        "Artist": {
+          "title": "Artist",
+          "description": "Person who created the image.",
+          "type": "string"
+        },
+        "Copyright": {
+          "title": "Copyright",
+          "description": "Copyright notice of the image.",
+          "type": "string"
+        },
+        "HostComputer": {
+          "title": "Host computer",
+          "description": "Computer on which the image was created.",
+          "type": "string"
+        },
+        "DocumentName": {
+          "title": "Document name",
+          "description": "Name of the document from which the image was scanned.",
+          "type": "string"
+        },
+        "MinSampleValue": {
+          "title": "Minimum sample value",
+          "description": "Smallest sample value used in the image.",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          ]
+        },
+        "MaxSampleValue": {
+          "title": "Maximum sample value",
+          "description": "Largest sample value used in the image.",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          ]
+        },
+        "SMinSampleValue": {
+          "title": "Minimum sample value (any type)",
+          "description": "Smallest sample value used, in the sample format of the image.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "SMaxSampleValue": {
+          "title": "Maximum sample value (any type)",
+          "description": "Largest sample value used, in the sample format of the image.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

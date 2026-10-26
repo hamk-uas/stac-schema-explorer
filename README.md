@@ -110,10 +110,11 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 ## Vendored schemas
 
 Most published STAC schemas have no descriptions and list allowed values without explaining them; the explanations are
-in the extensions' READMEs. This repository therefore vendors STAC core (1.0.0 and 1.1.0) and the extensions of the
-quick-select list in [schemas/](schemas), as copies that add a title and a description to every field and turn every
-`enum` into a `oneOf` of titled (and, where documented, described) constants. The
-[Observatory](https://github.com/hamk-uas/observatory) uses these copies, adding its own Finnish and Swedish
+in the extensions' READMEs. This repository therefore vendors STAC core (1.0.0 and 1.1.0), the extensions of the
+quick-select list and the Zarr conventions `proj`, `spatial` and `multiscales`
+([zarr-conventions](https://github.com/zarr-conventions)) in [schemas/](schemas), as copies that add a title and a
+description to every field and turn every `enum` into a `oneOf` of titled (and, where documented, described) constants.
+The [Observatory](https://github.com/hamk-uas/observatory) uses these copies, adding its own Finnish and Swedish
 translations of STAC core.
 
 - [schemas/](schemas)`/<host>/<path>` is the documented copy of `https://<host>/<path>`; its `$id` is that URL (upstream
@@ -130,7 +131,7 @@ translations of STAC core.
 - The texts come from the extensions' and the STAC specification's README tables (Apache License 2.0) and, for titles,
   from [stac-utils/stac-fields](https://github.com/stac-utils/stac-fields), with corrections where the READMEs are wrong
   (for example the Raster histogram `max`) and notes where README and schema disagree (Datacube `type` versus
-  `variable_type`).
+  `variable_type`). The Zarr convention texts come from their READMEs (Apache License 2.0).
 
 To vendor another schema, add it to [scripts/manifest.mjs](scripts/manifest.mjs), then:
 
@@ -142,6 +143,46 @@ node scripts/review.mjs <name>      # print the added texts for review
 ```
 
 Edit the files in `schemas/` directly to improve the texts; `pnpm test` keeps them honest.
+
+## Embedded metadata schemas
+
+Data files carry metadata of their own: Zarr `zarr.json` documents, netCDF attributes, TIFF tags. Deciding what to put
+in STAC, what in the data and what in both needs the same answer as for STAC fields: what does each field mean, and
+where may it go? This repository therefore also describes the metadata **embedded** in data assets, with the same
+treatment as STAC:
+
+| STAC | Embedded metadata |
+| --- | --- |
+| STAC core (Catalog, Collection, Item) | **Format schemas**: Zarr v3 and v2 nodes, netCDF groups and variables, TIFF files and images |
+| STAC extensions, declared in `stac_extensions` | **Conventions**: Zarr conventions declared in `zarr_conventions`; CF and ACDD declared in the `Conventions` attribute; GeoTIFF, GDAL, xarray and EOPF recognised from their keys |
+
+Every schema validates one **node** of a format document: a Zarr group or array (its `zarr.json`, or for Zarr v2 its
+`.zgroup`/`.zarray` with `.zattrs` as `attributes`), a netCDF group or variable, or a TIFF file or image (Image File
+Directory). Conventions add their fields to the node's `attributes` (Zarr, netCDF) or `tags`/`geo_keys`/`gdal_metadata`
+(TIFF), exactly as the published Zarr convention schemas do. netCDF and TIFF have no JSON form of their own, so their
+format schemas define one: what `ncdump -h` shows, and named TIFF tags with decoded GeoKeys and GDAL metadata.
+
+Zarr conventions are vendored like extensions (above). No official JSON Schema exists for Zarr core, netCDF, TIFF, CF,
+ACDD, GeoTIFF, GDAL, xarray or EOPF metadata, so this repository **authors** unofficial ones, each saying so in its
+description, in
+[schemas/hamk-uas.github.io/stac-schema-explorer/schemas/](schemas/hamk-uas.github.io/stac-schema-explorer/schemas).
+They have no upstream copy; the build publishes them at their `$id`,
+`https://hamk-uas.github.io/stac-schema-explorer/schemas/<name>/<version>/schema.json`, with:
+
+- [registry.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/registry.json): the formats (schema, media
+  types, node types) and conventions (kind, formats, versions and how each is declared or recognised). Zarr conventions
+  are identified by the UUID of their `zarr_conventions` entry, which stays the same when a schema moves; their names
+  are only labels (TESSERA writes `spatial:` where the convention says `spatial`).
+- [crosswalk.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/crosswalk.json): where embedded fields
+  correspond to STAC fields (`proj:code` in both, ACDD `title` and STAC `title`, GeoTIFF `ProjectedCRSGeoKey` and
+  `proj:code`, …): the same value, the same value after a named conversion, or related information in different forms.
+
+The CF attribute descriptions are those of the CF Conventions 1.13 Appendices A and F (public domain, CC0 1.0); the
+others summarise their specifications in our own words and link to them. The tests
+([test/authored.test.ts](test/authored.test.ts)) check that every authored schema compiles, documents every field and
+lists allowed values as titled constants, that the registry and crosswalk point to existing schemas and fields, and
+that the embedded metadata of the Observatory lab's catalogs (Arctic CH4, Blue Marble and TESSERA Zarr v3, EOPF Zarr v2,
+a HIKET netCDF-4 file and an Earth Genome COG, in [test/fixtures/embedded](test/fixtures/embedded)) validates.
 
 ## Development
 

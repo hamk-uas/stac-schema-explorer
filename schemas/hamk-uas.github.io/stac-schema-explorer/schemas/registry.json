@@ -1,0 +1,321 @@
+{
+  "$comment": "Formats whose embedded metadata the schemas of hamk-uas/stac-schema-explorer describe, and the conventions that add fields to it. Every node of a format document is checked against the format schema and the schemas of the conventions that apply to it. A convention applies when it is declared (in `zarr_conventions` or the global `Conventions` attribute) or, for conventions without a declaration mechanism, when a node has one of its `detection` members (paths into the node).",
+  "formats": [
+    {
+      "id": "zarr-v3",
+      "title": "Zarr v3",
+      "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json",
+      "specification": "https://zarr-specs.readthedocs.io/en/latest/v3/core/index.html",
+      "description": "Chunked n-dimensional arrays in groups; each node has a `zarr.json` metadata document.",
+      "mediaTypes": [
+        "application/vnd.zarr; version=3",
+        "application/vnd.zarr",
+        "application/vnd+zarr"
+      ],
+      "nodeTypes": [
+        "group",
+        "array"
+      ]
+    },
+    {
+      "id": "zarr-v2",
+      "title": "Zarr v2",
+      "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v2/schema.json",
+      "specification": "https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html",
+      "description": "Chunked n-dimensional arrays in groups; each node has `.zgroup` or `.zarray` and `.zattrs` documents, often consolidated into `.zmetadata`.",
+      "mediaTypes": [
+        "application/vnd.zarr; version=2",
+        "application/vnd.zarr",
+        "application/vnd+zarr"
+      ],
+      "nodeTypes": [
+        "group",
+        "array"
+      ]
+    },
+    {
+      "id": "netcdf",
+      "title": "netCDF",
+      "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/netcdf/v0.1.0/schema.json",
+      "specification": "https://docs.unidata.ucar.edu/netcdf-c/current/",
+      "description": "Self-describing files of named dimensions, variables and attributes; netCDF-4 is stored in HDF5.",
+      "mediaTypes": [
+        "application/netcdf",
+        "application/x-netcdf",
+        "application/x-netcdf4"
+      ],
+      "nodeTypes": [
+        "group",
+        "variable"
+      ]
+    },
+    {
+      "id": "tiff",
+      "title": "TIFF",
+      "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/tiff/v0.1.0/schema.json",
+      "specification": "https://www.itu.int/itudoc/itu-t/com16/tiff-fx/docs/tiff6.pdf",
+      "description": "Tagged image files, including GeoTIFF and Cloud Optimized GeoTIFF (COG).",
+      "mediaTypes": [
+        "image/tiff",
+        "image/tiff; application=geotiff",
+        "image/tiff; application=geotiff; profile=cloud-optimized"
+      ],
+      "nodeTypes": [
+        "file",
+        "image"
+      ]
+    }
+  ],
+  "conventions": [
+    {
+      "id": "proj",
+      "kind": "zarr-convention",
+      "title": "proj",
+      "formats": [
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Coordinate reference system of geospatial data.",
+      "authored": false,
+      "specification": "https://github.com/zarr-conventions/proj",
+      "declaration": {
+        "zarrConventions": {
+          "uuid": "f17cb550-5864-4468-aeb7-f3180cfb622f"
+        }
+      },
+      "versions": [
+        {
+          "version": "v0.1",
+          "schema": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+          "specification": "https://github.com/zarr-conventions/proj/blob/v0.1/README.md"
+        }
+      ]
+    },
+    {
+      "id": "spatial",
+      "kind": "zarr-convention",
+      "title": "spatial",
+      "formats": [
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Relationship between array indices and spatial coordinates.",
+      "authored": false,
+      "specification": "https://github.com/zarr-conventions/spatial",
+      "declaration": {
+        "zarrConventions": {
+          "uuid": "689b58e2-cf7b-45e0-9fff-9cfc0883d6b4"
+        }
+      },
+      "versions": [
+        {
+          "version": "v0.1",
+          "schema": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+          "specification": "https://github.com/zarr-conventions/spatial/blob/v0.1/README.md"
+        }
+      ]
+    },
+    {
+      "id": "multiscales",
+      "kind": "zarr-convention",
+      "title": "multiscales",
+      "formats": [
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Resolution levels of a multiscale pyramid.",
+      "authored": false,
+      "specification": "https://github.com/zarr-conventions/multiscales",
+      "declaration": {
+        "zarrConventions": {
+          "uuid": "d35379db-88df-4056-af3a-620245f8e347"
+        }
+      },
+      "versions": [
+        {
+          "version": "v0.1",
+          "schema": "https://raw.githubusercontent.com/zarr-conventions/multiscales/refs/tags/v0.1/schema.json",
+          "specification": "https://github.com/zarr-conventions/multiscales/blob/v0.1/README.md"
+        }
+      ]
+    },
+    {
+      "id": "cf",
+      "kind": "attribute-convention",
+      "title": "CF",
+      "formats": [
+        "netcdf",
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Climate and Forecast metadata conventions: units, standard names, coordinates, cell methods and grid mappings.",
+      "authored": true,
+      "specification": "https://cfconventions.org/",
+      "declaration": {
+        "conventionsAttribute": "^CF-(?<version>[0-9]+(?:\\.[0-9]+)*)$"
+      },
+      "versions": [
+        {
+          "version": "1.13",
+          "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+          "specification": "https://cfconventions.org/Data/cf-conventions/cf-conventions-1.13/cf-conventions.html"
+        }
+      ]
+    },
+    {
+      "id": "acdd",
+      "kind": "attribute-convention",
+      "title": "ACDD",
+      "formats": [
+        "netcdf",
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Attribute Convention for Data Discovery: titles, summaries, keywords, creators and coverage.",
+      "authored": true,
+      "specification": "https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3",
+      "declaration": {
+        "conventionsAttribute": "^ACDD-(?<version>[0-9]+(?:\\.[0-9]+)*)$"
+      },
+      "versions": [
+        {
+          "version": "1.3",
+          "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json"
+        }
+      ]
+    },
+    {
+      "id": "geotiff",
+      "kind": "format-extension",
+      "title": "GeoTIFF",
+      "formats": [
+        "tiff"
+      ],
+      "description": "Georeferencing of TIFF images with model tags and GeoKeys.",
+      "authored": true,
+      "specification": "https://docs.ogc.org/is/19-008r4/19-008r4.html",
+      "detection": [
+        [
+          "geo_keys"
+        ],
+        [
+          "tags",
+          "ModelPixelScaleTag"
+        ],
+        [
+          "tags",
+          "ModelTiepointTag"
+        ],
+        [
+          "tags",
+          "ModelTransformationTag"
+        ]
+      ],
+      "versions": [
+        {
+          "version": "1.1",
+          "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/geotiff/v1.1/schema.json"
+        }
+      ]
+    },
+    {
+      "id": "gdal",
+      "kind": "de-facto",
+      "title": "GDAL",
+      "formats": [
+        "tiff",
+        "netcdf",
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Metadata written by the GDAL library and rioxarray.",
+      "authored": true,
+      "specification": "https://gdal.org/",
+      "detection": [
+        [
+          "tags",
+          "GDAL_NODATA"
+        ],
+        [
+          "gdal_metadata"
+        ],
+        [
+          "gdal_structural_metadata"
+        ],
+        [
+          "attributes",
+          "spatial_ref"
+        ],
+        [
+          "attributes",
+          "GeoTransform"
+        ],
+        [
+          "attributes",
+          "_CRS"
+        ]
+      ],
+      "versions": [
+        {
+          "version": "0.1.0",
+          "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json"
+        }
+      ]
+    },
+    {
+      "id": "xarray",
+      "kind": "de-facto",
+      "title": "xarray",
+      "formats": [
+        "zarr-v2"
+      ],
+      "description": "Dimension names that xarray adds to Zarr v2 arrays.",
+      "authored": true,
+      "specification": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html",
+      "detection": [
+        [
+          "attributes",
+          "_ARRAY_DIMENSIONS"
+        ]
+      ],
+      "versions": [
+        {
+          "version": "0.1.0",
+          "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/xarray/v0.1.0/schema.json"
+        }
+      ]
+    },
+    {
+      "id": "eopf",
+      "kind": "de-facto",
+      "title": "EOPF",
+      "formats": [
+        "zarr-v2",
+        "zarr-v3"
+      ],
+      "description": "Sentinel product metadata of the ESA Earth Observation Processing Framework.",
+      "authored": true,
+      "specification": "https://cpm.pages.eopf.copernicus.eu/eopf-cpm/main/",
+      "detection": [
+        [
+          "attributes",
+          "stac_discovery"
+        ],
+        [
+          "attributes",
+          "_eopf_attrs"
+        ],
+        [
+          "attributes",
+          "other_metadata"
+        ]
+      ],
+      "versions": [
+        {
+          "version": "0.1.0",
+          "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/eopf/v0.1.0/schema.json"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,881 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/geotiff/v1.1/schema.json",
+  "title": "GeoTIFF",
+  "description": "Georeferencing of TIFF images by the OGC GeoTIFF standard 1.1 (https://docs.ogc.org/is/19-008r4/19-008r4.html), which also covers GeoTIFF 1.0 files. Tags place the raster in model space; keys of the GeoKeyDirectoryTag, decoded into `geo_keys`, name its coordinate reference system. Keys have their GeoTIFF 1.1 names; renamed GeoTIFF 1.0 names are noted. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "properties": {
+    "tags": {
+      "title": "Tags",
+      "description": "TIFF tags of the image.",
+      "type": "object",
+      "properties": {
+        "ModelPixelScaleTag": {
+          "title": "Pixel scale",
+          "description": "Size of a pixel in model (CRS) units along x, y and z. Tag 33550.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ModelTiepointTag": {
+          "title": "Tie points",
+          "description": "Points tying raster positions (i, j, k) to model positions (x, y, z), six values per point. Tag 33922.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ModelTransformationTag": {
+          "title": "Model transformation",
+          "description": "A 4 × 4 affine matrix from raster to model space, used instead of pixel scale and tie point for rotated or sheared rasters. Tag 34264.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "geotiff_version": {
+      "title": "GeoTIFF version",
+      "description": "GeoTIFF version declared in the header of the key directory.",
+      "oneOf": [
+        {
+          "const": "1.0",
+          "title": "GeoTIFF 1.0",
+          "description": "Key revision 1.0."
+        },
+        {
+          "const": "1.1",
+          "title": "GeoTIFF 1.1",
+          "description": "Key revision 1.1 (OGC standard 19-008r4)."
+        }
+      ]
+    },
+    "geo_keys": {
+      "title": "GeoKeys",
+      "description": "Keys of the GeoKeyDirectoryTag (34735), with values from it, GeoDoubleParamsTag (34736) or GeoAsciiParamsTag (34737). An unknown key is named by its number.",
+      "type": "object",
+      "properties": {
+        "GTModelTypeGeoKey": {
+          "title": "Model type",
+          "description": "Kind of coordinate reference system of the raster. Key 1024.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 1,
+                  "title": "Projected",
+                  "description": "A projected CRS."
+                },
+                {
+                  "const": 2,
+                  "title": "Geographic",
+                  "description": "A geographic (latitude–longitude) CRS."
+                },
+                {
+                  "const": 3,
+                  "title": "Geocentric",
+                  "description": "A geocentric Cartesian CRS."
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "GTRasterTypeGeoKey": {
+          "title": "Raster type",
+          "description": "Whether a pixel value represents an area or a point. Key 1025.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 1,
+                  "title": "Pixel is area",
+                  "description": "A pixel covers a cell; tie points refer to cell corners."
+                },
+                {
+                  "const": 2,
+                  "title": "Pixel is point",
+                  "description": "A pixel is a sample at a point; tie points refer to cell centres."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "GTCitationGeoKey": {
+          "title": "Citation",
+          "description": "Free-text description of the raster's CRS. Key 1026.",
+          "type": "string"
+        },
+        "GeodeticCRSGeoKey": {
+          "title": "Geodetic CRS",
+          "description": "EPSG code of the geographic (geodetic) CRS. Key 2048. GeoTIFF 1.0 name: GeographicTypeGeoKey.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "GeodeticCitationGeoKey": {
+          "title": "Geodetic CRS citation",
+          "description": "Free-text description of the geodetic CRS. Key 2049. GeoTIFF 1.0 name: GeogCitationGeoKey.",
+          "type": "string"
+        },
+        "GeodeticDatumGeoKey": {
+          "title": "Geodetic datum",
+          "description": "EPSG code of the geodetic datum. Key 2050. GeoTIFF 1.0 name: GeogGeodeticDatumGeoKey.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "PrimeMeridianGeoKey": {
+          "title": "Prime meridian",
+          "description": "EPSG code of the prime meridian. Key 2051. GeoTIFF 1.0 name: GeogPrimeMeridianGeoKey.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "GeogLinearUnitsGeoKey": {
+          "title": "Geodetic linear units",
+          "description": "EPSG code of the linear unit of the geodetic CRS. Key 2052.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 9001,
+                  "title": "Metre"
+                },
+                {
+                  "const": 9002,
+                  "title": "Foot"
+                },
+                {
+                  "const": 9003,
+                  "title": "US survey foot"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "GeogLinearUnitSizeGeoKey": {
+          "title": "Geodetic linear unit size",
+          "description": "Size of a user-defined linear unit in metres. Key 2053.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "GeogAngularUnitsGeoKey": {
+          "title": "Geodetic angular units",
+          "description": "EPSG code of the angular unit of the geodetic CRS. Key 2054.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 9101,
+                  "title": "Radian"
+                },
+                {
+                  "const": 9102,
+                  "title": "Degree"
+                },
+                {
+                  "const": 9105,
+                  "title": "Grad"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "GeogAngularUnitSizeGeoKey": {
+          "title": "Geodetic angular unit size",
+          "description": "Size of a user-defined angular unit in radians. Key 2055.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "EllipsoidGeoKey": {
+          "title": "Ellipsoid",
+          "description": "EPSG code of the ellipsoid. Key 2056. GeoTIFF 1.0 name: GeogEllipsoidGeoKey.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "EllipsoidSemiMajorAxisGeoKey": {
+          "title": "Ellipsoid semi-major axis",
+          "description": "Semi-major axis of a user-defined ellipsoid. Key 2057. GeoTIFF 1.0 name: GeogSemiMajorAxisGeoKey.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "EllipsoidSemiMinorAxisGeoKey": {
+          "title": "Ellipsoid semi-minor axis",
+          "description": "Semi-minor axis of a user-defined ellipsoid. Key 2058. GeoTIFF 1.0 name: GeogSemiMinorAxisGeoKey.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "EllipsoidInvFlatteningGeoKey": {
+          "title": "Ellipsoid inverse flattening",
+          "description": "Inverse flattening of a user-defined ellipsoid. Key 2059. GeoTIFF 1.0 name: GeogInvFlatteningGeoKey.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "GeogAzimuthUnitsGeoKey": {
+          "title": "Azimuth units",
+          "description": "EPSG code of the angular unit of azimuths. Key 2060.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 9101,
+                  "title": "Radian"
+                },
+                {
+                  "const": 9102,
+                  "title": "Degree"
+                },
+                {
+                  "const": 9105,
+                  "title": "Grad"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "PrimeMeridianLongitudeGeoKey": {
+          "title": "Prime meridian longitude",
+          "description": "Longitude of a user-defined prime meridian from Greenwich. Key 2061. GeoTIFF 1.0 name: GeogPrimeMeridianLongGeoKey.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjectedCRSGeoKey": {
+          "title": "Projected CRS",
+          "description": "EPSG code of the projected CRS. Key 3072. GeoTIFF 1.0 name: ProjectedCSTypeGeoKey.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "ProjectedCitationGeoKey": {
+          "title": "Projected CRS citation",
+          "description": "Free-text description of the projected CRS. Key 3073. GeoTIFF 1.0 name: PCSCitationGeoKey.",
+          "type": "string"
+        },
+        "ProjectionGeoKey": {
+          "title": "Projection",
+          "description": "EPSG code of the map projection (coordinate conversion). Key 3074.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "ProjMethodGeoKey": {
+          "title": "Projection method",
+          "description": "GeoTIFF code of the method of a user-defined projection. Key 3075. GeoTIFF 1.0 name: ProjCoordTransGeoKey.",
+          "type": "integer"
+        },
+        "ProjLinearUnitsGeoKey": {
+          "title": "Projected linear units",
+          "description": "EPSG code of the linear unit of the projected CRS. Key 3076.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 9001,
+                  "title": "Metre"
+                },
+                {
+                  "const": 9002,
+                  "title": "Foot"
+                },
+                {
+                  "const": 9003,
+                  "title": "US survey foot"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "ProjLinearUnitSizeGeoKey": {
+          "title": "Projected linear unit size",
+          "description": "Size of a user-defined linear unit in metres. Key 3077.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjStdParallel1GeoKey": {
+          "title": "First standard parallel",
+          "description": "Latitude of the first standard parallel. Key 3078.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjStdParallel2GeoKey": {
+          "title": "Second standard parallel",
+          "description": "Latitude of the second standard parallel. Key 3079.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjNatOriginLongGeoKey": {
+          "title": "Natural origin longitude",
+          "description": "Longitude of the natural origin of the projection. Key 3080.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjNatOriginLatGeoKey": {
+          "title": "Natural origin latitude",
+          "description": "Latitude of the natural origin of the projection. Key 3081.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjFalseEastingGeoKey": {
+          "title": "False easting",
+          "description": "Easting added to all projected coordinates. Key 3082.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjFalseNorthingGeoKey": {
+          "title": "False northing",
+          "description": "Northing added to all projected coordinates. Key 3083.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjFalseOriginLongGeoKey": {
+          "title": "False origin longitude",
+          "description": "Longitude of the false origin. Key 3084.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjFalseOriginLatGeoKey": {
+          "title": "False origin latitude",
+          "description": "Latitude of the false origin. Key 3085.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjFalseOriginEastingGeoKey": {
+          "title": "False origin easting",
+          "description": "Easting at the false origin. Key 3086.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjFalseOriginNorthingGeoKey": {
+          "title": "False origin northing",
+          "description": "Northing at the false origin. Key 3087.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjCenterLongGeoKey": {
+          "title": "Projection centre longitude",
+          "description": "Longitude of the centre of the projection. Key 3088.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjCenterLatGeoKey": {
+          "title": "Projection centre latitude",
+          "description": "Latitude of the centre of the projection. Key 3089.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjCenterEastingGeoKey": {
+          "title": "Projection centre easting",
+          "description": "Easting of the centre of the projection. Key 3090.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjCenterNorthingGeoKey": {
+          "title": "Projection centre northing",
+          "description": "Northing of the centre of the projection. Key 3091.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjScaleAtNatOriginGeoKey": {
+          "title": "Scale at natural origin",
+          "description": "Scale factor at the natural origin. Key 3092.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjScaleAtCenterGeoKey": {
+          "title": "Scale at centre",
+          "description": "Scale factor at the centre of the projection. Key 3093.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjAzimuthAngleGeoKey": {
+          "title": "Azimuth angle",
+          "description": "Azimuth of the central line of an oblique projection. Key 3094.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjStraightVertPoleLongGeoKey": {
+          "title": "Straight vertical pole longitude",
+          "description": "Longitude of the straight vertical meridian of a polar stereographic projection. Key 3095.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "ProjRectifiedGridAngleGeoKey": {
+          "title": "Rectified grid angle",
+          "description": "Angle from the rectified grid to the skew grid of an oblique projection. Key 3096.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "VerticalGeoKey": {
+          "title": "Vertical CRS",
+          "description": "EPSG code of the vertical CRS. Key 4096. GeoTIFF 1.0 name: VerticalCSTypeGeoKey.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "VerticalCitationGeoKey": {
+          "title": "Vertical CRS citation",
+          "description": "Free-text description of the vertical CRS. Key 4097.",
+          "type": "string"
+        },
+        "VerticalDatumGeoKey": {
+          "title": "Vertical datum",
+          "description": "EPSG code of the vertical datum. Key 4098.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 0,
+                  "title": "Undefined"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "VerticalUnitsGeoKey": {
+          "title": "Vertical units",
+          "description": "EPSG code of the unit of vertical values. Key 4099.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": 9001,
+                  "title": "Metre"
+                },
+                {
+                  "const": 9002,
+                  "title": "Foot"
+                },
+                {
+                  "const": 9003,
+                  "title": "US survey foot"
+                },
+                {
+                  "const": 32767,
+                  "title": "User-defined",
+                  "description": "Defined by other keys rather than a registered code."
+                }
+              ]
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

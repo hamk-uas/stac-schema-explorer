@@ -1,0 +1,1414 @@
+{
+  "$comment": "Where information in embedded metadata corresponds to a STAC field. `embedded.path` is a path into a node of the format document (`*` matches any key or index); `nodes` restricts it to the root node or to node types. `stac.paths` are tried in order in the places listed in `stac.in`: the asset object, then the document that holds it (Item properties or the Collection). In STAC paths `{name}` is the node name and `{0}` the value of the first `*`. `same`: values should be equal; `converted`: equal after the named conversion; `related`: describe the same thing in different forms, compared by a reader. Conversions: `comma-list` (comma-separated text ↔ array of strings, order-insensitive), `datetime` (ISO 8601 instants), `epsg-code` (integer ↔ \"EPSG:<integer>\"), `gdal-geotransform` (GDAL text \"c a b f d e\" ↔ affine [a, b, c, d, e, f]), `number` (text or \"nan\" ↔ number).",
+  "entries": [
+    {
+      "id": "zarr-format",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json",
+        "path": [
+          "zarr_format"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "zarr:zarr_format"
+          ]
+        ],
+        "in": [
+          "asset"
+        ],
+        "schema": "https://stac-extensions.github.io/zarr/v1.1.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Zarr format version of the store."
+    },
+    {
+      "id": "zarr-v2-format",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v2/schema.json",
+        "path": [
+          "zarr_format"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "zarr:zarr_format"
+          ]
+        ],
+        "in": [
+          "asset"
+        ],
+        "schema": "https://stac-extensions.github.io/zarr/v1.1.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Zarr format version of the store."
+    },
+    {
+      "id": "zarr-node-type",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json",
+        "path": [
+          "node_type"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "zarr:node_type"
+          ]
+        ],
+        "in": [
+          "asset"
+        ],
+        "schema": "https://stac-extensions.github.io/zarr/v1.1.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Whether the asset is a Zarr group or array."
+    },
+    {
+      "id": "zarr-v2-node-type",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v2/schema.json",
+        "path": [
+          "node_type"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "zarr:node_type"
+          ]
+        ],
+        "in": [
+          "asset"
+        ],
+        "schema": "https://stac-extensions.github.io/zarr/v1.1.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Whether the asset is a Zarr group or array."
+    },
+    {
+      "id": "zarr-dimension-names",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json",
+        "path": [
+          "dimension_names"
+        ],
+        "nodes": [
+          "array"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "dimensions"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Dimensions of an array; STAC datacube variables list them by name."
+    },
+    {
+      "id": "xarray-dimension-names",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/xarray/v0.1.0/schema.json",
+        "path": [
+          "attributes",
+          "_ARRAY_DIMENSIONS"
+        ],
+        "nodes": [
+          "array"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "dimensions"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Dimensions of a Zarr v2 array; STAC datacube variables list them by name."
+    },
+    {
+      "id": "netcdf-dimension-names",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/netcdf/v0.1.0/schema.json",
+        "path": [
+          "dimensions"
+        ],
+        "nodes": [
+          "variable"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "dimensions"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Dimensions of a netCDF variable; STAC datacube variables list them by name."
+    },
+    {
+      "id": "zarr-data-type",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json",
+        "path": [
+          "data_type"
+        ],
+        "nodes": [
+          "array"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "data_type"
+          ],
+          [
+            "bands",
+            0,
+            "data_type"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "STAC states one data type for the asset or band; a store can hold arrays of several types."
+    },
+    {
+      "id": "zarr-fill-value",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json",
+        "path": [
+          "fill_value"
+        ],
+        "nodes": [
+          "array"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "nodata"
+          ],
+          [
+            "bands",
+            0,
+            "nodata"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "The Zarr fill value is what unwritten chunks contain; STAC nodata is the value that marks missing data. They are often, but not necessarily, the same."
+    },
+    {
+      "id": "proj-code",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "proj:code"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:code"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Both use the authority:code form, such as EPSG:4326."
+    },
+    {
+      "id": "proj-wkt2",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "proj:wkt2"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:wkt2"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "CRS as WKT2."
+    },
+    {
+      "id": "proj-projjson",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "proj:projjson"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:projjson"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "CRS as PROJJSON."
+    },
+    {
+      "id": "spatial-bbox",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "spatial:bbox"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:bbox"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Bounding box in the CRS of the data, [xmin, ymin, xmax, ymax]."
+    },
+    {
+      "id": "spatial-shape",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "spatial:shape"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:shape"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Number of rows and columns, [height, width]."
+    },
+    {
+      "id": "spatial-transform",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "spatial:transform"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:transform"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Affine transform [a, b, c, d, e, f] from pixel to CRS coordinates, in the same coefficient order."
+    },
+    {
+      "id": "gdal-geotransform",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+        "path": [
+          "attributes",
+          "GeoTransform"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:transform"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "converted",
+      "conversion": "gdal-geotransform",
+      "note": "GDAL orders the coefficients differently and writes them as text."
+    },
+    {
+      "id": "gdal-spatial-ref",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+        "path": [
+          "attributes",
+          "spatial_ref"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:wkt2"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "related",
+      "note": "GDAL may write WKT1 rather than WKT2; compare the CRS, not the text."
+    },
+    {
+      "id": "cf-crs-wkt",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+        "path": [
+          "attributes",
+          "crs_wkt"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:wkt2"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "related",
+      "note": "CF allows WKT1 or WKT2; compare the CRS, not the text."
+    },
+    {
+      "id": "gdal-nodata",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+        "path": [
+          "tags",
+          "GDAL_NODATA"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "nodata"
+          ],
+          [
+            "bands",
+            0,
+            "nodata"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "converted",
+      "conversion": "number",
+      "note": "Nodata value of the bands, written as text in the TIFF tag."
+    },
+    {
+      "id": "gdal-scale",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+        "path": [
+          "gdal_metadata",
+          "bands",
+          "*",
+          "SCALE"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "bands",
+            "{0}",
+            "scale"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "converted",
+      "conversion": "number",
+      "note": "Scale from stored to physical values."
+    },
+    {
+      "id": "gdal-offset",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+        "path": [
+          "gdal_metadata",
+          "bands",
+          "*",
+          "OFFSET"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "bands",
+            "{0}",
+            "offset"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "converted",
+      "conversion": "number",
+      "note": "Offset from stored to physical values."
+    },
+    {
+      "id": "gdal-unit",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+        "path": [
+          "gdal_metadata",
+          "bands",
+          "*",
+          "UNITTYPE"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "bands",
+            "{0}",
+            "unit"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "Unit of the band values; the notations may differ."
+    },
+    {
+      "id": "gdal-description",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+        "path": [
+          "gdal_metadata",
+          "bands",
+          "*",
+          "DESCRIPTION"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "bands",
+            "{0}",
+            "description"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "Description of the band."
+    },
+    {
+      "id": "geotiff-projected-crs",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/geotiff/v1.1/schema.json",
+        "path": [
+          "geo_keys",
+          "ProjectedCRSGeoKey"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:code"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "converted",
+      "conversion": "epsg-code",
+      "note": "The GeoTIFF key holds the EPSG code as a number."
+    },
+    {
+      "id": "geotiff-geodetic-crs",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/geotiff/v1.1/schema.json",
+        "path": [
+          "geo_keys",
+          "GeodeticCRSGeoKey"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:code"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "converted",
+      "conversion": "epsg-code",
+      "note": "For geographic rasters, the GeoTIFF key holds the EPSG code as a number."
+    },
+    {
+      "id": "tiff-width",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/tiff/v0.1.0/schema.json",
+        "path": [
+          "tags",
+          "ImageWidth"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:shape",
+            1
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Number of columns of the full-resolution image."
+    },
+    {
+      "id": "tiff-length",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/tiff/v0.1.0/schema.json",
+        "path": [
+          "tags",
+          "ImageLength"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:shape",
+            0
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Number of rows of the full-resolution image."
+    },
+    {
+      "id": "geotiff-pixel-scale",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/geotiff/v1.1/schema.json",
+        "path": [
+          "tags",
+          "ModelPixelScaleTag"
+        ],
+        "nodes": [
+          "image"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "proj:transform"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+      },
+      "relation": "related",
+      "note": "Pixel size; with the tie point it determines the affine transform."
+    },
+    {
+      "id": "acdd-title",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "title"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "title"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "same",
+      "note": "Title of the dataset."
+    },
+    {
+      "id": "acdd-summary",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "summary"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "description"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "STAC descriptions are CommonMark and often longer than the ACDD summary."
+    },
+    {
+      "id": "acdd-keywords",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "keywords"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "keywords"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "converted",
+      "conversion": "comma-list",
+      "note": "ACDD lists keywords as comma-separated text, STAC as an array."
+    },
+    {
+      "id": "acdd-license",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "license"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "license"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "STAC uses an SPDX identifier or \"other\" with a licence link; ACDD uses a URL or free text."
+    },
+    {
+      "id": "acdd-time-start",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "time_coverage_start"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "start_datetime"
+          ],
+          [
+            "datetime"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "converted",
+      "conversion": "datetime",
+      "note": "Start of the time period of the data."
+    },
+    {
+      "id": "acdd-time-end",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "time_coverage_end"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "end_datetime"
+          ],
+          [
+            "datetime"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "converted",
+      "conversion": "datetime",
+      "note": "End of the time period of the data."
+    },
+    {
+      "id": "acdd-date-created",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "date_created"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "created"
+          ]
+        ],
+        "in": [
+          "asset"
+        ]
+      },
+      "relation": "related",
+      "note": "STAC `created` of an asset is when the file was created; ACDD `date_created` when this version of the data was."
+    },
+    {
+      "id": "acdd-date-modified",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "date_modified"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "updated"
+          ]
+        ],
+        "in": [
+          "asset"
+        ]
+      },
+      "relation": "related",
+      "note": "Last modification of the data or the file."
+    },
+    {
+      "id": "acdd-platform",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "platform"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "platform"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "STAC recommends lowercase platform names; ACDD allows several, separated by commas."
+    },
+    {
+      "id": "acdd-instrument",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "instrument"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "instruments"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "STAC lists instruments as an array; ACDD as comma-separated text."
+    },
+    {
+      "id": "acdd-processing-level",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "processing_level"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "processing:level"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/processing/v1.2.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Processing level, such as L3."
+    },
+    {
+      "id": "acdd-history",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "history"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "processing:lineage"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/processing/v1.2.0/schema.json"
+      },
+      "relation": "related",
+      "note": "Processing history of the data."
+    },
+    {
+      "id": "acdd-product-version",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "product_version"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "processing:version"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/processing/v1.2.0/schema.json"
+      },
+      "relation": "related",
+      "note": "Version of the product or of its processing."
+    },
+    {
+      "id": "acdd-references",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "references"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "sci:citation"
+          ]
+        ],
+        "in": [
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/scientific/v1.0.0/schema.json"
+      },
+      "relation": "related",
+      "note": "References or the citation of the data."
+    },
+    {
+      "id": "acdd-creator",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "creator_name"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "providers"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "A STAC provider with the producer role."
+    },
+    {
+      "id": "acdd-publisher",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "publisher_name"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "providers"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "A STAC provider with the host or licensor role."
+    },
+    {
+      "id": "acdd-institution",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "institution"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "providers"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "A STAC provider of the data."
+    },
+    {
+      "id": "acdd-geospatial-bounds",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+        "path": [
+          "attributes",
+          "geospatial_bounds"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          [
+            "geometry"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "Footprint of the data; STAC uses GeoJSON in WGS 84, ACDD WKT in `geospatial_bounds_crs`."
+    },
+    {
+      "id": "cf-units",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+        "path": [
+          "attributes",
+          "units"
+        ],
+        "nodes": [
+          "array",
+          "variable"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "unit"
+          ],
+          [
+            "cube:dimensions",
+            "{name}",
+            "unit"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+      },
+      "relation": "related",
+      "note": "CF units follow UDUNITS; STAC recommends UCUM."
+    },
+    {
+      "id": "cf-long-name",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+        "path": [
+          "attributes",
+          "long_name"
+        ],
+        "nodes": [
+          "array",
+          "variable"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "description"
+          ],
+          [
+            "cube:dimensions",
+            "{name}",
+            "description"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+      },
+      "relation": "related",
+      "note": "Descriptive name of the variable."
+    },
+    {
+      "id": "cf-standard-name",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+        "path": [
+          "attributes",
+          "standard_name"
+        ],
+        "nodes": [
+          "array",
+          "variable"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "cf:standard_name"
+          ],
+          [
+            "cube:dimensions",
+            "{name}",
+            "cf:standard_name"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/cf/v1.0.0/schema.json"
+      },
+      "relation": "same",
+      "note": "The STAC CF extension gives the standard name of each datacube variable or band."
+    },
+    {
+      "id": "cf-cell-methods",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+        "path": [
+          "attributes",
+          "cell_methods"
+        ],
+        "nodes": [
+          "array",
+          "variable"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "cf:cell_methods"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/cf/v1.0.0/schema.json"
+      },
+      "relation": "related",
+      "note": "CF writes the cell methods as one string; the STAC CF extension as a list."
+    },
+    {
+      "id": "cf-fill-value",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+        "path": [
+          "attributes",
+          "_FillValue"
+        ],
+        "nodes": [
+          "array",
+          "variable"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "nodata"
+          ],
+          [
+            "bands",
+            0,
+            "nodata"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ]
+      },
+      "relation": "converted",
+      "conversion": "number",
+      "note": "Value that marks missing data."
+    },
+    {
+      "id": "cf-axis",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+        "path": [
+          "attributes",
+          "axis"
+        ],
+        "nodes": [
+          "array",
+          "variable"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:dimensions",
+            "{name}",
+            "axis"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+      },
+      "relation": "related",
+      "note": "CF uses X, Y, Z and T; the STAC datacube extension x, y and z (and the temporal type)."
+    },
+    {
+      "id": "eopf-stac-discovery",
+      "embedded": {
+        "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/eopf/v0.1.0/schema.json",
+        "path": [
+          "attributes",
+          "stac_discovery"
+        ],
+        "nodes": "root"
+      },
+      "stac": {
+        "paths": [
+          []
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "A copy of the product's STAC Item embedded in the product; the catalog's Item may differ from it."
+    }
+  ]
+}

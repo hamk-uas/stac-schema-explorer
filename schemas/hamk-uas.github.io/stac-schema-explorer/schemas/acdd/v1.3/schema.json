@@ -1,0 +1,549 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/acdd/v1.3/schema.json",
+  "title": "Attribute Convention for Data Discovery (ACDD) 1.3",
+  "description": "Discovery attributes of the Attribute Convention for Data Discovery 1.3 by ESIP (https://wiki.esipfed.org/Attribute_Convention_for_Data_Discovery_1-3) for netCDF and Zarr. Datasets declare it with `ACDD-1.3` in their global `Conventions` attribute. The descriptions summarise the convention; see it for the complete guidance. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "properties": {
+    "attributes": {
+      "title": "Attributes",
+      "description": "Attributes of a netCDF or Zarr group (global attributes on the root group) or variable.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "title": "Title",
+          "description": "Short phrase or sentence describing the dataset, as shown in search results. Highly recommended. Global attribute.",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "description": "Paragraph describing the dataset, like the abstract of a paper. Highly recommended. Global attribute.",
+          "type": "string"
+        },
+        "keywords": {
+          "title": "Keywords",
+          "description": "Comma-separated keywords or phrases, possibly terms or URIs of a controlled vocabulary named in `keywords_vocabulary`. Highly recommended. Global attribute.",
+          "type": "string"
+        },
+        "Conventions": {
+          "title": "Conventions",
+          "description": "Comma-separated list of conventions followed; includes `ACDD-1.3` for this version. Highly recommended. Global attribute.",
+          "type": "string"
+        },
+        "id": {
+          "title": "Identifier",
+          "description": "Identifier of the dataset, unique within its naming authority, without white space. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "naming_authority": {
+          "title": "Naming authority",
+          "description": "Organisation that provides the identifier, preferably in reverse-DNS form such as `edu.ucar.unidata`. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "history": {
+          "title": "History",
+          "description": "Audit trail of the modifications of the original data, one line per processing step. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "description": "How the original data were produced: the model and its version or the observation method. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "processing_level": {
+          "title": "Processing level",
+          "description": "Textual description of the processing or quality-control level of the data. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "comment": {
+          "title": "Comment",
+          "description": "Miscellaneous information about the data or the methods used to produce it. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "acknowledgement": {
+          "title": "Acknowledgement",
+          "description": "Acknowledgement of the various types of support for the project that produced the data. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "license": {
+          "title": "Licence",
+          "description": "Licence of the data: the URL of a standard or specific licence, \"Freely Distributed\", \"None\", or a free-text description of restrictions. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "standard_name_vocabulary": {
+          "title": "Standard name vocabulary",
+          "description": "Name and version of the vocabulary of the `standard_name` attributes, for example `CF Standard Name Table v84`. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "date_created": {
+          "title": "Date created",
+          "description": "When this version of the data was created, in ISO 8601 format. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "creator_name": {
+          "title": "Creator name",
+          "description": "Name of the person or other creator principally responsible for creating the data. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "creator_email": {
+          "title": "Creator email",
+          "description": "Email address of the creator. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "creator_url": {
+          "title": "Creator URL",
+          "description": "Web address of the creator. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "institution": {
+          "title": "Institution",
+          "description": "Name of the institution principally responsible for the data. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "project": {
+          "title": "Project",
+          "description": "Name of the scientific project or projects that produced the data. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "publisher_name": {
+          "title": "Publisher name",
+          "description": "Name of the person or organisation that distributes the data. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "publisher_email": {
+          "title": "Publisher email",
+          "description": "Email address of the publisher. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "publisher_url": {
+          "title": "Publisher URL",
+          "description": "Web address of the publisher. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_bounds": {
+          "title": "Geospatial bounds",
+          "description": "Footprint of the data as Well-Known Text (WKT), in the CRS of `geospatial_bounds_crs`. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_bounds_crs": {
+          "title": "Geospatial bounds CRS",
+          "description": "Coordinate reference system of `geospatial_bounds`, preferably an EPSG code such as `EPSG:4326`. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_bounds_vertical_crs": {
+          "title": "Geospatial bounds vertical CRS",
+          "description": "Vertical coordinate reference system of the vertical values of `geospatial_bounds`. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_lat_min": {
+          "title": "Southernmost latitude",
+          "description": "Southernmost latitude of the data, in decimal degrees north. Recommended. Global attribute.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "geospatial_lat_max": {
+          "title": "Northernmost latitude",
+          "description": "Northernmost latitude of the data, in decimal degrees north. Recommended. Global attribute.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "geospatial_lon_min": {
+          "title": "Westernmost longitude",
+          "description": "Westernmost longitude of the data, in decimal degrees east. Recommended. Global attribute.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "geospatial_lon_max": {
+          "title": "Easternmost longitude",
+          "description": "Easternmost longitude of the data, in decimal degrees east. Recommended. Global attribute.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "geospatial_vertical_min": {
+          "title": "Lowest vertical value",
+          "description": "Smallest vertical coordinate of the data. Recommended. Global attribute.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "geospatial_vertical_max": {
+          "title": "Highest vertical value",
+          "description": "Largest vertical coordinate of the data. Recommended. Global attribute.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "geospatial_vertical_positive": {
+          "title": "Vertical positive direction",
+          "description": "Whether vertical values increase upwards or downwards. Recommended. Global attribute.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "up",
+                  "title": "Up"
+                },
+                {
+                  "const": "down",
+                  "title": "Down"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "time_coverage_start": {
+          "title": "Time coverage start",
+          "description": "Start of the time period of the data, in ISO 8601 format. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "time_coverage_end": {
+          "title": "Time coverage end",
+          "description": "End of the time period of the data, in ISO 8601 format. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "time_coverage_duration": {
+          "title": "Time coverage duration",
+          "description": "Duration of the time period of the data, as an ISO 8601 duration. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "time_coverage_resolution": {
+          "title": "Time coverage resolution",
+          "description": "Target time interval between data values, as an ISO 8601 duration. Recommended. Global attribute.",
+          "type": "string"
+        },
+        "creator_type": {
+          "title": "Creator type",
+          "description": "Kind of creator named in `creator_name`. Suggested. Global attribute.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "person",
+                  "title": "Person"
+                },
+                {
+                  "const": "group",
+                  "title": "Group"
+                },
+                {
+                  "const": "institution",
+                  "title": "Institution"
+                },
+                {
+                  "const": "position",
+                  "title": "Position"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "creator_institution": {
+          "title": "Creator institution",
+          "description": "Institution of the creator. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "publisher_type": {
+          "title": "Publisher type",
+          "description": "Kind of publisher named in `publisher_name`. Suggested. Global attribute.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "person",
+                  "title": "Person"
+                },
+                {
+                  "const": "group",
+                  "title": "Group"
+                },
+                {
+                  "const": "institution",
+                  "title": "Institution"
+                },
+                {
+                  "const": "position",
+                  "title": "Position"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "publisher_institution": {
+          "title": "Publisher institution",
+          "description": "Institution of the publisher. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "program": {
+          "title": "Programme",
+          "description": "Overarching programme or programmes of which the dataset is a part. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "contributor_name": {
+          "title": "Contributor names",
+          "description": "Names of individuals, institutions or projects that contributed to the data, separated by commas. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "contributor_role": {
+          "title": "Contributor roles",
+          "description": "Roles of the contributors, in the order of `contributor_name`. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_lat_units": {
+          "title": "Latitude units",
+          "description": "Units of the latitude values; `degree_north` by default. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_lat_resolution": {
+          "title": "Latitude resolution",
+          "description": "Target spacing of the data in latitude, with units. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_lon_units": {
+          "title": "Longitude units",
+          "description": "Units of the longitude values; `degree_east` by default. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_lon_resolution": {
+          "title": "Longitude resolution",
+          "description": "Target spacing of the data in longitude, with units. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_vertical_units": {
+          "title": "Vertical units",
+          "description": "Units of the vertical values, or an EPSG code of a vertical CRS. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "geospatial_vertical_resolution": {
+          "title": "Vertical resolution",
+          "description": "Target vertical spacing of the data, with units. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "date_modified": {
+          "title": "Date modified",
+          "description": "When the data were last modified, in ISO 8601 format. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "date_issued": {
+          "title": "Date issued",
+          "description": "When the data were first made available, in ISO 8601 format. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "date_metadata_modified": {
+          "title": "Metadata modification date",
+          "description": "When the metadata were last modified, in ISO 8601 format. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "product_version": {
+          "title": "Product version",
+          "description": "Version of the product or processing that produced the data. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "keywords_vocabulary": {
+          "title": "Keywords vocabulary",
+          "description": "Controlled vocabulary or vocabularies of the `keywords`, for example `GCMD:GCMD Keywords`. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "platform": {
+          "title": "Platform",
+          "description": "Names of the platforms that supported the sensors, such as satellites or ships, separated by commas. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "platform_vocabulary": {
+          "title": "Platform vocabulary",
+          "description": "Controlled vocabulary of the `platform` names. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "instrument": {
+          "title": "Instrument",
+          "description": "Names of the instruments or sensors that collected the data, separated by commas. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "instrument_vocabulary": {
+          "title": "Instrument vocabulary",
+          "description": "Controlled vocabulary of the `instrument` names. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "cdm_data_type": {
+          "title": "CDM data type",
+          "description": "Data type according to the Unidata Common Data Model (THREDDS). Suggested. Global attribute.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "Grid",
+                  "title": "Grid"
+                },
+                {
+                  "const": "Image",
+                  "title": "Image"
+                },
+                {
+                  "const": "Point",
+                  "title": "Point"
+                },
+                {
+                  "const": "Radial",
+                  "title": "Radial"
+                },
+                {
+                  "const": "Station",
+                  "title": "Station"
+                },
+                {
+                  "const": "Swath",
+                  "title": "Swath"
+                },
+                {
+                  "const": "Trajectory",
+                  "title": "Trajectory"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "metadata_link": {
+          "title": "Metadata link",
+          "description": "URL of a complete metadata record of the data, such as an ISO 19115 record. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "references": {
+          "title": "References",
+          "description": "Published or web-based references that describe the data or the methods used to produce it. Suggested. Global attribute.",
+          "type": "string"
+        },
+        "long_name": {
+          "title": "Long name",
+          "description": "Descriptive name of the variable, as for CF. Highly recommended. Variable attribute.",
+          "type": "string"
+        },
+        "standard_name": {
+          "title": "Standard name",
+          "description": "Name from the CF standard name table that identifies the quantity. Highly recommended. Variable attribute.",
+          "type": "string"
+        },
+        "units": {
+          "title": "Units",
+          "description": "Units of the variable, as for CF. Highly recommended. Variable attribute.",
+          "type": "string"
+        },
+        "coverage_content_type": {
+          "title": "Coverage content type",
+          "description": "ISO 19115 coverage content type of the variable. Highly recommended. Variable attribute.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "image",
+                  "title": "Image",
+                  "description": "Data that are an image."
+                },
+                {
+                  "const": "thematicClassification",
+                  "title": "Thematic classification",
+                  "description": "Classified data."
+                },
+                {
+                  "const": "physicalMeasurement",
+                  "title": "Physical measurement",
+                  "description": "Measured or derived physical values."
+                },
+                {
+                  "const": "auxiliaryInformation",
+                  "title": "Auxiliary information",
+                  "description": "Supporting information, such as a sensor angle."
+                },
+                {
+                  "const": "qualityInformation",
+                  "title": "Quality information",
+                  "description": "Quality flags or uncertainty of other variables."
+                },
+                {
+                  "const": "referenceInformation",
+                  "title": "Reference information",
+                  "description": "Reference data, such as a land mask."
+                },
+                {
+                  "const": "modelResult",
+                  "title": "Model result",
+                  "description": "Output of a model."
+                },
+                {
+                  "const": "coordinate",
+                  "title": "Coordinate",
+                  "description": "A coordinate variable."
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

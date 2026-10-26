@@ -1,0 +1,253 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/gdal/v0.1.0/schema.json",
+  "title": "GDAL metadata",
+  "description": "Metadata that the GDAL library writes in the files it creates, undeclared and recognised from its keys: in TIFF the GDAL_NODATA and GDAL_METADATA tags (https://gdal.org/en/stable/drivers/raster/gtiff.html) and the structural metadata of Cloud Optimized GeoTIFFs (https://gdal.org/en/stable/drivers/raster/cog.html); in netCDF and Zarr the georeferencing attributes of grid mapping variables, also written by rioxarray. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "properties": {
+    "attributes": {
+      "title": "Attributes",
+      "description": "Attributes of a netCDF or Zarr variable.",
+      "type": "object",
+      "properties": {
+        "spatial_ref": {
+          "title": "Spatial reference (WKT)",
+          "description": "CRS of the grid mapping variable as Well-Known Text, for GDAL; usually the same as CF `crs_wkt`.",
+          "type": "string"
+        },
+        "GeoTransform": {
+          "title": "Geotransform",
+          "description": "Affine transform of the grid as six numbers separated by spaces, in GDAL order: x of the upper-left corner, pixel width, row rotation, y of the upper-left corner, column rotation, pixel height (negative for north-up).",
+          "type": "string"
+        },
+        "_CRS": {
+          "title": "CRS (GDAL Zarr driver)",
+          "description": "CRS of a Zarr array written by GDAL's Zarr driver, as WKT, PROJJSON or a URL.",
+          "type": "object",
+          "properties": {
+            "wkt": {
+              "title": "WKT",
+              "description": "The CRS as Well-Known Text.",
+              "type": "string"
+            },
+            "projjson": {
+              "title": "PROJJSON",
+              "description": "The CRS as PROJJSON.",
+              "type": "object"
+            },
+            "url": {
+              "title": "URL",
+              "description": "URL identifying the CRS.",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "TIFF tags of the image.",
+      "type": "object",
+      "properties": {
+        "GDAL_NODATA": {
+          "title": "Nodata value",
+          "description": "Value of pixels without data, as text, for all bands. Tag 42113.",
+          "type": "string"
+        }
+      }
+    },
+    "gdal_metadata": {
+      "title": "GDAL metadata",
+      "description": "Items of the GDAL_METADATA tag (42112), decoded from its XML. Items of the default domain have their name as key; items of another domain are keyed `domain:name`.",
+      "type": "object",
+      "properties": {
+        "dataset": {
+          "title": "Dataset items",
+          "description": "Items that apply to the whole image.",
+          "type": "object",
+          "properties": {
+            "AREA_OR_POINT": {
+              "title": "Area or point",
+              "description": "Whether pixel values represent areas or points (dataset item).",
+              "anyOf": [
+                {
+                  "oneOf": [
+                    {
+                      "const": "Area",
+                      "title": "Area"
+                    },
+                    {
+                      "const": "Point",
+                      "title": "Point"
+                    }
+                  ]
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "SCALE": {
+              "title": "Scale",
+              "description": "Multiplier from stored to physical values (band item with role `scale`).",
+              "type": "string"
+            },
+            "OFFSET": {
+              "title": "Offset",
+              "description": "Added to scaled values to get physical values (band item with role `offset`).",
+              "type": "string"
+            },
+            "UNITTYPE": {
+              "title": "Unit",
+              "description": "Unit of the band values (band item with role `unittype`).",
+              "type": "string"
+            },
+            "DESCRIPTION": {
+              "title": "Description",
+              "description": "Description of the band (band item with role `description`).",
+              "type": "string"
+            },
+            "STATISTICS_MINIMUM": {
+              "title": "Minimum",
+              "description": "Smallest value of the band computed by GDAL.",
+              "type": "string"
+            },
+            "STATISTICS_MAXIMUM": {
+              "title": "Maximum",
+              "description": "Largest value of the band computed by GDAL.",
+              "type": "string"
+            },
+            "STATISTICS_MEAN": {
+              "title": "Mean",
+              "description": "Mean value of the band computed by GDAL.",
+              "type": "string"
+            },
+            "STATISTICS_STDDEV": {
+              "title": "Standard deviation",
+              "description": "Standard deviation of the band values computed by GDAL.",
+              "type": "string"
+            },
+            "STATISTICS_VALID_PERCENT": {
+              "title": "Valid percentage",
+              "description": "Percentage of valid (not nodata) pixels computed by GDAL.",
+              "type": "string"
+            }
+          }
+        },
+        "bands": {
+          "title": "Band items",
+          "description": "Items of each band (sample), from the first band.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "AREA_OR_POINT": {
+                "title": "Area or point",
+                "description": "Whether pixel values represent areas or points (dataset item).",
+                "anyOf": [
+                  {
+                    "oneOf": [
+                      {
+                        "const": "Area",
+                        "title": "Area"
+                      },
+                      {
+                        "const": "Point",
+                        "title": "Point"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "SCALE": {
+                "title": "Scale",
+                "description": "Multiplier from stored to physical values (band item with role `scale`).",
+                "type": "string"
+              },
+              "OFFSET": {
+                "title": "Offset",
+                "description": "Added to scaled values to get physical values (band item with role `offset`).",
+                "type": "string"
+              },
+              "UNITTYPE": {
+                "title": "Unit",
+                "description": "Unit of the band values (band item with role `unittype`).",
+                "type": "string"
+              },
+              "DESCRIPTION": {
+                "title": "Description",
+                "description": "Description of the band (band item with role `description`).",
+                "type": "string"
+              },
+              "STATISTICS_MINIMUM": {
+                "title": "Minimum",
+                "description": "Smallest value of the band computed by GDAL.",
+                "type": "string"
+              },
+              "STATISTICS_MAXIMUM": {
+                "title": "Maximum",
+                "description": "Largest value of the band computed by GDAL.",
+                "type": "string"
+              },
+              "STATISTICS_MEAN": {
+                "title": "Mean",
+                "description": "Mean value of the band computed by GDAL.",
+                "type": "string"
+              },
+              "STATISTICS_STDDEV": {
+                "title": "Standard deviation",
+                "description": "Standard deviation of the band values computed by GDAL.",
+                "type": "string"
+              },
+              "STATISTICS_VALID_PERCENT": {
+                "title": "Valid percentage",
+                "description": "Percentage of valid (not nodata) pixels computed by GDAL.",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "gdal_structural_metadata": {
+      "title": "Structural metadata",
+      "description": "Layout declared in the header of a file written by GDAL's COG driver, which lets readers find tiles with few range requests.",
+      "type": "object",
+      "properties": {
+        "LAYOUT": {
+          "title": "Layout",
+          "description": "`IFDS_BEFORE_DATA` when all image directories precede the image data, as in a COG.",
+          "type": "string"
+        },
+        "BLOCK_ORDER": {
+          "title": "Block order",
+          "description": "Order of the tiles in the file, such as `ROW_MAJOR`.",
+          "type": "string"
+        },
+        "BLOCK_LEADER": {
+          "title": "Block leader",
+          "description": "`SIZE_AS_UINT4` when each tile is preceded by its size.",
+          "type": "string"
+        },
+        "BLOCK_TRAILER": {
+          "title": "Block trailer",
+          "description": "`LAST_4_BYTES_REPEATED` when the last bytes of each tile are repeated after it.",
+          "type": "string"
+        },
+        "KNOWN_INCOMPATIBLE_EDITION": {
+          "title": "Known incompatible edition",
+          "description": "`YES` when the file was edited in a way that broke the layout.",
+          "type": "string"
+        },
+        "MASK_INTERLEAVED_WITH_IMAGERY": {
+          "title": "Mask interleaved with imagery",
+          "description": "`YES` when mask tiles follow their image tiles.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

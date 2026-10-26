@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v2/schema.json",
+  "title": "Zarr v2 node metadata",
+  "description": "A Zarr v2 group or array as one object: the content of its `.zgroup` or `.zarray` document with its `.zattrs` as `attributes` (Zarr storage specification 2, https://zarr-specs.readthedocs.io/en/latest/v2/v2.0.html). Zarr v2 stores these in separate documents and has no `node_type`; readers add it from the document that exists, as Zarr v3 does in `zarr.json`. Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "required": [
+    "zarr_format",
+    "node_type"
+  ],
+  "properties": {
+    "zarr_format": {
+      "title": "Zarr format",
+      "description": "Version of the Zarr format: 2.",
+      "const": 2
+    },
+    "node_type": {
+      "title": "Node type",
+      "description": "Whether the node has a `.zarray` (array) or a `.zgroup` (group) document. Not stored in Zarr v2; added by the reader.",
+      "oneOf": [
+        {
+          "const": "array",
+          "title": "Array",
+          "description": "A node with a `.zarray` document."
+        },
+        {
+          "const": "group",
+          "title": "Group",
+          "description": "A node with a `.zgroup` document."
+        }
+      ]
+    },
+    "attributes": {
+      "title": "Attributes",
+      "description": "The node's `.zattrs` document: arbitrary user metadata. Conventions such as CF, ACDD and xarray's `_ARRAY_DIMENSIONS` define their fields here.",
+      "type": "object"
+    },
+    "shape": {
+      "title": "Shape",
+      "description": "Length of each dimension of the array.",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "chunks": {
+      "title": "Chunk shape",
+      "description": "Shape of each chunk.",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "dtype": {
+      "title": "Data type",
+      "description": "NumPy type string of the elements, for example `<f4` (little-endian 32-bit float) or `|u1` (unsigned byte), or a list of fields for structured types.",
+      "type": [
+        "string",
+        "array"
+      ]
+    },
+    "compressor": {
+      "title": "Compressor",
+      "description": "Primary compression codec, or null for uncompressed chunks.",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "title": "Codec",
+              "description": "numcodecs identifier of the codec, for example blosc, zstd, zlib or delta.",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fill_value": {
+      "title": "Fill value",
+      "description": "Value of elements that have not been written, or null when undefined. Floats may be \"NaN\", \"Infinity\" or \"-Infinity\".",
+      "type": [
+        "number",
+        "string",
+        "boolean",
+        "null"
+      ]
+    },
+    "order": {
+      "title": "Memory layout",
+      "description": "Order of elements within a chunk.",
+      "oneOf": [
+        {
+          "const": "C",
+          "title": "Row-major (C)",
+          "description": "The last dimension varies fastest."
+        },
+        {
+          "const": "F",
+          "title": "Column-major (Fortran)",
+          "description": "The first dimension varies fastest."
+        }
+      ]
+    },
+    "filters": {
+      "title": "Filters",
+      "description": "Codecs applied before the compressor, or null.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "title": "Codec",
+                "description": "numcodecs identifier of the codec, for example blosc, zstd, zlib or delta.",
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dimension_separator": {
+      "title": "Dimension separator",
+      "description": "Character between chunk indices in chunk keys.",
+      "oneOf": [
+        {
+          "const": ".",
+          "title": "Dot",
+          "description": "Keys like `0.1.2` (default)."
+        },
+        {
+          "const": "/",
+          "title": "Slash",
+          "description": "Keys like `0/1/2`."
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "array"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "required": [
+          "shape",
+          "chunks",
+          "dtype",
+          "compressor",
+          "fill_value",
+          "order",
+          "filters"
+        ]
+      }
+    }
+  ]
+}

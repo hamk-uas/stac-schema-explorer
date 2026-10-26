@@ -29,7 +29,7 @@ technical visual language; it need not adopt Observatory instance branding.
 | [src/components](src/components) | Document cards, object/JSON trees, field chips/info, extension picker, matrix and legend. |
 | [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. |
 | [src/engine.worker.ts](src/engine.worker.ts), [src/lib/engine.ts](src/lib/engine.ts) | Worker-backed probing/validation protocol. |
-| [schemas](schemas) | Reviewed, documentation-enriched schema source consumed by this app and Observatory. |
+| [schemas](schemas) | Reviewed, documentation-enriched schema source consumed by this app and Observatory: vendored copies, plus authored embedded-metadata schemas under `schemas/hamk-uas.github.io/stac-schema-explorer/schemas/`. |
 | [upstream](upstream) | Pristine published originals/dependencies used to prove enrichment preserves validation. |
 | [scripts](scripts), [test](test) | Fetching/drafting/review tooling and validation/engine regression tests. |
 
@@ -72,6 +72,29 @@ Do not hand-edit `upstream` to make tests pass or enrich its prose. Preserve
 upstream attribution/license notices. Tests compare canonicalized schema
 constraints, original annotations, dependency identity and documentation/value-list
 completeness. Treat them as the acceptance gate for enrichment.
+
+### Embedded-metadata schemas
+
+Format and convention schemas for metadata embedded in data assets (README
+"Embedded metadata schemas") have the same roles as STAC core and extensions.
+Zarr conventions are vendored through the manifest like extensions. Schemas
+without an official JSON Schema (Zarr core, netCDF, TIFF, CF, ACDD, GeoTIFF,
+GDAL, xarray, EOPF) are **authored** under `AUTHORED_BASE`
+(`scripts/manifest.mjs`), have no upstream copy, say "Unofficial JSON Schema"
+in their description and are published at their `$id` by `vite.config.ts`.
+
+- Every schema validates one format **node** (Zarr group/array, netCDF
+  group/variable, TIFF file/image); conventions add fields under `attributes`,
+  `tags`, `geo_keys` or `gdal_metadata`. Keep this contract: Observatory and the
+  published Zarr convention schemas rely on it.
+- `registry.json` and `crosswalk.json` are contracts read by Observatory. Identify
+  Zarr conventions by UUID, not name or URL. Changing ids, paths, relations or
+  conversion names requires coordinated Observatory changes.
+- Do not copy text whose licence does not allow it: CF text is CC0; ACDD, OGC
+  and GDAL texts are summarised in our own words with links.
+- `test/authored.test.ts` checks documentation, registry/crosswalk targets and
+  that the lab catalogs' metadata in `test/fixtures/embedded` validates. Fixtures
+  must not contain personal data from source files (names, emails, user names).
 
 Documentation drafting caches remote source material under `.cache`.
 Engine tests first use vendored schemas, then `test/fixtures`, then fetch/cache

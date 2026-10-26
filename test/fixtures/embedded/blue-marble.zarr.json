@@ -1,0 +1,481 @@
+{
+ "attributes": {
+  "zarr_conventions": [
+   {
+    "schema_url": "https://raw.githubusercontent.com/zarr-conventions/multiscales/refs/tags/v0.1/schema.json",
+    "spec_url": "https://github.com/zarr-conventions/multiscales/blob/v0.1/README.md",
+    "uuid": "d35379db-88df-4056-af3a-620245f8e347",
+    "name": "multiscales",
+    "description": "Multiscale layout of zarr datasets"
+   },
+   {
+    "schema_url": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+    "spec_url": "https://github.com/zarr-conventions/proj/blob/v0.1/README.md",
+    "uuid": "f17cb550-5864-4468-aeb7-f3180cfb622f",
+    "name": "proj",
+    "description": "Coordinate reference system information for geospatial data"
+   },
+   {
+    "schema_url": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+    "spec_url": "https://github.com/zarr-conventions/spatial/blob/v0.1/README.md",
+    "uuid": "689b58e2-cf7b-45e0-9fff-9cfc0883d6b4",
+    "name": "spatial",
+    "description": "Spatial coordinate information"
+   }
+  ],
+  "multiscales": {
+   "layout": [
+    {
+     "asset": "0",
+     "transform": {
+      "scale": [
+       1.0,
+       1.0
+      ],
+      "translation": [
+       0.0,
+       0.0
+      ]
+     },
+     "spatial:transform": [
+      0.004166666666666667,
+      0.0,
+      -180.0,
+      0.0,
+      -0.004166666666666667,
+      90.0
+     ],
+     "spatial:shape": [
+      43200,
+      86400
+     ]
+    },
+    {
+     "asset": "1",
+     "derived_from": "0",
+     "transform": {
+      "scale": [
+       2.0,
+       2.0
+      ],
+      "translation": [
+       0.0,
+       0.0
+      ]
+     },
+     "resampling_method": "average",
+     "spatial:transform": [
+      0.008333333333333333,
+      0.0,
+      -180.0,
+      0.0,
+      -0.008333333333333333,
+      90.0
+     ],
+     "spatial:shape": [
+      21600,
+      43200
+     ]
+    }
+   ],
+   "resampling_method": "average"
+  },
+  "proj:code": "EPSG:4326",
+  "proj:wkt2": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+  "spatial:dimensions": [
+   "y",
+   "x"
+  ],
+  "spatial:transform": [
+   0.004166666666666667,
+   0.0,
+   -180.0,
+   0.0,
+   -0.004166666666666667,
+   90.0
+  ],
+  "spatial:shape": [
+   43200,
+   86400
+  ],
+  "spatial:bbox": [
+   -180.0,
+   -90.0,
+   180.0,
+   90.0
+  ],
+  "spatial:registration": "pixel",
+  "title": "NASA Blue Marble: Next Generation, July 2004",
+  "summary": "Global cloud-free true-colour mosaic of the Earth's surface for July 2004 from the NASA Blue Marble: Next Generation (BMNG) collection, derived from Terra MODIS surface reflectance (MOD09A1). 15 arc-second (~500 m) resolution, 86400 x 43200 pixels in EPSG:4326, without topography or bathymetry shading. Published as a multiscale Zarr v3 pyramid. Credit: NASA's Earth Observatory. NASA imagery is generally free to use with credit and does not imply NASA endorsement. Caveats from NASA: deep oceans are not included in the source data and are filled with a uniform blue that is not completely blended with shallow coastal water; areas of open water still show some noise; in tropical lowlands, rainy-season cloud cover can prevent a cloud-free view of every pixel within the month; and snow and cloud are not completely distinguished in areas with short-term snow cover (less than three or four months). Pixel values are stored with lossy JPEG compression (lossy JPEG (quality 90, 4:2:0 chroma subsampling)): visually near-lossless but not exact, and the lossless values are not published. Reading the arrays needs the 'jpeg' Zarr codec (see https://github.com/hamk-uas/cards-zarr-optim).",
+  "source": "NASA Earth Observatory, Blue Marble: Next Generation (world.200407.3x21600x21600 GeoTIFF tiles)",
+  "institution": "NASA Earth Observatory / NASA Goddard Space Flight Center",
+  "creator_institution": "NASA Earth Observatory (NASA Goddard Space Flight Center)",
+  "attribution": "NASA's Earth Observatory",
+  "acknowledgement": "Credit: NASA's Earth Observatory.",
+  "publisher_name": "Häme University of Applied Sciences (HAMK)",
+  "publisher_url": "https://www.hamk.fi/",
+  "references": "Stöckli, R., Vermote, E., Saleous, N., Simmon, R. and Herring, D. (2005). The Blue Marble Next Generation - A true color earth dataset including seasonal dynamics from MODIS. Published by the NASA Earth Observatory. https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/base-map/#july, https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/",
+  "license": "NASA Images and Media Usage Guidelines (https://www.nasa.gov/nasa-brand-center/images-and-media/). NASA imagery is generally free to use with credit and does not imply NASA endorsement.",
+  "time_coverage_start": "2004-07-01T00:00:00Z",
+  "time_coverage_end": "2004-07-31T23:59:59Z",
+  "date_created": "2026-10-01T10:50:39Z",
+  "history": "2026-10-01T10:50:39Z: Derived from the NASA Blue Marble: Next Generation July 2004 base map (world.200407.3x21600x21600.{A,B,C,D}{1,2}_geo.tif). The 8 GeoTIFF tiles were mosaicked into a single 86400 x 43200 EPSG:4326 grid, and floating-point noise in the GeoTIFF georeferencing was snapped to the exact 0.00416666666667 degree grid with origin (-180, 90); level 0 pixel values are unchanged by the mosaicking. Levels 1-6 were each computed from the previous level as the rounded mean of non-overlapping 2 x 2 pixel blocks. Arrays are stored as Zarr v3 with 512 x 512 chunks in 4096 x 4096 shards (shard index at the start of each shard) and lossy JPEG (quality 90, 4:2:0 chroma subsampling), using the 'jpeg' Zarr codec (baseline JFIF, libjpeg-turbo) after a transpose to (y, x, band). Every level was encoded once, from the exact lossless pixels of the same level of the pyramid described above, so no level has been through more than one JPEG generation. (hamk-uas/cards-zarr-optim blue_marble_to_zarr.py git:5bcc90cf3a4f-dirty sha256:73d80bb44228)",
+  "processing_version": "git:5bcc90cf3a4f-dirty sha256:73d80bb44228",
+  "processing_software": {
+   "hamk-uas/cards-zarr-optim blue_marble_to_zarr.py": "git:5bcc90cf3a4f-dirty sha256:73d80bb44228",
+   "python": "3.14.7",
+   "zarr-python": "3.3.0",
+   "numpy": "2.5.2",
+   "rasterio": "1.5.2",
+   "GDAL": "3.12.2",
+   "PROJ": "9.8.1",
+   "imagecodecs": "2026.8.16",
+   "JPEG": "libjpeg_turbo 3.2.0/8.0"
+  },
+  "compression": "lossy JPEG (quality 90, 4:2:0 chroma subsampling)"
+ },
+ "zarr_format": 3,
+ "consolidated_metadata": {
+  "kind": "inline",
+  "must_understand": false,
+  "metadata": {
+   "0": {
+    "attributes": {
+     "zarr_conventions": [
+      {
+       "schema_url": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+       "spec_url": "https://github.com/zarr-conventions/proj/blob/v0.1/README.md",
+       "uuid": "f17cb550-5864-4468-aeb7-f3180cfb622f",
+       "name": "proj",
+       "description": "Coordinate reference system information for geospatial data"
+      },
+      {
+       "schema_url": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+       "spec_url": "https://github.com/zarr-conventions/spatial/blob/v0.1/README.md",
+       "uuid": "689b58e2-cf7b-45e0-9fff-9cfc0883d6b4",
+       "name": "spatial",
+       "description": "Spatial coordinate information"
+      }
+     ],
+     "proj:code": "EPSG:4326",
+     "proj:wkt2": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+     "spatial:dimensions": [
+      "y",
+      "x"
+     ],
+     "spatial:transform": [
+      0.004166666666666667,
+      0.0,
+      -180.0,
+      0.0,
+      -0.004166666666666667,
+      90.0
+     ],
+     "spatial:shape": [
+      43200,
+      86400
+     ],
+     "spatial:bbox": [
+      -180.0,
+      -90.0,
+      180.0,
+      90.0
+     ],
+     "spatial:registration": "pixel"
+    },
+    "zarr_format": 3,
+    "consolidated_metadata": {
+     "kind": "inline",
+     "must_understand": false,
+     "metadata": {}
+    },
+    "node_type": "group"
+   },
+   "0/band": {
+    "shape": [
+     3
+    ],
+    "data_type": "uint8",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       3
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0,
+    "codecs": [
+     {
+      "name": "bytes"
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 0,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "long_name": "band index",
+     "flag_values": [
+      1,
+      2,
+      3
+     ],
+     "flag_meanings": "red green blue"
+    },
+    "dimension_names": [
+     "band"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "0/rgb": {
+    "shape": [
+     3,
+     43200,
+     86400
+    ],
+    "data_type": "uint8",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       3,
+       4096,
+       4096
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0,
+    "codecs": [
+     {
+      "name": "sharding_indexed",
+      "configuration": {
+       "chunk_shape": [
+        3,
+        512,
+        512
+       ],
+       "codecs": [
+        {
+         "name": "transpose",
+         "configuration": {
+          "order": [
+           1,
+           2,
+           0
+          ]
+         }
+        },
+        {
+         "name": "jpeg",
+         "configuration": {
+          "quality": 90,
+          "subsampling": "4:2:0"
+         }
+        }
+       ],
+       "index_codecs": [
+        {
+         "name": "bytes",
+         "configuration": {
+          "endian": "little"
+         }
+        },
+        {
+         "name": "crc32c"
+        }
+       ],
+       "index_location": "start"
+      }
+     }
+    ],
+    "attributes": {
+     "long_name": "true-colour RGB reflectance (8-bit, display-ready)",
+     "band_names": [
+      "red",
+      "green",
+      "blue"
+     ],
+     "grid_mapping": "spatial_ref",
+     "coordinates": "spatial_ref",
+     "valid_range": [
+      0,
+      255
+     ],
+     "compression": "lossy JPEG (quality 90, 4:2:0 chroma subsampling)"
+    },
+    "dimension_names": [
+     "band",
+     "y",
+     "x"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "0/spatial_ref": {
+    "shape": [],
+    "data_type": "int32",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": []
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 0,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "crs_wkt": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+     "semi_major_axis": 6378137.0,
+     "semi_minor_axis": 6356752.314245179,
+     "inverse_flattening": 298.257223563,
+     "reference_ellipsoid_name": "WGS 84",
+     "longitude_of_prime_meridian": 0.0,
+     "prime_meridian_name": "Greenwich",
+     "geographic_crs_name": "WGS 84",
+     "horizontal_datum_name": "World Geodetic System 1984 ensemble",
+     "grid_mapping_name": "latitude_longitude",
+     "spatial_ref": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+     "GeoTransform": "-180.0 0.004166666666666667 0.0 90.0 0.0 -0.004166666666666667"
+    },
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "0/x": {
+    "shape": [
+     86400
+    ],
+    "data_type": "float64",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       86400
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0.0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "standard_name": "longitude",
+     "long_name": "longitude of pixel centre",
+     "units": "degrees_east",
+     "axis": "X"
+    },
+    "dimension_names": [
+     "x"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "0/y": {
+    "shape": [
+     43200
+    ],
+    "data_type": "float64",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       43200
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0.0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "standard_name": "latitude",
+     "long_name": "latitude of pixel centre",
+     "units": "degrees_north",
+     "axis": "Y"
+    },
+    "dimension_names": [
+     "y"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   }
+  }
+ },
+ "node_type": "group"
+}

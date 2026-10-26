@@ -1,0 +1,1153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json",
+  "title": "CF Conventions attributes",
+  "description": "Attributes of the Climate and Forecast (CF) Metadata Conventions 1.13 (https://cfconventions.org/), from its Appendix A (attributes) and Appendix F (grid mapping attributes), for any group or variable of netCDF or Zarr. Datasets declare CF in their global `Conventions` attribute, for example `CF-1.11`; attributes of earlier CF versions are a subset of these. The attribute descriptions are those of the CF Conventions, dedicated to the public domain (CC0 1.0). Unofficial JSON Schema authored by hamk-uas/stac-schema-explorer to document and check metadata embedded in data files; it is not published or endorsed by the maintainers of the format or convention.",
+  "type": "object",
+  "properties": {
+    "attributes": {
+      "title": "Attributes",
+      "description": "Attributes of a netCDF or Zarr group or variable.",
+      "type": "object",
+      "properties": {
+        "actual_range": {
+          "title": "Actual range",
+          "description": "The smallest and the largest valid non-missing values occurring in the variable. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "add_offset": {
+          "title": "Offset",
+          "description": "If present for a variable, this number is to be added to the data after it is read by an application. If both `scale_factor` and `add_offset` attributes are present, the data are first scaled before the offset is added. In cases where there is a strong constraint on dataset size, it is allowed to pack the coordinate variables (using add_offset and/or scale_factor), but this is not recommended in general. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "aggregated_data": {
+          "title": "Aggregated data",
+          "description": "Records the instructions that define how to create the aggregated data of an aggregation variable. Used on: aggregation variables.",
+          "type": "string"
+        },
+        "aggregated_dimensions": {
+          "title": "Aggregated dimensions",
+          "description": "Identifies the dimensions of the aggregated data of an aggregation variable. Used on: aggregation variables.",
+          "type": "string"
+        },
+        "algorithm": {
+          "title": "Quantization algorithm",
+          "description": "Name of the quantization algorithm employed. Used on: quantization container variables.",
+          "type": "string"
+        },
+        "ancillary_variables": {
+          "title": "Ancillary variables",
+          "description": "Identifies a variable that contains closely associated data, e.g., the measurement uncertainties of instrument data. Used on: data variables.",
+          "type": "string"
+        },
+        "axis": {
+          "title": "Axis",
+          "description": "Identifies latitude, longitude, vertical, or time axes. Used on: coordinate variables, boundary variables (inheriting).",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "X",
+                  "title": "X (longitude or easting)"
+                },
+                {
+                  "const": "Y",
+                  "title": "Y (latitude or northing)"
+                },
+                {
+                  "const": "Z",
+                  "title": "Z (vertical)"
+                },
+                {
+                  "const": "T",
+                  "title": "T (time)"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "bounds": {
+          "title": "Cell bounds variable",
+          "description": "Identifies a boundary variable. Used on: coordinate variables.",
+          "type": "string"
+        },
+        "calendar": {
+          "title": "Calendar",
+          "description": "Calendar used for encoding time axes. Used on: coordinate variables, boundary variables (inheriting).",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "standard",
+                  "title": "Standard",
+                  "description": "Mixed Gregorian/Julian calendar, as used by udunits."
+                },
+                {
+                  "const": "gregorian",
+                  "title": "Gregorian (deprecated)",
+                  "description": "Deprecated synonym of standard."
+                },
+                {
+                  "const": "proleptic_gregorian",
+                  "title": "Proleptic Gregorian",
+                  "description": "The Gregorian calendar extended to dates before 1582-10-15."
+                },
+                {
+                  "const": "julian",
+                  "title": "Julian",
+                  "description": "Every fourth year is a leap year."
+                },
+                {
+                  "const": "noleap",
+                  "title": "No leap years",
+                  "description": "All years have 365 days."
+                },
+                {
+                  "const": "365_day",
+                  "title": "365 days",
+                  "description": "All years have 365 days."
+                },
+                {
+                  "const": "all_leap",
+                  "title": "All leap years",
+                  "description": "All years have 366 days."
+                },
+                {
+                  "const": "366_day",
+                  "title": "366 days",
+                  "description": "All years have 366 days."
+                },
+                {
+                  "const": "360_day",
+                  "title": "360 days",
+                  "description": "All years have 12 months of 30 days."
+                },
+                {
+                  "const": "utc",
+                  "title": "UTC",
+                  "description": "Gregorian calendar with leap seconds, as Coordinated Universal Time."
+                },
+                {
+                  "const": "tai",
+                  "title": "TAI",
+                  "description": "Gregorian calendar without leap seconds, as International Atomic Time."
+                },
+                {
+                  "const": "none",
+                  "title": "None",
+                  "description": "No calendar."
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "cell_measures": {
+          "title": "Cell measures",
+          "description": "Identifies variables that contain cell areas or volumes. Used on: data variables, domain variables.",
+          "type": "string"
+        },
+        "cell_methods": {
+          "title": "Cell methods",
+          "description": "Records the method used to derive data that represents cell values. Used on: data variables.",
+          "type": "string"
+        },
+        "cf_role": {
+          "title": "CF role",
+          "description": "Identifies the roles of variables that identify features in discrete sampling geometries. Identifies the roles of mesh topology and location index set variables (see appendix mesh topology attributes). Used on: coordinate variables, boundary variables (inheriting).",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "timeseries_id",
+                  "title": "Time series identifier"
+                },
+                {
+                  "const": "profile_id",
+                  "title": "Profile identifier"
+                },
+                {
+                  "const": "trajectory_id",
+                  "title": "Trajectory identifier"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "climatology": {
+          "title": "Climatology bounds variable",
+          "description": "Identifies a climatology boundary variable. Used on: coordinate variables.",
+          "type": "string"
+        },
+        "comment": {
+          "title": "Comment",
+          "description": "Miscellaneous information about the data or methods used to produce it. Used on: global attribute, coordinate variables, data variables.",
+          "type": "string"
+        },
+        "compress": {
+          "title": "Compressed dimensions",
+          "description": "Identifies other dimension(s) to which the values in this variable are indices, used for compression by gathering. Used on: coordinate variables.",
+          "type": "string"
+        },
+        "computed_standard_name": {
+          "title": "Computed standard name",
+          "description": "Indicates the standard name, from the standard name table, of the computed vertical coordinate values, computed according to the formula in the definition. Used on: coordinate variables, boundary variables (inheriting).",
+          "type": "string"
+        },
+        "Conventions": {
+          "title": "Conventions",
+          "description": "Name of the conventions followed by the dataset. Used on: global attribute.",
+          "type": "string"
+        },
+        "coordinate_interpolation": {
+          "title": "Coordinate interpolation",
+          "description": "Indicates that coordinates have been compressed by sampling and identifies the tie point coordinate variables and their associated interpolation variables. Used on: data variables, domain variables.",
+          "type": "string"
+        },
+        "coordinates": {
+          "title": "Auxiliary coordinates",
+          "description": "Identifies auxiliary coordinate variables, label variables, and alternate coordinate variables. Used on: data variables, geometry container variables, domain variables.",
+          "type": "string"
+        },
+        "dimensions": {
+          "title": "Domain dimensions",
+          "description": "Identifies the dimensions that define a domain variable. Used on: domain variables.",
+          "type": "string"
+        },
+        "external_variables": {
+          "title": "External variables",
+          "description": "Identifies variables which are named by `cell_measures` attributes in the file but which are not present in the file. Used on: global attribute.",
+          "type": "string"
+        },
+        "_FillValue": {
+          "title": "Fill value",
+          "description": "A value used to represent missing or undefined data. Allowed for auxiliary coordinate variables but not allowed for coordinate variables. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          ]
+        },
+        "featureType": {
+          "title": "Feature type",
+          "description": "Specifies the type of discrete sampling geometry to which the data in the scope of this attribute belongs, and implies that all data variables in the scope of this attribute contain collections of features of that type. Used on: global attribute.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "point",
+                  "title": "Point"
+                },
+                {
+                  "const": "timeSeries",
+                  "title": "Time series"
+                },
+                {
+                  "const": "trajectory",
+                  "title": "Trajectory"
+                },
+                {
+                  "const": "profile",
+                  "title": "Profile"
+                },
+                {
+                  "const": "timeSeriesProfile",
+                  "title": "Time series of profiles"
+                },
+                {
+                  "const": "trajectoryProfile",
+                  "title": "Trajectory of profiles"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "flag_masks": {
+          "title": "Flag masks",
+          "description": "Provides a list of bit fields expressing Boolean or enumerated flags. Used on: data variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          ]
+        },
+        "flag_meanings": {
+          "title": "Flag meanings",
+          "description": "Use in conjunction with `flag_values`  to provide descriptive words or phrases for each flag value. If multi-word phrases are used to describe the flag values, then the words within a phrase should be connected with underscores. Used on: data variables.",
+          "type": "string"
+        },
+        "flag_values": {
+          "title": "Flag values",
+          "description": "Provides a list of the flag values. Use in conjunction with `flag_meanings`. Used on: data variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          ]
+        },
+        "formula_terms": {
+          "title": "Formula terms",
+          "description": "Identifies variables that correspond to the terms in a formula. Used on: coordinate variables, boundary variables (own).",
+          "type": "string"
+        },
+        "geometry": {
+          "title": "Geometry variable",
+          "description": "Identifies a variable that defines geometry. Used on: coordinate variables, data variables, domain variables.",
+          "type": "string"
+        },
+        "geometry_type": {
+          "title": "Geometry type",
+          "description": "Indicates the type of geometry present. Used on: geometry container variables.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "point",
+                  "title": "Point"
+                },
+                {
+                  "const": "line",
+                  "title": "Line"
+                },
+                {
+                  "const": "polygon",
+                  "title": "Polygon"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "grid_mapping": {
+          "title": "Grid mapping",
+          "description": "Identifies a variable that defines a grid mapping. Used on: data variables, geometry container variables, domain variables.",
+          "type": "string"
+        },
+        "history": {
+          "title": "History",
+          "description": "List of the applications that have modified the original data. Used on: global attribute, group attribute.",
+          "type": "string"
+        },
+        "implementation": {
+          "title": "Quantization implementation",
+          "description": "The name and version of the library or client software that performed the quantization with `algorithm`. Used on: quantization container variables.",
+          "type": "string"
+        },
+        "instance_dimension": {
+          "title": "Instance dimension",
+          "description": "An attribute which identifies an index variable and names the instance dimension to which it applies. The index variable indicates that the indexed ragged array representation is being used for a collection of features. Used on: other variables.",
+          "type": "string"
+        },
+        "institution": {
+          "title": "Institution",
+          "description": "Where the original data was produced. Used on: global attribute, data variables.",
+          "type": "string"
+        },
+        "interior_ring": {
+          "title": "Interior ring variable",
+          "description": "Identifies a variable that indicates if polygon parts are interior rings (i.e., holes) or not. Used on: geometry container variables.",
+          "type": "string"
+        },
+        "leap_month": {
+          "title": "Leap month",
+          "description": "Specifies which month is lengthened by a day in leap years for a user defined calendar. Used on: coordinate variables, boundary variables (inheriting).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "leap_year": {
+          "title": "Leap year",
+          "description": "Provides an example of a leap year for a user defined calendar. It is assumed that all years that differ from this year by a multiple of four are also leap years. Used on: coordinate variables, boundary variables (inheriting).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "location": {
+          "title": "Mesh location",
+          "description": "Specifies the location type within the mesh topology at which the variable is defined. Used on: data variables, domain variables.",
+          "type": "string"
+        },
+        "location_index_set": {
+          "title": "Location index set",
+          "description": "Specifies a variable that defines the subset of locations of a mesh topology at which the variable is defined. Used on: data variables, domain variables.",
+          "type": "string"
+        },
+        "long_name": {
+          "title": "Long name",
+          "description": "A descriptive name that indicates a variable's content. This name is not standardized. Used on: coordinate variables, data variables, domain variables, boundary variables (inheriting).",
+          "type": "string"
+        },
+        "mesh": {
+          "title": "Mesh",
+          "description": "Specifies a variable that defines a mesh topology. Used on: data variables, domain variables.",
+          "type": "string"
+        },
+        "missing_value": {
+          "title": "Missing value",
+          "description": "A value or values used to represent missing or undefined data. Allowed for auxiliary coordinate variables but not allowed for coordinate variables. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          ]
+        },
+        "month_lengths": {
+          "title": "Month lengths",
+          "description": "Specifies the length of each month in a non-leap year for a user defined calendar. Used on: coordinate variables, boundary variables (inheriting).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "node_coordinates": {
+          "title": "Node coordinates",
+          "description": "Identifies variables that contain geometry node coordinates. Used on: geometry container variables.",
+          "type": "string"
+        },
+        "node_count": {
+          "title": "Node count variable",
+          "description": "Identifies a variable indicating the count of nodes per geometry. Used on: geometry container variables.",
+          "type": "string"
+        },
+        "nodes": {
+          "title": "Nodes variable",
+          "description": "Identifies a coordinate node variable. Used on: coordinate variables.",
+          "type": "string"
+        },
+        "part_node_count": {
+          "title": "Part node count variable",
+          "description": "Identifies a variable providing the count of nodes per geometry part. Used on: geometry container variables.",
+          "type": "string"
+        },
+        "positive": {
+          "title": "Positive direction",
+          "description": "Direction of increasing vertical coordinate value. Used on: coordinate variables, boundary variables (inheriting).",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "up",
+                  "title": "Up",
+                  "description": "Values increase upwards, as for height."
+                },
+                {
+                  "const": "down",
+                  "title": "Down",
+                  "description": "Values increase downwards, as for depth or pressure."
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "quantization": {
+          "title": "Quantization variable",
+          "description": "Identifies a variable that defines a quantization algorithm and its provenance. Used on: data variables.",
+          "type": "string"
+        },
+        "quantization_nsb": {
+          "title": "Quantization significant bits",
+          "description": "Specifies the number of significant bits retained in the IEEE mantissa of data quantized with the BitRound algorithm. Use in conjunction with `quantization`. Used on: data variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "quantization_nsd": {
+          "title": "Quantization significant digits",
+          "description": "Specifies the number of significant base-10 digits retained in the IEEE mantissa of data quantized with base-10 quantization algorithms. Use in conjunction with `quantization`. Used on: data variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "references": {
+          "title": "References",
+          "description": "References that describe the data or methods used to produce it. Used on: global attribute, data variables.",
+          "type": "string"
+        },
+        "sample_dimension": {
+          "title": "Sample dimension",
+          "description": "An attribute which identifies a count variable and names the sample dimension to which it applies. The count variable indicates that the contiguous ragged array representation is being used for a collection of features. Used on: other variables.",
+          "type": "string"
+        },
+        "scale_factor": {
+          "title": "Scale factor",
+          "description": "If present for a variable, the data are to be multiplied by this factor after the data are read by an application. See also the `add_offset` attribute. In cases where there is a strong constraint on dataset size, it is allowed to pack the coordinate variables (using add_offset and/or scale_factor), but this is not recommended in general. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "select": {
+          "title": "Selection dimension",
+          "description": "Identifies a dimension to which the values in this variable are indices, used for selection of climatological time coordinates for norm metadata variables. Used on: coordinate variables.",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "description": "Method of production of the original data. Used on: global attribute, data variables.",
+          "type": "string"
+        },
+        "standard_error_multiplier": {
+          "title": "Standard error multiplier",
+          "description": "If a data variable with a standard_name modifier of standard_error has this attribute, it indicates that the values are the stated multiple of one standard error. Used on: data variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "standard_name": {
+          "title": "Standard name",
+          "description": "A standard name that references a description of a variable's content in the standard name table. Used on: coordinate variables, data variables, boundary variables (inheriting).",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "description": "Short description of the file contents. Used on: global attribute, group attribute.",
+          "type": "string"
+        },
+        "units": {
+          "title": "Units",
+          "description": "Units of a variable's content. Used on: coordinate variables, data variables, boundary variables (inheriting).",
+          "type": "string"
+        },
+        "units_metadata": {
+          "title": "Units metadata",
+          "description": "Specifies the interpretation of a unit of measure appearing in the `units` attribute. Used on: coordinate variables, data variables, boundary variables (inheriting).",
+          "type": "string"
+        },
+        "valid_max": {
+          "title": "Valid maximum",
+          "description": "Largest valid value of a variable. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "valid_min": {
+          "title": "Valid minimum",
+          "description": "Smallest valid value of a variable. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "valid_range": {
+          "title": "Valid range",
+          "description": "Smallest and largest valid values of a variable. Used on: coordinate variables, data variables, boundary variables (own).",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "azimuth_of_central_line": {
+          "title": "Azimuth of central line",
+          "description": "Specifies a horizontal angle measured in degrees clockwise from North. Used by certain projections (e.g., Oblique Mercator) to define the orientation of the map projection relative to a reference direction. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "crs_wkt": {
+          "title": "CRS in WKT",
+          "description": "This optional attribute may be used to specify multiple coordinate system properties in well-known text (WKT) format. The syntax must conform to the WKT format as specified in reference OGC_WKT CRS. Use of the `crs_wkt` attribute is described in section 5.6.1. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "earth_radius": {
+          "title": "Earth radius",
+          "description": "Used to specify the radius, in metres, of the spherical figure used to approximate the shape of the Earth. This attribute should be specified for those projected coordinate reference systems in which the X-Y cartesian coordinates have been derived using a spherical Earth approximation. If the cartesian coordinates were derived using an ellipsoid, this attribute should not be defined. Example: \"6371007\", which is the radius of the GRS 1980 Authalic Sphere. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "false_easting": {
+          "title": "False easting",
+          "description": "Applied to all abscissa values in the rectangular coordinates for a map projection in order to eliminate negative numbers. Expressed in the unit of the coordinate variable identified by the standard name `projection_x_coordinate`. If `false_easting` is not provided it is assumed to be 0. The formula to convert from the coordinate value as written in the `projection_x_coordinate` (xf) to a value (x0) used in a transformation without `false_easting`, i.e. `false_easting`= 0, is: x0 = xf -`false_easting` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "false_northing": {
+          "title": "False northing",
+          "description": "Applied to all ordinate values in the rectangular coordinates for a map projection in order to eliminate negative numbers. Expressed in the unit of the coordinate variable identified by the standard name `projection_y_coordinate`. If `false_northing` is not provided it is assumed to be 0. The formula to convert from the coordinate value as written in the `projection_y_coordinate` (yf) to a value (y0) used in a transformation without `false_northing`, i.e. `false_northing`= 0, is: y0 = yf -`false_northing` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "fixed_angle_axis": {
+          "title": "Fixed angle axis",
+          "description": "Indicates the axis on which the view is fixed in a hypothetical gimbal view model of the Earth, as used in the geostationary grid mapping. It corresponds to the inner-gimbal axis of the gimbal view model, whose axis of rotation moves about the outer-gimbal axis. This value can adopt two values, \"x\" or \"y\", corresponding with the Earth's E-W or N-S axis, respectively. The counterpart to this attribute is `sweep_angle_axis`. If set to \"x\", `sweep_angle_axis` is \"y\", and vice versa. If one of the attributes `fixed_angle_axis` or `sweep_angle_axis` is provided, the other is not mandatory, as they can be used to infer each other. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "geographic_crs_name": {
+          "title": "Geographic CRS name",
+          "description": "The name of the geographic coordinate reference system. Corresponds to a OGC WKT GEOGCS node name. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "geoid_name": {
+          "title": "Geoid name",
+          "description": "The name of the estimate or model of the geoid being used as a datum, e.g. GEOID12B. Corresponds to an OGC WKT VERT_DATUM name. The geoid is the surface of constant geopotential that the ocean would follow if it were at rest. This attribute and `geopotential_datum_name` cannot both be specified. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "geopotential_datum_name": {
+          "title": "Geopotential datum name",
+          "description": "The name of an estimated surface of constant geopotential being used as a datum, e.g. NAVD88. Such a surface is often called an equipotential surface in geodesy. Corresponds to an OGC WKT VERT_DATUM name. This attribute and `geoid_name` cannot both be specified. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "grid_mapping_name": {
+          "title": "Grid mapping name",
+          "description": "The name used to identify the grid mapping. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "albers_conical_equal_area",
+                  "title": "Albers conical equal area"
+                },
+                {
+                  "const": "azimuthal_equidistant",
+                  "title": "Azimuthal equidistant"
+                },
+                {
+                  "const": "geostationary",
+                  "title": "Geostationary"
+                },
+                {
+                  "const": "healpix",
+                  "title": "Healpix"
+                },
+                {
+                  "const": "lambert_azimuthal_equal_area",
+                  "title": "Lambert azimuthal equal area"
+                },
+                {
+                  "const": "lambert_conformal_conic",
+                  "title": "Lambert conformal conic"
+                },
+                {
+                  "const": "lambert_cylindrical_equal_area",
+                  "title": "Lambert cylindrical equal area"
+                },
+                {
+                  "const": "latitude_longitude",
+                  "title": "Latitude longitude"
+                },
+                {
+                  "const": "mercator",
+                  "title": "Mercator"
+                },
+                {
+                  "const": "oblique_mercator",
+                  "title": "Oblique mercator"
+                },
+                {
+                  "const": "orthographic",
+                  "title": "Orthographic"
+                },
+                {
+                  "const": "polar_stereographic",
+                  "title": "Polar stereographic"
+                },
+                {
+                  "const": "rotated_latitude_longitude",
+                  "title": "Rotated latitude longitude"
+                },
+                {
+                  "const": "sinusoidal",
+                  "title": "Sinusoidal"
+                },
+                {
+                  "const": "stereographic",
+                  "title": "Stereographic"
+                },
+                {
+                  "const": "transverse_mercator",
+                  "title": "Transverse mercator"
+                },
+                {
+                  "const": "vertical_perspective",
+                  "title": "Vertical perspective"
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "grid_north_pole_latitude": {
+          "title": "Grid north pole latitude",
+          "description": "True latitude (degrees_north) of the north pole of the rotated grid. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "grid_north_pole_longitude": {
+          "title": "Grid north pole longitude",
+          "description": "True longitude (degrees_east) of the north pole of the rotated grid. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "horizontal_datum_name": {
+          "title": "Horizontal datum name",
+          "description": "The name of the geodetic (horizontal) datum, which corresponds to the procedure used to measure positions on the surface of the Earth. Valid datum names and their associated parameters are given in `horiz_datum.csv` (OGC_DATUM_NAME column), following Table 2 in CF WKT. The valid names are obtained by transforming the EPSG name using the following rules (used by OGR and Cadcorp): convert all non alphanumeric characters (including +) to underscores, then strip any leading, trailing or repeating underscores. This is to ensure that named datums can be correctly identified for precise datum transformations (see CF WKT for more details). Corresponds to a OGC WKT DATUM node name. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "indexing_scheme": {
+          "title": "HEALPix indexing scheme",
+          "description": "The HEALPix cell indexing scheme, either `nested`, `ring`, `nuniq`, or `zuniq`. See healpix for more detailed definitions. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "inverse_flattening": {
+          "title": "Inverse flattening",
+          "description": "Used to specify the *inverse* flattening (*1/f*) of the ellipsoidal figure associated with the geodetic datum and used to approximate the shape of the Earth. The flattening (*f*) of the ellipsoid is related to the semi-major and semi-minor axes by the formula *f = (a-b)/a*. In the case of a spherical Earth this attribute should be omitted or set to zero. Example: 298.257222101 for the GRS 1980 ellipsoid. (Note: By convention the dimensions of an ellipsoid are specified using either the semi-major and semi-minor axis lengths, or the semi-major axis length and the inverse flattening. If all three attributes are specified then the supplied values must be consistent with the aforementioned formula.) Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "latitude_of_projection_origin": {
+          "title": "Latitude of projection origin",
+          "description": "The latitude (degrees_north) chosen as the origin of rectangular coordinates for a map projection. Domain: + // The following lines shows how to insert Unicode for <=.  A plain '<=' turns into an arrow. // Except as marked, all work for asciidoctor and none work for asciidoctor-pdf. //     `-90.0 &#x2264; latitude_of_projection_origin &#x2264; 90.0` + //doesn't work for asciidoctor     `-90.0 &#2264; latitude_of_projection_origin &#2264; 90.0` + //     `-90.0 &le; latitude_of_projection_origin &le; 90.0` + //     `-90.0 &leq; latitude_of_projection_origin &leq; 90.0` + //     `-90.0 +++<u>&le;</u>+++ latitude_of_projection_origin +++<u>&le;</u>+++ 90.0` + //     `-90.0 < = latitude_of_projection_origin < = 90.0` + //     `-90.0 \\<= latitude_of_projection_origin \\<= 90.0` + // The cleanest-looking, which sometimes works for asciidoctor-pdf: `-90.0 \\<= latitude_of_projection_origin \\<= 90.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "refinement_level": {
+          "title": "HEALPix refinement level",
+          "description": "The refinement level of the grid within the HEALPix hierarchy, starting at 0 for the base tessellation with 12 cells globally, 1 for the next level with 48 cells globally, etc. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "longitude_of_central_meridian": {
+          "title": "Longitude of central meridian",
+          "description": "The line of longitude (degrees_east) at the center of a map projection generally used as the basis for constructing the projection. Domain: + `-180.0 \\<= longitude_of_central_meridian < 180.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "longitude_of_prime_meridian": {
+          "title": "Longitude of prime meridian",
+          "description": "Specifies the longitude, with respect to Greenwich, of the prime meridian associated with the geodetic datum. The prime meridian defines the origin from which longitude values are determined. Not to be confused with the projection origin longitude (cf. `longitude_of_projection_origin`, a.k.a. central meridian) which defines the longitude of the map projection origin. Domain: + `-180.0 \\<= longitude_of_prime_meridian < 180.0` decimal degrees. Default = `0.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "longitude_of_projection_origin": {
+          "title": "Longitude of projection origin",
+          "description": "The longitude (degrees_east) chosen as the origin of rectangular coordinates for a map projection. Domain: + `-180.0 \\<= longitude_of_projection_origin < 180.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "north_pole_grid_longitude": {
+          "title": "North pole grid longitude",
+          "description": "Longitude (degrees) of the true north pole in the rotated grid. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "perspective_point_height": {
+          "title": "Perspective point height",
+          "description": "Records the height, *in metres*, of the map projection perspective point above the ellipsoid (or sphere). Used by perspective-type map projections, for example the Vertical Perspective Projection, which may be used to simulate the view from a Meteosat satellite. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "prime_meridian_name": {
+          "title": "Prime meridian name",
+          "description": "The name of the prime meridian associated with the geodetic datum. Valid names are given in `prime_meridian.csv`, following Table 2 in CF WKT. Corresponds to a OGC WKT PRIMEM node name. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "projected_crs_name": {
+          "title": "Projected CRS name",
+          "description": "The name of the projected coordinate reference system. Corresponds to a OGC WKT PROJCS node name. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "reference_ellipsoid_name": {
+          "title": "Reference ellipsoid name",
+          "description": "The name of the reference ellipsoid. Valid names are given in `ellipsoid.csv`, following Table 2 in CF WKT. Corresponds to a OGC WKT SPHEROID node name. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "scale_factor_at_central_meridian": {
+          "title": "Scale factor at central meridian",
+          "description": "A multiplier for reducing a distance obtained from a map by computation or scaling to the actual distance along the central meridian. Domain: `scale_factor_at_central_meridian &gt; 0.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "scale_factor_at_projection_origin": {
+          "title": "Scale factor at projection origin",
+          "description": "A multiplier for reducing a distance obtained from a map by computation or scaling to the actual distance at the projection origin. Domain: `scale_factor_at_projection_origin &gt; 0.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "semi_major_axis": {
+          "title": "Semi-major axis",
+          "description": "Specifies the length, *in metres*, of the semi-major axis of the ellipsoidal figure associated with the geodetic datum and used to approximate the shape of the Earth. Commonly denoted using the symbol *a*. In the case of a spherical Earth approximation this attribute defines the radius of the Earth. See also the `inverse_flattening` attribute. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "semi_minor_axis": {
+          "title": "Semi-minor axis",
+          "description": "Specifies the length, *in metres*, of the semi-minor axis of the ellipsoidal figure associated with the geodetic datum and used to approximate the shape of the Earth. Commonly denoted using the symbol *b*. In the case of a spherical Earth approximation this attribute should be omitted (the preferred option) or else set equal to the value of the semi_major_axis attribute. See also the inverse_flattening attribute. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "standard_parallel": {
+          "title": "Standard parallel",
+          "description": "Specifies the line, or lines, of latitude at which the developable map projection surface (plane, cone, or cylinder) touches the reference sphere or ellipsoid used to represent the Earth. Since there is zero scale distortion along a standard parallel it is also referred to as a \"latitude of true scale\". In the situation where a conical developable surface intersects the reference ellipsoid there are two standard parallels, in which case this attribute can be used as a vector to record both latitude values, with the additional convention that the standard parallel nearest the pole (N or S) is provided first. Domain: `-90.0 &lt;= standard_parallel &lt;= 90.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "straight_vertical_longitude_from_pole": {
+          "title": "Straight vertical longitude from pole",
+          "description": "*Deprecated*. Has the same meaning as `longitude_of_projection_origin`, which must be used instead. Domain: `-180.0 &lt;= straight_vertical_longitude_from_pole &lt; 180.0` Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        },
+        "sweep_angle_axis": {
+          "title": "Sweep angle axis",
+          "description": "Indicates the axis on which the view sweeps in a hypothetical gimbal view model of the Earth, as used in the geostationary grid mapping. It corresponds to the outer-gimbal axis of the gimbal view model, about whose axis of rotation the gimbal-gimbal axis moves. This value can adopt two values, \"x\" or \"y\", corresponding with the Earth's E-W or N-S axis, respectively. The counterpart to this attribute is `fixed_angle_axis`. If set to \"x\", `fixed_angle_axis` is \"y\", and vice versa. If one of the attributes `fixed_angle_axis` or `sweep_angle_axis` is provided, the other is not mandatory, as they can be used to infer each other. Used on: grid mapping variables.",
+          "type": "string"
+        },
+        "towgs84": {
+          "title": "Bursa-Wolf parameters (TOWGS84)",
+          "description": "This indicates a list of up to 7 Bursa Wolf transformation parameters., which can be used to approximate a transformation from the horizontal datum to the WGS84 datum. More precise datum transformations can be done with datum shift grids. Represented as a double-precision array, with 3, 6 or 7 values (if there are less than 7 values the remaining are considered to be zero). Corresponds to a OGC WKT TOWGS84 node. Used on: grid mapping variables.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

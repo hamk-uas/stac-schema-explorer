@@ -1,5 +1,6 @@
 // Schemas vendored (and enriched with titles and descriptions) by this repository, with the documents that describe
-// them. Schemas that `$ref` other documents pull those in automatically as unmodified dependencies.
+// them: STAC core, STAC extensions and Zarr conventions. Schemas that `$ref` other documents pull those in
+// automatically as unmodified dependencies.
 //
 // Not vendored, because their own repositories maintain titles and descriptions: the Semantics extension
 // (hamk-uas/stac-semantics) and the Observatory extension (sklvarjo/observatory-stac-extension).
@@ -56,7 +57,29 @@ export const VENDORED = [
         schemas: ['https://cs-si.github.io/eopf-stac-extension/v1.2.0/schema.json'],
         readmes: ['https://raw.githubusercontent.com/CS-SI/eopf-stac-extension/v1.2.0/README.md'],
     },
+    ZARR_CONVENTION('proj', 'v0.1'),
+    ZARR_CONVENTION('spatial', 'v0.1'),
+    ZARR_CONVENTION('multiscales', 'v0.1'),
 ];
+
+/** A Zarr convention of github.com/zarr-conventions: its schema and README at a release tag. */
+function ZARR_CONVENTION(name, tag) {
+    return {
+        schemas: [`https://raw.githubusercontent.com/zarr-conventions/${name}/refs/tags/${tag}/schema.json`],
+        readmes: [`https://raw.githubusercontent.com/zarr-conventions/${name}/refs/tags/${tag}/README.md`],
+    };
+}
+
+/**
+ * Base URL of the schemas this repository authors rather than vendors: descriptions of data formats and attribute
+ * conventions that publish no JSON Schema of their own (see `schemas/hamk-uas.github.io/stac-schema-explorer/schemas/`).
+ * They have no upstream copy; GitHub Pages publishes them at their `$id`.
+ */
+export const AUTHORED_BASE = 'https://hamk-uas.github.io/stac-schema-explorer/schemas/';
+
+export function isAuthored(url) {
+    return url.startsWith(AUTHORED_BASE);
+}
 
 /** Hosts whose schemas are only dependencies: vendored unmodified, never enriched. */
 export const DEPENDENCY_HOSTS = ['geojson.org', 'proj.org', 'json-schema.org'];

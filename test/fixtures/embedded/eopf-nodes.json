@@ -1,0 +1,78 @@
+[
+ {
+  "path": "",
+  "node": {
+   "zarr_format": 2,
+   "node_type": "group",
+   "attributes": {
+    "stac_discovery": {
+     "type": "Feature",
+     "stac_version": "1.1.0",
+     "id": "S02MSIL2A_20261025T140201_0000_A010_TE7A"
+    },
+    "other_metadata": {
+     "aot_retrieval_model": "CAMS"
+    },
+    "processing_history": {}
+   }
+  }
+ },
+ {
+  "path": "measurements/reflectance/r10m/b02",
+  "node": {
+   "chunks": [
+    2048,
+    2048
+   ],
+   "compressor": {
+    "blocksize": 0,
+    "clevel": 3,
+    "cname": "zstd",
+    "id": "blosc",
+    "shuffle": 2
+   },
+   "dtype": "<u2",
+   "fill_value": 0,
+   "filters": null,
+   "order": "C",
+   "shape": [
+    10980,
+    10980
+   ],
+   "zarr_format": 2,
+   "node_type": "array",
+   "attributes": {
+    "_ARRAY_DIMENSIONS": [
+     "y",
+     "x"
+    ],
+    "_eopf_attrs": {
+     "add_offset": -0.1,
+     "coordinates": [
+      "y",
+      "x"
+     ],
+     "dimensions": [
+      "y",
+      "x"
+     ],
+     "dtype": "<u2",
+     "fill_value": 0,
+     "long_name": "BOA reflectance from MSI acquisition at spectral band 02 490 nm",
+     "scale_factor": 0.0001,
+     "short_name": "b02_10m",
+     "units": "digital_counts",
+     "valid_max": 65535,
+     "valid_min": 1
+    },
+    "add_offset": -0.1,
+    "dtype": "<u2",
+    "long_name": "BOA reflectance from MSI acquisition at spectral band 02 490 nm",
+    "scale_factor": 0.0001,
+    "units": "digital_counts",
+    "valid_max": 65535,
+    "valid_min": 1
+   }
+  }
+ }
+]

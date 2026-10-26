@@ -1,0 +1,62 @@
+[
+ {
+  "path": "/",
+  "node": {
+   "node_type": "group",
+   "name": "/",
+   "format": "netCDF-4 classic model",
+   "dimensions": {
+    "time": { "size": 8760, "unlimited": true },
+    "lon": { "size": 180 },
+    "lat": { "size": 150 }
+   },
+   "attributes": {
+    "CDI": "Climate Data Interface version 2.6.0 (https://mpimet.mpg.de/cdi)",
+    "Conventions": "CF-1.4",
+    "_NCProperties": "version=2,netcdf=4.10.0,hdf5=2.1.1",
+    "source": "JSBACH-HIMMELI 3.0",
+    "institution": "Finnish Meteorological Institute",
+    "title": "BU natural total soil CO2 fluxes",
+    "keywords": "carbon dioxide, ecosystem process modeling, fluxes, emissions, CO2, wetlands, ecosystem",
+    "CDO": "Climate Data Operators version 2.6.0 (https://mpimet.mpg.de/cdo)"
+   }
+  }
+ },
+ {
+  "path": "time",
+  "node": {
+   "node_type": "variable",
+   "name": "time",
+   "data_type": "double",
+   "dimensions": ["time"],
+   "shape": [8760],
+   "chunk_shape": [512],
+   "attributes": {
+    "standard_name": "time",
+    "units": "days since 1883-1-1 02:00:00",
+    "calendar": "proleptic_gregorian",
+    "axis": "T"
+   }
+  }
+ },
+ {
+  "path": "CO2_flux_net",
+  "node": {
+   "node_type": "variable",
+   "name": "CO2_flux_net",
+   "data_type": "float",
+   "dimensions": ["time", "lat", "lon"],
+   "shape": [8760, 150, 180],
+   "chunk_shape": [1, 150, 180],
+   "filters": [{ "id": 2, "name": "shuffle" }, { "id": 1, "name": "deflate", "parameters": [5] }],
+   "attributes": {
+    "long_name": "total CO2 flux from the ecosystem",
+    "units": "mol(CO2) m-2(grid box) s-1",
+    "code": 160,
+    "table": 180,
+    "_FillValue": 9.96921e+36,
+    "missing_value": 9.96921e+36
+   }
+  }
+ }
+]

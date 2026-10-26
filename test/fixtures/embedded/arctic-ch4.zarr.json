@@ -1,0 +1,456 @@
+{
+ "attributes": {
+  "zarr_conventions": [
+   {
+    "schema_url": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+    "spec_url": "https://github.com/zarr-conventions/proj/blob/v0.1/README.md",
+    "uuid": "f17cb550-5864-4468-aeb7-f3180cfb622f",
+    "name": "proj",
+    "description": "Coordinate reference system information for geospatial data"
+   },
+   {
+    "schema_url": "https://raw.githubusercontent.com/zarr-conventions/spatial/refs/tags/v0.1/schema.json",
+    "spec_url": "https://github.com/zarr-conventions/spatial/blob/v0.1/README.md",
+    "uuid": "689b58e2-cf7b-45e0-9fff-9cfc0883d6b4",
+    "name": "spatial",
+    "description": "Spatial coordinate information"
+   }
+  ],
+  "proj:code": "EPSG:4326",
+  "proj:wkt2": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+  "spatial:dimensions": [
+   "latitude",
+   "longitude"
+  ],
+  "spatial:transform": [
+   0.05,
+   0.0,
+   -180.0,
+   0.0,
+   0.05,
+   50.0
+  ],
+  "spatial:shape": [
+   800,
+   7200
+  ],
+  "spatial:bbox": [
+   -180.0,
+   50.0,
+   180.0,
+   90.0
+  ],
+  "spatial:registration": "pixel",
+  "Conventions": "CF-1.11, ACDD-1.3",
+  "title": "Arctic TROPOMI CH4 Level 3, 2021",
+  "summary": "Daily Level 3 composites of the column-averaged dry-air mole fraction of methane (XCH4) and its 1-sigma uncertainty from Copernicus Sentinel-5P TROPOMI over 50-90 N for 2021, on a 0.05 degree latitude-longitude grid of 800 x 7200 cells, one frame per UTC day (364 frames; days without a frame: 2021-08-04). The Finnish Meteorological Institute (FMI) generated the composites from the ESA Level 2 methane product (S5P_RPRO_L2__CH4____, processor 02.04.00) with HARP spatial binning, keeping retrievals with a validity above 50. This store is HAMK's re-publication of FMI's Zarr store with CF and ACDD metadata, a CF time coordinate, 1-D coordinates, a grid mapping and the Zarr proj and spatial conventions; the data values are unchanged. Cells without valid retrievals, including the polar night, are NaN.",
+  "keywords": "methane, CH4, XCH4, TROPOMI, Sentinel-5P, Copernicus, Level 3, Arctic",
+  "platform": "Sentinel-5P",
+  "instrument": "TROPOMI",
+  "processing_level": "L3",
+  "source": "Copernicus Sentinel-5P TROPOMI Level 2 methane total column (S5P_RPRO_L2__CH4____, processor 02.04.00), gridded by FMI into daily Level 3 composites (https://arctic-tropomi-ch4-l3.lake.fmi.fi/arctic_tropomi_ch4_l3_2021.zarr)",
+  "institution": "Finnish Meteorological Institute (FMI)",
+  "creator_name": "Finnish Meteorological Institute (FMI)",
+  "creator_type": "institution",
+  "creator_url": "https://www.fmi.fi/",
+  "contributor_name": "European Space Agency (ESA)",
+  "contributor_role": "producer of the Level 2 methane product",
+  "publisher_name": "Häme University of Applied Sciences (HAMK)",
+  "publisher_type": "institution",
+  "publisher_url": "https://www.hamk.fi/",
+  "license": "Copernicus Sentinel data are free, full and open under the Legal notice on the use of Copernicus Sentinel Data and Service Information (https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice), based on Regulation (EU) No 377/2014 and Commission Delegated Regulation (EU) No 1159/2013. Anyone distributing or communicating this data to the public must include the notice \"Contains modified Copernicus Sentinel data 2021 processed by Finnish Meteorological Institute\".",
+  "attribution": "Contains modified Copernicus Sentinel data 2021 processed by Finnish Meteorological Institute",
+  "acknowledgement": "The TROPOspheric Monitoring Instrument (TROPOMI) is co-funded by ESA and NSO and it is on board the Copernicus Sentinel-5 Precursor satellite. ESA has provided the L2 data and FMI has generated the L3 images and data files.",
+  "references": "Copernicus Sentinel-5P (processed by ESA), 2021, TROPOMI Level 2 Methane products. Version 02. European Space Agency. https://doi.org/10.5270/S5P-3lcdqiv; https://sampo.fmi.fi/tropomi_l3/info.php; https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice; https://github.com/hamk-uas/cards-zarr-optim",
+  "history": "2023-11-12: FMI generated one daily composite per UTC day from all S5P_RPRO_L2__CH4____ orbit files (processor 02.04.00) whose sensing starts on that day, with HARP 1.18: harp.import_product('S5P_RPRO_L2__CH4____<YYYYMMDD>*.nc', operations='CH4_column_volume_mixing_ratio_dry_air_validity>50;keep(latitude_bounds,longitude_bounds,datetime_start,datetime_length,CH4_column_volume_mixing_ratio_dry_air,CH4_column_volume_mixing_ratio_dry_air_uncertainty);derive(CH4_column_volume_mixing_ratio_dry_air float [ppbv]);derive(CH4_column_volume_mixing_ratio_dry_air_uncertainty float [ppbv]);derive(datetime_stop {time} [days since 2000-01-01]);derive(datetime_start [days since 2000-01-01]);exclude(datetime_length);bin_spatial(3601, -90, 0.05, 7201, -180, 0.05);derive(latitude float {latitude});derive(longitude float {longitude})',reduce_operations='squash(time, (latitude, longitude, latitude_bounds, longitude_bounds));set(\"propagate_uncertainty\", \"correlated\");bin()',post_operations='exclude(longitude_bounds, latitude_bounds)'). The 50-90 N rows of the composites were stored as float32 in FMI's Zarr store https://arctic-tropomi-ch4-l3.lake.fmi.fi/arctic_tropomi_ch4_l3_2021.zarr.\n2026-10-14T10:44:03Z: HAMK copied every frame unchanged (verified by SHA-256 per frame), replaced the [year, month, day] date rows by a CF time coordinate with daily bounds, the 3-D float32 latitude/longitude meshes by exact 1-D float64 cell centres (the meshes were checked to match them within 2e-05 degrees), and added CF/ACDD attributes, a grid mapping, the Zarr proj and spatial conventions and consolidated metadata (hamk-uas/cards-zarr-optim arctic_tropomi_ch4_to_zarr.py git:dc8500edcb39 sha256:bc3a9fa59601).",
+  "comment": "Each frame is labelled by the start of its UTC day and has nominal bounds of that day. It contains every Level 2 orbit file whose sensing starts on that day, so its last orbit ends about an hour after the following midnight (for example 2021-07-01T00:55:03Z to 2021-07-02T01:00:12Z).",
+  "time_coverage_start": "2021-01-01T00:00:00Z",
+  "time_coverage_end": "2022-01-01T00:00:00Z",
+  "time_coverage_resolution": "P1D",
+  "geospatial_lat_min": 50.0,
+  "geospatial_lat_max": 90.0,
+  "geospatial_lat_units": "degrees_north",
+  "geospatial_lat_resolution": "0.05 degree",
+  "geospatial_lon_min": -180.0,
+  "geospatial_lon_max": 180.0,
+  "geospatial_lon_units": "degrees_east",
+  "geospatial_lon_resolution": "0.05 degree",
+  "geospatial_bounds_crs": "EPSG:4326",
+  "date_created": "2026-10-14T10:44:03Z",
+  "processing_version": "git:dc8500edcb39 sha256:bc3a9fa59601",
+  "processing_software": {
+   "hamk-uas/cards-zarr-optim arctic_tropomi_ch4_to_zarr.py": "git:dc8500edcb39 sha256:bc3a9fa59601",
+   "python": "3.14.8",
+   "zarr-python": "3.3.0",
+   "numpy": "2.5.2",
+   "fsspec": "2026.7.0",
+   "PROJ": "9.8.1",
+   "HARP (FMI Level 3 gridding)": "1.18"
+  }
+ },
+ "zarr_format": 3,
+ "consolidated_metadata": {
+  "kind": "inline",
+  "must_understand": false,
+  "metadata": {
+   "CH4_column_volume_mixing_ratio_dry_air": {
+    "shape": [
+     364,
+     800,
+     7200
+    ],
+    "data_type": "float32",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       1,
+       800,
+       900
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": "NaN",
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "long_name": "column-averaged dry-air mole fraction of methane (XCH4)",
+     "standard_name": "dry_atmosphere_mole_fraction_of_methane",
+     "ancillary_variables": "CH4_column_volume_mixing_ratio_dry_air_uncertainty",
+     "units": "ppbv",
+     "grid_mapping": "spatial_ref",
+     "cell_methods": "area: mean (comment: area-weighted mean of the valid Level 2 ground pixels that overlap the cell, HARP bin_spatial) time: mean (comment: all Level 2 orbit files whose sensing starts on the UTC day)"
+    },
+    "dimension_names": [
+     "time",
+     "latitude",
+     "longitude"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "CH4_column_volume_mixing_ratio_dry_air_uncertainty": {
+    "shape": [
+     364,
+     800,
+     7200
+    ],
+    "data_type": "float32",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       1,
+       800,
+       900
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": "NaN",
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "long_name": "1-sigma uncertainty of the column-averaged dry-air mole fraction of methane (XCH4)",
+     "standard_name": "dry_atmosphere_mole_fraction_of_methane standard_error",
+     "comment": "Propagated by HARP from the Level 2 uncertainties, assuming fully correlated errors.",
+     "units": "ppbv",
+     "grid_mapping": "spatial_ref",
+     "cell_methods": "area: mean (comment: area-weighted mean of the valid Level 2 ground pixels that overlap the cell, HARP bin_spatial) time: mean (comment: all Level 2 orbit files whose sensing starts on the UTC day)"
+    },
+    "dimension_names": [
+     "time",
+     "latitude",
+     "longitude"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "latitude": {
+    "shape": [
+     800
+    ],
+    "data_type": "float64",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       800
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0.0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "standard_name": "latitude",
+     "long_name": "latitude of cell centre",
+     "units": "degrees_north",
+     "axis": "Y"
+    },
+    "dimension_names": [
+     "latitude"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "longitude": {
+    "shape": [
+     7200
+    ],
+    "data_type": "float64",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       7200
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0.0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "standard_name": "longitude",
+     "long_name": "longitude of cell centre",
+     "units": "degrees_east",
+     "axis": "X"
+    },
+    "dimension_names": [
+     "longitude"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "spatial_ref": {
+    "shape": [],
+    "data_type": "int32",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": []
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 0,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "crs_wkt": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+     "semi_major_axis": 6378137.0,
+     "semi_minor_axis": 6356752.314245179,
+     "inverse_flattening": 298.257223563,
+     "reference_ellipsoid_name": "WGS 84",
+     "longitude_of_prime_meridian": 0.0,
+     "prime_meridian_name": "Greenwich",
+     "geographic_crs_name": "WGS 84",
+     "horizontal_datum_name": "World Geodetic System 1984 ensemble",
+     "grid_mapping_name": "latitude_longitude",
+     "spatial_ref": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+     "GeoTransform": "-180.0 0.05 0.0 50.0 0.0 0.05"
+    },
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "time": {
+    "shape": [
+     364
+    ],
+    "data_type": "int32",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       364
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "standard_name": "time",
+     "long_name": "start of the UTC day of the frame",
+     "units": "days since 2021-01-01 00:00:00",
+     "calendar": "proleptic_gregorian",
+     "axis": "T",
+     "bounds": "time_bnds"
+    },
+    "dimension_names": [
+     "time"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   },
+   "time_bnds": {
+    "shape": [
+     364,
+     2
+    ],
+    "data_type": "int32",
+    "chunk_grid": {
+     "name": "regular",
+     "configuration": {
+      "chunk_shape": [
+       364,
+       2
+      ]
+     }
+    },
+    "chunk_key_encoding": {
+     "name": "default",
+     "configuration": {
+      "separator": "/"
+     }
+    },
+    "fill_value": 0,
+    "codecs": [
+     {
+      "name": "bytes",
+      "configuration": {
+       "endian": "little"
+      }
+     },
+     {
+      "name": "zstd",
+      "configuration": {
+       "level": 9,
+       "checksum": false
+      }
+     }
+    ],
+    "attributes": {
+     "long_name": "nominal UTC day of the frame",
+     "units": "days since 2021-01-01 00:00:00",
+     "calendar": "proleptic_gregorian"
+    },
+    "dimension_names": [
+     "time",
+     "bnds"
+    ],
+    "zarr_format": 3,
+    "node_type": "array",
+    "storage_transformers": []
+   }
+  }
+ },
+ "node_type": "group"
+}

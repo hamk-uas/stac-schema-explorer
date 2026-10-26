@@ -1,0 +1,53 @@
+[
+ {
+  "path": "",
+  "node": {
+   "node_type": "file",
+   "byte_order": "little-endian",
+   "bigtiff": false,
+   "image_count": 4,
+   "gdal_structural_metadata": {
+    "LAYOUT": "IFDS_BEFORE_DATA",
+    "BLOCK_ORDER": "ROW_MAJOR",
+    "BLOCK_LEADER": "SIZE_AS_UINT4",
+    "BLOCK_TRAILER": "LAST_4_BYTES_REPEATED",
+    "KNOWN_INCOMPATIBLE_EDITION": "NO"
+   }
+  }
+ },
+ {
+  "path": "0",
+  "node": {
+   "node_type": "image",
+   "index": 0,
+   "tags": {
+    "ImageWidth": 10980,
+    "ImageLength": 10980,
+    "BitsPerSample": 16,
+    "Compression": 8,
+    "PhotometricInterpretation": 1,
+    "SamplesPerPixel": 1,
+    "PlanarConfiguration": 1,
+    "Predictor": 1,
+    "TileWidth": 512,
+    "TileLength": 512,
+    "TileOffsets": { "count": 484 },
+    "TileByteCounts": { "count": 484 },
+    "SampleFormat": 1,
+    "ModelPixelScaleTag": [10, 10, 0],
+    "ModelTiepointTag": [0, 0, 0, 600000, 9800020, 0],
+    "GDAL_NODATA": "0"
+   },
+   "geotiff_version": "1.0",
+   "geo_keys": {
+    "GTModelTypeGeoKey": 1,
+    "GTRasterTypeGeoKey": 1,
+    "GTCitationGeoKey": "WGS 84 / UTM zone 23S",
+    "GeodeticCitationGeoKey": "WGS 84",
+    "GeogAngularUnitsGeoKey": 9102,
+    "ProjectedCRSGeoKey": 32723,
+    "ProjLinearUnitsGeoKey": 9001
+   }
+  }
+ }
+]
