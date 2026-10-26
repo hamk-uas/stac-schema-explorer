@@ -12,6 +12,13 @@ export interface FieldPlace {
     kind: 'validated' | 'presence';
 }
 
+/** A field on the other side of the STAC/embedded-metadata crosswalk. */
+export interface FieldCounterpart {
+    label: string;
+    relation: 'same' | 'converted' | 'related';
+    note: string;
+}
+
 const props = defineProps<{
     name: string;
     source: string;
@@ -19,10 +26,14 @@ const props = defineProps<{
     doc?: FieldDoc;
     places: FieldPlace[];
     vendored: boolean;
+    /** Where the field's information also lives: STAC fields of an embedded field, embedded fields of a STAC field. */
+    counterparts?: FieldCounterpart[];
+    counterpartsTitle?: string;
 }>();
 const emit = defineEmits<{ close: []; place: [place: FieldPlace] }>();
 
 const schemaLink = computed(() => props.doc?.definedAt.split('#')[0]);
+const RELATION = { same: 'same value', converted: 'same value, converted', related: 'related' } as const;
 const vendoredLink = computed(() => {
     if (!props.vendored || !schemaLink.value) return undefined;
     const { host, pathname } = new URL(schemaLink.value);
@@ -63,6 +74,16 @@ const vendoredLink = computed(() => {
       <ul>
         <li v-for="place in places" :key="`${place.type} ${place.label}`">
           <button type="button" :class="place.kind" :title="place.locations.join('\n')" @click="emit('place', place)">{{ place.label }}</button>
+        </li>
+      </ul>
+    </div>
+    <div v-if="counterparts?.length" class="counterparts">
+      <span class="label">{{ counterpartsTitle ?? 'Corresponds to' }}</span>
+      <ul>
+        <li v-for="c in counterparts" :key="c.label">
+          <code>{{ c.label }}</code>
+          <span class="relation" :class="c.relation">{{ RELATION[c.relation] }}</span>
+          <span class="note">{{ c.note }}</span>
         </li>
       </ul>
     </div>
@@ -179,6 +200,41 @@ header {
 }
 .places button.presence {
   border-style: dashed;
+}
+.counterparts {
+  margin-top: 10px;
+}
+.counterparts ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: grid;
+  gap: 4px;
+}
+.counterparts li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+}
+.relation {
+  font: 600 10px var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  padding: 0 5px;
+  color: #475569;
+  background: #f1f5f9;
+}
+.relation.same,
+.relation.converted {
+  color: #0f766e;
+  background: #ccfbf1;
+}
+.note {
+  flex-basis: 100%;
+  color: #475569;
 }
 :deep(code) {
   font-family: var(--mono);

@@ -249,5 +249,35 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "attributes"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "tags"
+              ]
+            },
+            {
+              "required": [
+                "gdal_metadata"
+              ]
+            },
+            {
+              "required": [
+                "gdal_structural_metadata"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
 }

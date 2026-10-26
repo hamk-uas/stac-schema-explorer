@@ -1,10 +1,13 @@
 import { normalizeSchemaUrl } from './extensions';
 import type { FetchJson } from './schemas';
 
-// Vendored schemas, loaded on demand: `schemas/<host>/<path>` is the copy of `https://<host>/<path>`.
-const loaders = import.meta.glob('../../schemas/**/*.json', { import: 'default' }) as Record<string, () => Promise<unknown>>;
+// Vendored schemas, loaded on demand: `schemas/<host>/<path>` is the copy of `https://<host>/<path>`. The registry and
+// crosswalk beside the authored schemas are data, imported by conventions.ts.
+const loaders = import.meta.glob(['../../schemas/**/*.json', '!../../schemas/hamk-uas.github.io/stac-schema-explorer/schemas/{registry,crosswalk}.json'],
+    { import: 'default' }) as Record<string, () => Promise<unknown>>;
 
-const BY_URL = new Map(Object.entries(loaders).map(([path, load]) => [`https://${path.replace(/^.*\/schemas\//, '')}`, load]));
+// The first `schemas/` is this repository's directory; authored schemas have another one in their URL path.
+const BY_URL = new Map(Object.entries(loaders).map(([path, load]) => [`https://${path.replace(/^.*?\/schemas\//, '')}`, load]));
 
 /** True when this repository vendors the schema (with documented fields and values). */
 export function isVendored(url: string): boolean {

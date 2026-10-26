@@ -30,7 +30,6 @@
    "data_type": "double",
    "dimensions": ["time"],
    "shape": [8760],
-   "chunk_shape": [512],
    "attributes": {
     "standard_name": "time",
     "units": "days since 1883-1-1 02:00:00",
@@ -48,7 +47,7 @@
    "dimensions": ["time", "lat", "lon"],
    "shape": [8760, 150, 180],
    "chunk_shape": [1, 150, 180],
-   "filters": [{ "id": 2, "name": "shuffle" }, { "id": 1, "name": "deflate", "parameters": [5] }],
+   "filters": [{ "id": 1, "name": "deflate", "parameters": [5] }],
    "attributes": {
     "long_name": "total CO2 flux from the ecosystem",
     "units": "mol(CO2) m-2(grid box) s-1",

@@ -1,18 +1,23 @@
 <script setup lang="ts">
 import { computed, markRaw, onMounted, reactive, ref, shallowRef, watch } from 'vue';
 
+import ConventionPicker from './components/ConventionPicker.vue';
 import DocCard from './components/DocCard.vue';
 import ExtensionPicker from './components/ExtensionPicker.vue';
-import FieldInfo, { type FieldPlace } from './components/FieldInfo.vue';
+import FieldInfo, { type FieldCounterpart, type FieldPlace } from './components/FieldInfo.vue';
 import JsonView from './components/JsonView.vue';
 import Legend from './components/Legend.vue';
 import MatrixView from './components/MatrixView.vue';
+import NodeCard from './components/NodeCard.vue';
 import Splitter from './components/Splitter.vue';
 import { isProbeableLocation } from './lib/base-docs';
 import { colorOf, sourceLabel } from './lib/colors';
+import { DATA_FORMATS, embeddedCounterparts, embeddedSchemaLabel, stacCounterparts } from './lib/conventions';
 import { TYPE_LABEL, type DocEntry } from './lib/docs';
+import { nodeConventions, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type NodeEntry } from './lib/embedded-docs';
+import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-probe';
 import { Engine } from './lib/engine';
-import { normalizeSchemaUrl } from './lib/extensions';
+import { describeUrl, normalizeSchemaUrl } from './lib/extensions';
 import { conceptPath } from './lib/matrix';
 import { STAC_TYPES, STAC_VERSIONS, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
 import { objectLocations } from './lib/pointer';
@@ -51,6 +56,85 @@ async function runProbe() {
 watch(() => [state.stacVersion, state.extensions.join('\n')], runProbe, { immediate: true });
 
 const sources = computed(() => result.value?.sources ?? []);
+
+// ---- Embedded metadata: conventions of data formats ------------------------------------------------------------
+
+const embeddedResult = shallowRef<EmbeddedProbeResult>();
+const embeddedError = ref('');
+let embeddedRunId = 0;
+async function runEmbeddedProbe() {
+    const id = ++embeddedRunId;
+    embeddedError.value = '';
+    if (state.conventions.length === 0) {
+        embeddedResult.value = undefined;
+        return;
+    }
+    try {
+        const probed = await engine.probeEmbedded([...state.conventions]);
+        if (id === embeddedRunId) embeddedResult.value = markRaw(probed);
+    } catch (error) {
+        if (id === embeddedRunId) embeddedError.value = error instanceof Error ? error.message : String(error);
+    }
+}
+watch(() => state.conventions.join('\n'), runEmbeddedProbe, { immediate: true });
+const embeddedSources = computed<EmbeddedSourceInfo[]>(() => embeddedResult.value?.sources ?? []);
+const exampleNodes = computed<NodeEntry[]>(() => (embeddedResult.value ? templateEntries(embeddedResult.value, state.showCore) : []));
+
+/** Metadata embedded in a data asset (a Zarr store), read from its metadata document and shown as node cards. */
+interface EmbeddedView {
+    label: string;
+    href: string;
+    status: 'loading' | 'ready' | 'error';
+    error?: string;
+    nodes: NodeEntry[];
+}
+const embeddedView = ref<EmbeddedView>();
+
+async function fetchJson(url: string): Promise<unknown> {
+    const response = await fetch(url, { headers: { accept: 'application/json' } });
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return response.json();
+}
+
+/** Reads the Zarr metadata of a store or metadata document and checks each node against its format and conventions. */
+async function openEmbedded(href: string, label: string, json?: unknown) {
+    const view: EmbeddedView = reactive({ label, href, status: 'loading', nodes: [] });
+    embeddedView.value = view;
+    try {
+        let document = json === undefined ? undefined : zarrDocument(json as never);
+        let read = href;
+        for (const url of json === undefined ? zarrMetadataUrls(href) : []) {
+            try {
+                document = zarrDocument((await fetchJson(url)) as never);
+            } catch {
+                continue;
+            }
+            if (document) { read = url; break; }
+        }
+        if (!document) throw new Error('no Zarr metadata (zarr.json or .zmetadata) found');
+        const format = DATA_FORMATS.find((f) => f.id === document!.format)!;
+        const root = document.nodes.find((n) => n.path === '')?.node;
+        const urls = [...new Set([...document.nodes.flatMap((n) => nodeConventions(format.id, n.node, root)), ...state.conventions])];
+        const probed = await engine.probeEmbedded(urls);
+        view.nodes = document.nodes.map(({ path, node }) => {
+            const own = nodeConventions(format.id, node, root);
+            const nodeType = node.node_type === 'array' ? 'array' : 'group';
+            const template = probed.nodes.find((t) => t.key === `${format.id}:${nodeType}`);
+            const nodeSources = probed.sources.filter((s) => s.kind === 'format' ? s.key === format.schema : own.includes(s.key) || state.conventions.includes(s.key));
+            return markRaw({ key: `node:${read}#${path}`, format: format.id, formatTitle: format.title, nodeType, title: path, href: read, doc: node,
+                view: realNodeView(node, template, nodeSources, format.schema, state.showCore), sources: nodeSources, conventions: own });
+        });
+        view.status = 'ready';
+        await Promise.all(view.nodes.map(async (entry, i) => {
+            const errors = await engine.validateNode(entry.doc, format.schema, entry.conventions);
+            view.nodes[i] = markRaw({ ...entry, errors, valid: errors.length === 0 });
+        }));
+    } catch (error) {
+        view.status = 'error';
+        view.error = error instanceof Error ? error.message : String(error);
+        if (error instanceof TypeError) view.error += ' (network error or the server does not allow cross-origin requests)';
+    }
+}
 
 // ---- Example catalog -------------------------------------------------------------------------------------------
 
@@ -171,6 +255,20 @@ async function openHref(href: string, keepSelection = false) {
         state.pointer = '';
         selectedPointers.value = [''];
     }
+    embeddedView.value = undefined;
+    // Zarr metadata (a store, its zarr.json or .zmetadata) is explored as embedded metadata, not as STAC.
+    const path = trimmed.split(/[?#]/)[0];
+    let json: unknown;
+    if (!/(\.zarr\/?|\/zarr\.json|\/\.zmetadata)$/i.test(path)) {
+        try { json = await fetchJson(trimmed); } catch { /* reported by the STAC loader below */ }
+    }
+    if (json === undefined ? /(\.zarr\/?|\/zarr\.json|\/\.zmetadata)$/i.test(path) : zarrDocument(json as never)) {
+        hrefRoot.value = undefined;
+        await openEmbedded(trimmed, trimmed, json);
+        const opened = embeddedView.value as EmbeddedView | undefined;
+        if (!keepSelection && opened?.nodes[0]) state.selected = opened.nodes[0].key;
+        return;
+    }
     hrefRoot.value = newEntry(trimmed);
     const root = hrefRoot.value;
     await load(root);
@@ -260,13 +358,20 @@ function find(entry: DocEntry | undefined, key: string): DocEntry | undefined {
 }
 
 const currentRoot = computed(() => (state.mode === 'example' ? exampleRoot.value : hrefRoot.value));
+const currentNodes = computed(() => (state.mode === 'example' ? exampleNodes.value : embeddedView.value?.nodes ?? []));
+const selectedNode = computed(() => currentNodes.value.find((n) => n.key === state.selected));
 const selectedEntry = computed(() => find(currentRoot.value, state.selected) ?? (state.mode === 'href' && detached.value?.key === state.selected ? detached.value : undefined));
-const jsonIndex = computed(() => (selectedEntry.value?.view ? fieldIndex(selectedEntry.value.view) : new Map()));
-const jsonTitle = computed(() => (selectedEntry.value ? `${TYPE_LABEL[selectedEntry.value.type]} — ${selectedEntry.value.title}` : ''));
+const selectedDocument = computed(() => selectedEntry.value ?? selectedNode.value);
+const jsonIndex = computed(() => (selectedDocument.value?.view ? fieldIndex(selectedDocument.value.view) : new Map()));
+const jsonTitle = computed(() => {
+    if (selectedEntry.value) return `${TYPE_LABEL[selectedEntry.value.type]} — ${selectedEntry.value.title}`;
+    const node = selectedNode.value;
+    return node ? `${node.formatTitle} ${node.nodeType} — ${node.title || 'root'}` : '';
+});
 
 // A shared link may select a document deeper than what is loaded: load it on its own.
 watch(() => [state.mode, state.selected, hrefRoot.value?.status], () => {
-    if (state.mode !== 'href' || !state.selected || !/^https?:/.test(state.selected)) return;
+    if (state.mode !== 'href' || !state.selected || !/^https?:/.test(state.selected) || !hrefRoot.value) return;
     if (find(hrefRoot.value, state.selected) || hrefRoot.value?.status === 'loading' || detached.value?.key === state.selected) return;
     detached.value = newEntry(state.selected, 'selected');
     void load(detached.value);
@@ -308,7 +413,8 @@ const fieldPanel = computed(() => {
     const at = state.field.indexOf('|');
     const source = state.field.slice(0, at);
     const name = state.field.slice(at + 1);
-    const pools = [fieldContext.value, sources.value, selectedEntry.value?.sources].filter((p): p is SourceInfo[] => !!p);
+    const pools = [fieldContext.value, sources.value, embeddedSources.value, selectedEntry.value?.sources, selectedNode.value?.sources]
+        .filter((p): p is SourceInfo[] => !!p);
     const pool = pools.find((p) => p.some((s) => s.key === source && s.docs[name])) ?? pools[0] ?? [];
     const doc = pool.find((s) => s.key === source)?.docs[name];
     const places: FieldPlace[] = [];
@@ -329,12 +435,36 @@ const fieldPanel = computed(() => {
             places.push(...byLabel.values());
         }
     }
-    return { source, name, doc, places, sources: pool, vendored: source === 'core' ? true : isVendored(source) };
+    const embedded = embeddedSources.value.find((s) => s.key === source) ?? (pool.find((s) => s.key === source) as EmbeddedSourceInfo | undefined);
+    for (const template of embeddedResult.value?.nodes ?? []) {
+        for (const p of template.placements) {
+            if (p.source !== source || p.field !== name) continue;
+            places.push({ label: [template.formatTitle, template.nodeType, ...(p.location ? [p.location.slice(1)] : [])].join(' › '), type: `node:${template.key}`, locations: [p.location], kind: p.kind });
+        }
+    }
+    const counterparts: FieldCounterpart[] = [];
+    let counterpartsTitle: string | undefined;
+    if (embedded && 'containers' in embedded) {
+        const container = embedded.containers[name];
+        counterpartsTitle = 'In STAC';
+        for (const entry of stacCounterparts(source, container ? [container, name] : [name])) {
+            const extension = entry.stac.schema ? describeUrl(entry.stac.schema) : undefined;
+            counterparts.push({ label: `${entry.stac.paths.map((p) => p.join('.')).join(' or ')} (${extension ? `${extension.name} ${extension.version ?? ''}`.trim() : 'STAC core'}; ${entry.stac.in.join(' or ')})`,
+                relation: entry.relation, note: entry.note });
+        }
+    } else {
+        counterpartsTitle = 'Embedded in data as';
+        for (const entry of embeddedCounterparts(name, source === 'core' ? undefined : source)) {
+            counterparts.push({ label: `${embeddedSchemaLabel(entry.embedded.schema)}: ${entry.embedded.path.join('.')}`, relation: entry.relation, note: entry.note });
+        }
+    }
+    return { source, name, doc, places, counterparts, counterpartsTitle, sources: pool, vendored: source === 'core' ? true : isVendored(source) };
 });
 
 function showPlace(place: FieldPlace) {
     if (state.mode !== 'example') setMode('example');
-    select(EXAMPLE_KEYS[place.type as StacType], place.locations);
+    if (place.type.startsWith('node:')) select(place.type, place.locations);
+    else select(EXAMPLE_KEYS[place.type as StacType], place.locations);
 }
 
 const fullAppUrl = computed(() => {
@@ -363,6 +493,7 @@ const findings = computed(() => {
 
 const EXAMPLE_URLS = [
     { label: 'Arctic TROPOMI CH4 Item', href: 'https://cardsmirror.blob.core.windows.net/arctic-tropomi-ch4-l3/stac/arctic-tropomi-ch4-l3-2021/arctic-tropomi-ch4-l3-2021.json' },
+    { label: 'Arctic TROPOMI CH4 Zarr store', href: 'https://cardsmirror.blob.core.windows.net/arctic-tropomi-ch4-l3/arctic_tropomi_ch4_l3_2021.zarr' },
     { label: 'EOPF Sentinel-2 L1C (API)', href: 'https://stac.core.eopf.eodc.eu/collections/sentinel-2-l1c' },
     { label: 'Earth Search Sentinel-2 L2A (API)', href: 'https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a' },
 ];
@@ -400,8 +531,13 @@ onMounted(() => {
         <ExtensionPicker v-model="state.extensions" :sources="sources" @focus="toggleFocus" />
       </section>
       <section>
+        <h2>Data conventions</h2>
+        <p class="hint">Conventions of metadata embedded in data files (Zarr, netCDF, TIFF): the counterparts of STAC extensions.</p>
+        <ConventionPicker v-model="state.conventions" :sources="embeddedSources" @focus="toggleFocus" />
+      </section>
+      <section>
         <h2>Display</h2>
-        <label><input v-model="state.showCore" type="checkbox" /> Show STAC core fields</label>
+        <label><input v-model="state.showCore" type="checkbox" /> Show STAC core and data format fields</label>
         <label><input v-model="state.groupFields" type="checkbox" /> Group fields by extension</label>
         <label v-if="state.mode === 'href'"><input v-model="state.includeDeclared" type="checkbox" /> Include extensions the documents declare</label>
         <div v-if="state.focus" class="focus">
@@ -456,6 +592,27 @@ onMounted(() => {
               <li v-for="(f, i) in findings" :key="i" :class="f.type">{{ f.text }}</li>
             </ul>
           </details>
+          <section class="embedded-section" aria-labelledby="embedded-heading">
+            <h3 id="embedded-heading">Embedded in the data</h3>
+            <p class="explain">
+              Metadata stored in the data files of assets, not in STAC: the nodes of each format the selected data conventions apply to,
+              with every field placed where the format and convention schemas allow it.
+              <template v-if="!state.showCore">Format fields (the counterparts of STAC core) are shown with “Show STAC core and data format fields”.</template>
+            </p>
+            <p v-if="embeddedError" class="error">{{ embeddedError }}</p>
+            <p v-if="state.conventions.length === 0" class="explain">Select data conventions to see where their fields go.</p>
+            <NodeCard
+              v-for="node in exampleNodes"
+              :key="node.key"
+              :entry="node"
+              :group="state.groupFields"
+              :focus="state.focus"
+              :selected-doc="state.selected"
+              :selected-pointers="selectedPointers"
+              @select="select"
+              @field="openField"
+            />
+          </section>
         </div>
         <MatrixView
           v-else-if="state.view === 'matrix' && result"
@@ -493,6 +650,7 @@ onMounted(() => {
             @toggle="toggle"
             @more="loadMore"
             @field="openField"
+            @embedded="(href: string, label: string) => openEmbedded(href, label)"
           />
           <template v-if="detached && !find(hrefRoot, detached.key)">
             <h3 class="detached">Selected document (outside the loaded tree)</h3>
@@ -507,8 +665,30 @@ onMounted(() => {
               @toggle="toggle"
               @more="loadMore"
               @field="openField"
+              @embedded="(href: string, label: string) => openEmbedded(href, label)"
             />
           </template>
+          <section v-if="embeddedView" class="embedded-section" aria-labelledby="embedded-view-heading">
+            <h3 id="embedded-view-heading">Embedded in the data: {{ embeddedView.label }}</h3>
+            <p class="explain">
+              The nodes of the Zarr store, each shown within the fields its format and its declared or recognised conventions (and the
+              selected ones) allow, and validated against them. Only Zarr metadata, which is JSON, can be read here; the Observatory
+              also reads netCDF and TIFF metadata.
+            </p>
+            <p v-if="embeddedView.status === 'loading'" class="explain">Loading…</p>
+            <p v-else-if="embeddedView.status === 'error'" class="error">⚠ {{ embeddedView.error }}</p>
+            <NodeCard
+              v-for="node in embeddedView.nodes"
+              :key="node.key"
+              :entry="node"
+              :group="state.groupFields"
+              :focus="state.focus"
+              :selected-doc="state.selected"
+              :selected-pointers="selectedPointers"
+              @select="select"
+              @field="openField"
+            />
+          </section>
         </div>
       </template>
     </main>
@@ -522,14 +702,16 @@ onMounted(() => {
         :doc="fieldPanel.doc"
         :places="fieldPanel.places"
         :vendored="fieldPanel.vendored"
+        :counterparts="fieldPanel.counterparts"
+        :counterparts-title="fieldPanel.counterpartsTitle"
         @close="state.field = ''"
         @place="showPlace"
       />
       <JsonView
         class="json-view"
-        :doc="selectedEntry?.doc"
+        :doc="selectedDocument?.doc"
         :title="jsonTitle"
-        :href="selectedEntry?.href"
+        :href="selectedDocument?.href"
         :index="jsonIndex"
         :pointers="selectedPointers"
       />
@@ -824,6 +1006,16 @@ onMounted(() => {
   font: 600 12px var(--sans);
   color: #64748b;
   margin: 18px 0 0;
+}
+.embedded-section {
+  margin-top: 22px;
+  padding-top: 10px;
+  border-top: 1px dashed #cbd5e1;
+}
+.embedded-section h3 {
+  margin: 0 0 4px;
+  font: 600 14px var(--sans);
+  color: #334155;
 }
 @media (max-width: 1100px) {
   .app {

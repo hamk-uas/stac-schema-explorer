@@ -424,5 +424,64 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "group"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "data_type"
+              ]
+            },
+            {
+              "required": [
+                "shape"
+              ]
+            },
+            {
+              "required": [
+                "chunk_shape"
+              ]
+            },
+            {
+              "required": [
+                "filters"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "variable"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "format"
+          ]
+        }
+      }
+    }
+  ]
 }

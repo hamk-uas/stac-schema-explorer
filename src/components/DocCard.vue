@@ -3,6 +3,7 @@ import { computed } from 'vue';
 
 import { sourceLabel } from '../lib/colors';
 import { TYPE_LABEL, type DocEntry } from '../lib/docs';
+import { zarrAssets } from '../lib/embedded-docs';
 import type { SourceInfo } from '../lib/model';
 import FieldChips from './FieldChips.vue';
 import ObjectNode from './ObjectNode.vue';
@@ -22,7 +23,11 @@ const emit = defineEmits<{
     toggle: [entry: DocEntry];
     more: [entry: DocEntry];
     field: [source: string, name: string, sources: SourceInfo[]];
+    /** Explore the embedded metadata of a data asset (a Zarr store). */
+    embedded: [href: string, label: string];
 }>();
+
+const zarr = computed(() => (props.entry.href ? zarrAssets(props.entry.doc, props.entry.href) : []));
 
 const docSources = computed(() => props.entry.sources ?? props.sources);
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
@@ -83,6 +88,13 @@ const validityTitle = computed(() => {
       <div v-if="notApplicable.length && !entry.href" class="na" title="These selected extensions define no field for this object type">
         not applicable: {{ notApplicable.join(', ') }}
       </div>
+      <div v-if="zarr.length" class="embedded-links">
+        <span class="glyph">data</span>
+        <button v-for="asset in zarr" :key="asset.key" type="button" class="embedded-link" :title="`Read the embedded metadata of this Zarr store\n${asset.href}`"
+          @click.stop="emit('embedded', asset.href, `asset ${asset.key} of ${entry.title}`)">
+          embedded metadata of asset <code>{{ asset.key }}</code> ›
+        </button>
+      </div>
     </div>
     <div v-if="entry.expanded && hasChildren" class="child-docs">
       <DocCard
@@ -98,6 +110,7 @@ const validityTitle = computed(() => {
         @toggle="(e: DocEntry) => emit('toggle', e)"
         @more="(e: DocEntry) => emit('more', e)"
         @field="(s: string, n: string, src: SourceInfo[]) => emit('field', s, n, src)"
+        @embedded="(h: string, l: string) => emit('embedded', h, l)"
       />
       <button v-if="entry.remaining.length || entry.itemsHref" type="button" class="more" @click="emit('more', entry)">
         {{ entry.remaining.length ? `Show more (${entry.remaining.length} not loaded)` : 'Load items' }}
@@ -222,6 +235,26 @@ header {
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+.embedded-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 3px 6px;
+}
+.embedded-link {
+  border: 1px dashed #94a3b8;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  font: 500 12px var(--sans);
+  padding: 1px 8px;
+  cursor: pointer;
+}
+.embedded-link:hover {
+  border-color: #475569;
 }
 .na {
   margin-top: 4px;

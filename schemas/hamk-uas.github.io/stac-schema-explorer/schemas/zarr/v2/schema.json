@@ -174,6 +174,64 @@
           "filters"
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "group"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "shape"
+              ]
+            },
+            {
+              "required": [
+                "chunks"
+              ]
+            },
+            {
+              "required": [
+                "dtype"
+              ]
+            },
+            {
+              "required": [
+                "compressor"
+              ]
+            },
+            {
+              "required": [
+                "fill_value"
+              ]
+            },
+            {
+              "required": [
+                "order"
+              ]
+            },
+            {
+              "required": [
+                "filters"
+              ]
+            },
+            {
+              "required": [
+                "dimension_separator"
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

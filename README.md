@@ -1,7 +1,9 @@
 # STAC Schema Explorer
 
 A web app for understanding [SpatioTemporal Asset Catalog (STAC)](https://stacspec.org) core spec and STAC extensions:
-**where in the STAC hierarchy, and where within each STAC object, can each field go?**
+**where in the STAC hierarchy, and where within each STAC object, can each field go?** And, for the metadata embedded in
+the data files of assets (Zarr, netCDF, TIFF): which fields do their formats and conventions define, where do they go,
+and which STAC fields carry the same information?
 
 Live app: <https://hamk-uas.github.io/stac-schema-explorer/>
 
@@ -25,7 +27,18 @@ asking the schemas themselves.
   against STAC core and the extensions they declare.
 - **Field information**: click any field (a chip, or a row of the matrix) to see what it means: its title, description
   and type, the allowed values with their meanings, and every place it can go. The text comes from the schemas; see
-  [Vendored schemas](#vendored-schemas).
+  [Vendored schemas](#vendored-schemas). Where a field has a counterpart on the other side of the
+  [STAC crosswalk](#embedded-metadata-schemas), it is listed too: the STAC field of an embedded field (`proj:code` of
+  the Zarr `proj` convention is `proj:code` of the Projection extension), or the embedded fields of a STAC field.
+- **Embedded in the data**: below the example catalog, the nodes of the data formats (Zarr v3 and v2 groups and arrays,
+  netCDF groups and variables, TIFF files and images) that the selected **data conventions** apply to, with every field
+  placed where the format and convention schemas allow it. Data conventions are chosen apart from extensions, with their
+  own quick-select list grouped by kind: Zarr conventions, attribute conventions (CF, ACDD), format extensions
+  (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). Format fields, the counterparts of STAC core, are shown with
+  STAC core fields.
+- **Explore Zarr metadata**: open a Zarr store, its `zarr.json` or its `.zmetadata`, or follow the “embedded metadata
+  of asset …” link of a STAC document with a Zarr asset. Every node is shown within the fields its format and its
+  declared (`zarr_conventions`, `Conventions`) or recognised conventions allow, and validated against them.
 
 Extensions are chosen from quick-select buttons (the extensions discussed in the
 [Observatory](https://github.com/hamk-uas/observatory) project) or added as any JSON Schema URL or `name@version`
@@ -38,8 +51,9 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | `mode` | `example` or `href` |
 | `v` | STAC version of the example (`1.1.0` default, `1.0.0`) |
 | `ext` | an extension, repeatable: `name@version` or a schema URL; `noext=1` for none |
-| `href` | STAC document to explore |
-| `sel`, `ptr` | selected document (`catalog`, `subcatalog`, `collection`, `item` or a URL) and object (JSON Pointer) |
+| `conv` | a data convention, repeatable: `name@version` (`proj@v0.1`, `cf@1.13`) or a schema URL; `noconv=1` for none; absent for the defaults |
+| `href` | STAC document, Zarr store or Zarr metadata document to explore |
+| `sel`, `ptr` | selected document (`catalog`, `subcatalog`, `collection`, `item`, a URL, or `node:…` for a node of embedded metadata) and object (JSON Pointer) |
 | `view` | `matrix` for the placement matrix |
 | `focus` | an extension whose fields are highlighted (others dimmed) |
 | `field` | field shown in the field information panel: `<extension>\|<field>`, e.g. `cf@1.0.0\|cf:cell_methods`, or `core\|license` |
@@ -91,6 +105,13 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 4. **Field documentation** ([src/lib/field-docs.ts](src/lib/field-docs.ts)). Title and description are the nearest ones
    along the field's `$ref` chain; the type is computed from the schema (`array of (string or null)`,
    `object: name → Variable Object`); allowed values come from `oneOf` lists of titled constants (or `enum`).
+5. **Embedded placement probing** ([src/lib/embedded-probe.ts](src/lib/embedded-probe.ts)). The fields of a format or
+   convention schema are the keys it defines for a node and the entries of its `attributes`, `tags` and `geo_keys`.
+   Starting from a minimal valid node of each format and node type (with the `zarr_conventions` entry a Zarr convention
+   requires), each field is added with an example value and kept unless it adds validation errors, so required
+   companions (`spatial:dimensions` of an array) are kept in any order; a convention whose node still fails cannot apply
+   there (`multiscales` in an array). As for STAC, a field is validated where an invalid value fails and presence-only
+   where any value passes.
 
 ### Limitations
 
@@ -106,6 +127,9 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 - Exploring a URL needs the server to allow cross-origin requests (CORS), as do custom schema URLs.
 - In STAC 1.0.0 the example Collection has `item_assets` even without the Item Assets extension, which 1.0.0 core does
   not validate.
+- Only Zarr metadata, which is JSON, can be explored; netCDF and TIFF metadata need binary readers, which the
+  [Observatory](https://github.com/hamk-uas/observatory) has. The placement matrix covers STAC objects only, and a Zarr
+  store without consolidated metadata shows only the node that was opened.
 
 ## Vendored schemas
 

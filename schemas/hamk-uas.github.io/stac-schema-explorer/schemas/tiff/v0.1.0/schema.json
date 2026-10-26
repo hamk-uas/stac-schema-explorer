@@ -325,6 +325,9 @@
           "description": "Byte offset of each tile in the file.",
           "anyOf": [
             {
+              "type": "integer"
+            },
+            {
               "type": "array",
               "items": {
                 "type": "integer"
@@ -350,6 +353,9 @@
           "title": "Tile byte counts",
           "description": "Size in bytes of each compressed tile.",
           "anyOf": [
+            {
+              "type": "integer"
+            },
             {
               "type": "array",
               "items": {
@@ -382,6 +388,9 @@
           "description": "Byte offset of each strip in the file.",
           "anyOf": [
             {
+              "type": "integer"
+            },
+            {
               "type": "array",
               "items": {
                 "type": "integer"
@@ -407,6 +416,9 @@
           "title": "Strip byte counts",
           "description": "Size in bytes of each compressed strip.",
           "anyOf": [
+            {
+              "type": "integer"
+            },
             {
               "type": "array",
               "items": {
@@ -468,6 +480,9 @@
           "description": "Palette of a palette-colour image: red, green and blue values for each index.",
           "anyOf": [
             {
+              "type": "integer"
+            },
+            {
               "type": "array",
               "items": {
                 "type": "integer"
@@ -493,6 +508,9 @@
           "title": "JPEG tables",
           "description": "Quantization and Huffman tables shared by the JPEG-compressed tiles.",
           "anyOf": [
+            {
+              "type": "integer"
+            },
             {
               "type": "array",
               "items": {
@@ -627,5 +645,88 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "file"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "index"
+              ]
+            },
+            {
+              "required": [
+                "tags"
+              ]
+            },
+            {
+              "required": [
+                "geo_keys"
+              ]
+            },
+            {
+              "required": [
+                "geotiff_version"
+              ]
+            },
+            {
+              "required": [
+                "gdal_metadata"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "image"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "byte_order"
+              ]
+            },
+            {
+              "required": [
+                "bigtiff"
+              ]
+            },
+            {
+              "required": [
+                "image_count"
+              ]
+            },
+            {
+              "required": [
+                "gdal_structural_metadata"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
 }

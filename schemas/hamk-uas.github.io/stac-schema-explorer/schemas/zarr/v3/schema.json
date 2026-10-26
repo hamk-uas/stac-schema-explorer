@@ -648,6 +648,64 @@
           "codecs"
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "node_type": {
+            "const": "group"
+          }
+        },
+        "required": [
+          "node_type"
+        ]
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "shape"
+              ]
+            },
+            {
+              "required": [
+                "data_type"
+              ]
+            },
+            {
+              "required": [
+                "chunk_grid"
+              ]
+            },
+            {
+              "required": [
+                "chunk_key_encoding"
+              ]
+            },
+            {
+              "required": [
+                "fill_value"
+              ]
+            },
+            {
+              "required": [
+                "codecs"
+              ]
+            },
+            {
+              "required": [
+                "dimension_names"
+              ]
+            },
+            {
+              "required": [
+                "storage_transformers"
+              ]
+            }
+          ]
+        }
+      }
     }
   ],
   "additionalProperties": {

@@ -1,4 +1,5 @@
 import type { EngineRequest, EngineResponse } from '../engine.worker';
+import type { EmbeddedProbeResult } from './embedded-probe';
 import type { JsonObject, ProbeProgress, ProbeResult } from './model';
 
 type Pending = { resolve: (value: never) => void; reject: (error: Error) => void; onProgress?: (p: ProbeProgress) => void };
@@ -18,7 +19,7 @@ export class Engine {
             if (message.kind === 'progress') return entry.onProgress?.(message.progress);
             this.pending.delete(message.id);
             if (message.kind === 'error') entry.reject(new Error(message.message));
-            else if (message.kind === 'probe') entry.resolve(message.result as never);
+            else if (message.kind === 'probe' || message.kind === 'probe-embedded') entry.resolve(message.result as never);
             else entry.resolve(message.errors as never);
         };
     }
@@ -37,5 +38,15 @@ export class Engine {
 
     validate(doc: JsonObject, stacVersion: string, urls: string[]): Promise<string[]> {
         return this.send<string[]>({ kind: 'validate', doc, stacVersion, urls });
+    }
+
+    /** Where the fields of the convention schemas, and of the formats they apply to, can go in embedded metadata. */
+    probeEmbedded(urls: string[]): Promise<EmbeddedProbeResult> {
+        return this.send<EmbeddedProbeResult>({ kind: 'probe-embedded', urls });
+    }
+
+    /** Validates a node of embedded metadata against its format schema and convention schemas. */
+    validateNode(node: JsonObject, formatSchema: string, urls: string[]): Promise<string[]> {
+        return this.send<string[]>({ kind: 'validate-node', node, formatSchema, urls });
     }
 }

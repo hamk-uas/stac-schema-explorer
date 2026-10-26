@@ -1,6 +1,7 @@
 <template>
   <ul class="legend">
     <li><span class="doc">▯ Collection</span> STAC document: a separate JSON file</li>
+    <li><span class="node">◫ Zarr v3 group</span> node of metadata embedded in a data file (Zarr, netCDF, TIFF), not STAC</li>
     <li><span class="glyph">{}</span> object inside a document <span class="glyph">[{}]</span> object in an array</li>
     <li><span class="geo">properties</span> GeoJSON Feature properties of an Item</li>
     <li><span class="chip">cube:*</span> fields validated there by the schema; <code>prefix:*</code> means all fields of that prefix, otherwise they are named</li>
@@ -38,6 +39,16 @@
 .glyph {
   font: 600 11px var(--mono);
   color: #94a3b8;
+}
+.node {
+  display: inline-block;
+  font: 700 11px var(--sans);
+  color: #334155;
+  border: 1px dashed #94a3b8;
+  border-left: 3px solid #475569;
+  border-radius: 4px;
+  padding: 0 5px;
+  background: #f8fafc;
 }
 .geo {
   font: 500 11px var(--mono);
