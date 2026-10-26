@@ -40,9 +40,9 @@ export class Engine {
         return this.send<string[]>({ kind: 'validate', doc, stacVersion, urls });
     }
 
-    /** Where the fields of the convention schemas, and of the formats they apply to, can go in embedded metadata. */
-    probeEmbedded(urls: string[]): Promise<EmbeddedProbeResult> {
-        return this.send<EmbeddedProbeResult>({ kind: 'probe-embedded', urls });
+    /** Where the fields of the convention schemas, and of the formats they apply to (and `formats`), can go in embedded metadata. */
+    probeEmbedded(urls: string[], formats: string[] = []): Promise<EmbeddedProbeResult> {
+        return this.send<EmbeddedProbeResult>({ kind: 'probe-embedded', urls, formats });
     }
 
     /** Validates a node of embedded metadata against its format schema and convention schemas. */

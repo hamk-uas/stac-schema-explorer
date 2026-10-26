@@ -3,7 +3,7 @@ import { computed } from 'vue';
 
 import { sourceLabel } from '../lib/colors';
 import { TYPE_LABEL, type DocEntry } from '../lib/docs';
-import { zarrAssets } from '../lib/embedded-docs';
+import { READER_LABEL, readableAssets, type ReaderKind } from '../lib/embedded-docs';
 import type { SourceInfo } from '../lib/model';
 import FieldChips from './FieldChips.vue';
 import ObjectNode from './ObjectNode.vue';
@@ -23,11 +23,11 @@ const emit = defineEmits<{
     toggle: [entry: DocEntry];
     more: [entry: DocEntry];
     field: [source: string, name: string, sources: SourceInfo[]];
-    /** Explore the embedded metadata of a data asset (a Zarr store). */
-    embedded: [href: string, label: string];
+    /** Explore the embedded metadata of a data asset (a Zarr store, a netCDF or TIFF file). */
+    embedded: [href: string, label: string, kind: ReaderKind];
 }>();
 
-const zarr = computed(() => (props.entry.href ? zarrAssets(props.entry.doc, props.entry.href) : []));
+const readable = computed(() => (props.entry.href ? readableAssets(props.entry.doc, props.entry.href) : []));
 
 const docSources = computed(() => props.entry.sources ?? props.sources);
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
@@ -88,10 +88,10 @@ const validityTitle = computed(() => {
       <div v-if="notApplicable.length && !entry.href" class="na" title="These selected extensions define no field for this object type">
         not applicable: {{ notApplicable.join(', ') }}
       </div>
-      <div v-if="zarr.length" class="embedded-links">
+      <div v-if="readable.length" class="embedded-links">
         <span class="glyph">data</span>
-        <button v-for="asset in zarr" :key="asset.key" type="button" class="embedded-link" :title="`Read the embedded metadata of this Zarr store\n${asset.href}`"
-          @click.stop="emit('embedded', asset.href, `asset ${asset.key} of ${entry.title}`)">
+        <button v-for="asset in readable" :key="asset.key" type="button" class="embedded-link" :title="`Read the embedded metadata of this ${READER_LABEL[asset.kind]}\n${asset.href}`"
+          @click.stop="emit('embedded', asset.href, `asset ${asset.key} of ${entry.title}`, asset.kind)">
           embedded metadata of asset <code>{{ asset.key }}</code> ›
         </button>
       </div>
@@ -110,7 +110,7 @@ const validityTitle = computed(() => {
         @toggle="(e: DocEntry) => emit('toggle', e)"
         @more="(e: DocEntry) => emit('more', e)"
         @field="(s: string, n: string, src: SourceInfo[]) => emit('field', s, n, src)"
-        @embedded="(h: string, l: string) => emit('embedded', h, l)"
+        @embedded="(h: string, l: string, k: ReaderKind) => emit('embedded', h, l, k)"
       />
       <button v-if="entry.remaining.length || entry.itemsHref" type="button" class="more" @click="emit('more', entry)">
         {{ entry.remaining.length ? `Show more (${entry.remaining.length} not loaded)` : 'Load items' }}

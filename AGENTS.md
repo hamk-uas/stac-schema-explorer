@@ -29,8 +29,9 @@ technical visual language; it need not adopt Observatory instance branding.
 | --- | --- |
 | [src/App.vue](src/App.vue) | App orchestration, URL state, selection, remote/example flows and layout. |
 | [src/components](src/components) | Document cards, object/JSON trees, field chips/info, extension picker, matrix and legend; `NodeCard` and `ConventionPicker` for embedded metadata. |
-| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, Zarr documents). |
+| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, reader kind of assets, Zarr documents), [readers](src/lib/readers) (netCDF and TIFF readers, ports of the Observatory's). |
 | [src/engine.worker.ts](src/engine.worker.ts), [src/lib/engine.ts](src/lib/engine.ts) | Worker-backed probing/validation protocol. |
+| [src/reader.worker.ts](src/reader.worker.ts), [src/lib/reader.ts](src/lib/reader.ts) | Separate, lazily created worker reading netCDF/TIFF files. netCDF-4 range reads are synchronous XHR: keep them out of the engine worker and the page. |
 | [schemas](schemas) | Reviewed, documentation-enriched schema source consumed by this app and Observatory: vendored copies, plus authored embedded-metadata schemas under `schemas/hamk-uas.github.io/stac-schema-explorer/schemas/`. |
 | [upstream](upstream) | Pristine published originals/dependencies used to prove enrichment preserves validation. |
 | [scripts](scripts), [test](test) | Fetching/drafting/review tooling and validation/engine regression tests. |
@@ -181,9 +182,11 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
   distinguish app support from downstream integration still to be done.
 - [ ] Establish an explicit software license; attribution of Apache-licensed
   source documentation in the README is not a repository-wide license.
-- [ ] Embedded metadata: the placement matrix covers STAC objects only, explored
-  Zarr views are not restored from a shared link of a STAC document (only when the
-  store itself is `href`), and netCDF/TIFF metadata cannot be explored here.
+- [ ] Embedded metadata: the placement matrix covers STAC objects only, and
+  explored data-file views are not restored from a shared link of a STAC document
+  (only when the file itself is `href`). The netCDF/TIFF readers duplicate the
+  Observatory's (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`);
+  until one shared package exists, change both together.
 
 ## Keep this guide current
 

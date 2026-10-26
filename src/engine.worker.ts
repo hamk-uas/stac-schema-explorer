@@ -8,7 +8,7 @@ import { withVendored } from './lib/vendored';
 export type EngineRequest =
     | { id: number; kind: 'probe'; stacVersion: string; urls: string[] }
     | { id: number; kind: 'validate'; doc: JsonObject; stacVersion: string; urls: string[] }
-    | { id: number; kind: 'probe-embedded'; urls: string[] }
+    | { id: number; kind: 'probe-embedded'; urls: string[]; formats: string[] }
     | { id: number; kind: 'validate-node'; node: JsonObject; formatSchema: string; urls: string[] };
 
 export type EngineResponse =
@@ -56,10 +56,10 @@ scope.onmessage = async (event: MessageEvent<EngineRequest>) => {
             }
             post({ id: request.id, kind: 'probe', result: await pending });
         } else if (request.kind === 'probe-embedded') {
-            const key = [...request.urls].sort().join('\n');
+            const key = `${[...request.formats].sort().join(',')}\n${[...request.urls].sort().join('\n')}`;
             let pending = embeddedProbes.get(key);
             if (!pending) {
-                pending = probeEmbedded(store, request.urls);
+                pending = probeEmbedded(store, request.urls, request.formats);
                 pending.catch(() => embeddedProbes.delete(key));
                 embeddedProbes.set(key, pending);
             }

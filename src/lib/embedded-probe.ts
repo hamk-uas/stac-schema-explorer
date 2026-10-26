@@ -141,11 +141,12 @@ function set(node: JsonObject, field: NodeField, value: Json | undefined): JsonO
 }
 
 /**
- * Where each field of the selected convention schemas, and of the formats they apply to, can go: probed like STAC
- * placements, by placing every field with an example value into a minimal node of each node type and dropping those the
- * schemas reject. A field is `validated` where an invalid value makes the node fail, `presence` where any value passes.
+ * Where each field of the selected convention schemas, and of the formats they apply to (and the `formats` given), can go:
+ * probed like STAC placements, by placing every field with an example value into a minimal node of each node type and
+ * dropping those the schemas reject. A field is `validated` where an invalid value makes the node fail, `presence` where any
+ * value passes.
  */
-export async function probeEmbedded(store: SchemaStore, conventionUrls: readonly string[]): Promise<EmbeddedProbeResult> {
+export async function probeEmbedded(store: SchemaStore, conventionUrls: readonly string[], formatIds: readonly string[] = []): Promise<EmbeddedProbeResult> {
     const sampler = new Sampler(store);
     const conventions: { url: string; formats: string[] }[] = [];
     const sources: EmbeddedSourceInfo[] = [];
@@ -162,7 +163,7 @@ export async function probeEmbedded(store: SchemaStore, conventionUrls: readonly
                 containers: {}, formats: known?.convention.formats ?? [], error: error instanceof Error ? error.message : String(error) });
         }
     }
-    const formats = DATA_FORMATS.filter((format) => conventions.some((c) => c.formats.includes(format.id)));
+    const formats = DATA_FORMATS.filter((format) => formatIds.includes(format.id) || conventions.some((c) => c.formats.includes(format.id)));
     // Every format's containers are needed to tell which container a convention field belongs to.
     for (const format of DATA_FORMATS) await store.validator(format.schema);
     const formatFields = new Map<string, NodeField[]>();

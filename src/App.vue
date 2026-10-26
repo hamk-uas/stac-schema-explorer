@@ -14,13 +14,14 @@ import { isProbeableLocation } from './lib/base-docs';
 import { colorOf, sourceLabel } from './lib/colors';
 import { DATA_FORMATS, embeddedCounterparts, embeddedSchemaLabel, stacCounterparts } from './lib/conventions';
 import { TYPE_LABEL, type DocEntry } from './lib/docs';
-import { nodeConventions, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type NodeEntry } from './lib/embedded-docs';
+import { nodeConventions, READER_LABEL, readerKind, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type NodeEntry, type ReaderKind } from './lib/embedded-docs';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-probe';
 import { Engine } from './lib/engine';
 import { describeUrl, normalizeSchemaUrl } from './lib/extensions';
 import { conceptPath } from './lib/matrix';
-import { STAC_TYPES, STAC_VERSIONS, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
+import { STAC_TYPES, STAC_VERSIONS, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
 import { objectLocations } from './lib/pointer';
+import { readEmbeddedFile } from './lib/reader';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
 import { documentView, fieldIndex, templateView } from './lib/tree';
 import { readState, writeState, type AppState } from './lib/url-state';
@@ -80,12 +81,15 @@ watch(() => state.conventions.join('\n'), runEmbeddedProbe, { immediate: true })
 const embeddedSources = computed<EmbeddedSourceInfo[]>(() => embeddedResult.value?.sources ?? []);
 const exampleNodes = computed<NodeEntry[]>(() => (embeddedResult.value ? templateEntries(embeddedResult.value, state.showCore) : []));
 
-/** Metadata embedded in a data asset (a Zarr store), read from its metadata document and shown as node cards. */
+/** Metadata embedded in a data asset (a Zarr store, a netCDF or TIFF file), read from the data and shown as node cards. */
 interface EmbeddedView {
     label: string;
     href: string;
+    kind: ReaderKind;
     status: 'loading' | 'ready' | 'error';
     error?: string;
+    /** What the reader left out or how it had to read the file. */
+    notes: string[];
     nodes: NodeEntry[];
 }
 const embeddedView = ref<EmbeddedView>();
@@ -96,32 +100,45 @@ async function fetchJson(url: string): Promise<unknown> {
     return response.json();
 }
 
-/** Reads the Zarr metadata of a store or metadata document and checks each node against its format and conventions. */
-async function openEmbedded(href: string, label: string, json?: unknown) {
-    const view: EmbeddedView = reactive({ label, href, status: 'loading', nodes: [] });
+/** The nodes of a Zarr store or metadata document, and the document they were read from. */
+async function readZarr(href: string, json?: unknown): Promise<{ format: string; nodes: { path: string; node: JsonObject }[]; read: string }> {
+    if (json !== undefined) {
+        const document = zarrDocument(json as never);
+        if (document) return { ...document, read: href };
+    }
+    for (const url of json === undefined ? zarrMetadataUrls(href) : []) {
+        try {
+            const document = zarrDocument((await fetchJson(url)) as never);
+            if (document) return { ...document, read: url };
+        } catch {
+            // Try the next metadata document.
+        }
+    }
+    throw new Error('no Zarr metadata (zarr.json or .zmetadata) found');
+}
+
+/** Reads the embedded metadata of a data asset and checks each node against its format and conventions. */
+async function openEmbedded(href: string, label: string, kind: ReaderKind, json?: unknown) {
+    const view: EmbeddedView = reactive({ label, href, kind, status: 'loading', nodes: [], notes: [] });
     embeddedView.value = view;
     try {
-        let document = json === undefined ? undefined : zarrDocument(json as never);
-        let read = href;
-        for (const url of json === undefined ? zarrMetadataUrls(href) : []) {
-            try {
-                document = zarrDocument((await fetchJson(url)) as never);
-            } catch {
-                continue;
-            }
-            if (document) { read = url; break; }
+        let document: { format: string; nodes: { path: string; node: JsonObject }[]; read?: string };
+        if (kind === 'zarr') document = await readZarr(href, json);
+        else {
+            const read = await readEmbeddedFile(kind, href);
+            document = { format: kind, nodes: read.nodes };
+            view.notes = read.notes;
         }
-        if (!document) throw new Error('no Zarr metadata (zarr.json or .zmetadata) found');
-        const format = DATA_FORMATS.find((f) => f.id === document!.format)!;
+        const format = DATA_FORMATS.find((f) => f.id === document.format)!;
         const root = document.nodes.find((n) => n.path === '')?.node;
         const urls = [...new Set([...document.nodes.flatMap((n) => nodeConventions(format.id, n.node, root)), ...state.conventions])];
-        const probed = await engine.probeEmbedded(urls);
+        const probed = await engine.probeEmbedded(urls, [format.id]);
         view.nodes = document.nodes.map(({ path, node }) => {
             const own = nodeConventions(format.id, node, root);
-            const nodeType = node.node_type === 'array' ? 'array' : 'group';
+            const nodeType = String(node.node_type);
             const template = probed.nodes.find((t) => t.key === `${format.id}:${nodeType}`);
             const nodeSources = probed.sources.filter((s) => s.kind === 'format' ? s.key === format.schema : own.includes(s.key) || state.conventions.includes(s.key));
-            return markRaw({ key: `node:${read}#${path}`, format: format.id, formatTitle: format.title, nodeType, title: path, href: read, doc: node,
+            return markRaw({ key: `node:${document.read ?? href}#${path}`, format: format.id, formatTitle: format.title, nodeType, title: path, href: document.read, doc: node,
                 view: realNodeView(node, template, nodeSources, format.schema, state.showCore), sources: nodeSources, conventions: own });
         });
         view.status = 'ready';
@@ -256,15 +273,15 @@ async function openHref(href: string, keepSelection = false) {
         selectedPointers.value = [''];
     }
     embeddedView.value = undefined;
-    // Zarr metadata (a store, its zarr.json or .zmetadata) is explored as embedded metadata, not as STAC.
-    const path = trimmed.split(/[?#]/)[0];
+    // Data files (a Zarr store or its zarr.json or .zmetadata, a netCDF or TIFF file) are explored as embedded metadata, not as STAC.
+    const kind = readerKind(trimmed);
     let json: unknown;
-    if (!/(\.zarr\/?|\/zarr\.json|\/\.zmetadata)$/i.test(path)) {
+    if (!kind) {
         try { json = await fetchJson(trimmed); } catch { /* reported by the STAC loader below */ }
     }
-    if (json === undefined ? /(\.zarr\/?|\/zarr\.json|\/\.zmetadata)$/i.test(path) : zarrDocument(json as never)) {
+    if (kind || zarrDocument(json as never)) {
         hrefRoot.value = undefined;
-        await openEmbedded(trimmed, trimmed, json);
+        await openEmbedded(trimmed, trimmed, kind ?? 'zarr', json);
         const opened = embeddedView.value as EmbeddedView | undefined;
         if (!keepSelection && opened?.nodes[0]) state.selected = opened.nodes[0].key;
         return;
@@ -494,6 +511,8 @@ const findings = computed(() => {
 const EXAMPLE_URLS = [
     { label: 'Arctic TROPOMI CH4 Item', href: 'https://cardsmirror.blob.core.windows.net/arctic-tropomi-ch4-l3/stac/arctic-tropomi-ch4-l3-2021/arctic-tropomi-ch4-l3-2021.json' },
     { label: 'Arctic TROPOMI CH4 Zarr store', href: 'https://cardsmirror.blob.core.windows.net/arctic-tropomi-ch4-l3/arctic_tropomi_ch4_l3_2021.zarr' },
+    { label: 'HIKET CO₂ flux netCDF', href: 'https://lake.fmi.fi/hiket-data/fmi/co2-flux-land-finland-jsbach-himmeli/CO2_FLUX_LAND_FINLAND_MOD_2015_HOUR_JSBACH-HIMMELI_FMI_V01.nc' },
+    { label: 'Sentinel-2 L2A COG (Earth Search)', href: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/36/Q/WD/2020/7/S2A_36QWD_20200701_0_L2A/B04.tif' },
     { label: 'EOPF Sentinel-2 L1C (API)', href: 'https://stac.core.eopf.eodc.eu/collections/sentinel-2-l1c' },
     { label: 'Earth Search Sentinel-2 L2A (API)', href: 'https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a' },
 ];
@@ -626,7 +645,7 @@ onMounted(() => {
 
       <template v-else>
         <form class="href-form" @submit.prevent="openHref(hrefInput)">
-          <input v-model="hrefInput" type="url" placeholder="https://…/catalog.json, collection.json or item.json" aria-label="STAC URL" />
+          <input v-model="hrefInput" type="url" placeholder="https://…/catalog.json, collection.json, item.json, or a Zarr store, netCDF or TIFF file" aria-label="STAC document or data file URL" />
           <button type="submit">Open</button>
         </form>
         <p class="examples">
@@ -650,7 +669,7 @@ onMounted(() => {
             @toggle="toggle"
             @more="loadMore"
             @field="openField"
-            @embedded="(href: string, label: string) => openEmbedded(href, label)"
+            @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
           />
           <template v-if="detached && !find(hrefRoot, detached.key)">
             <h3 class="detached">Selected document (outside the loaded tree)</h3>
@@ -665,18 +684,22 @@ onMounted(() => {
               @toggle="toggle"
               @more="loadMore"
               @field="openField"
-              @embedded="(href: string, label: string) => openEmbedded(href, label)"
+              @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
             />
           </template>
           <section v-if="embeddedView" class="embedded-section" aria-labelledby="embedded-view-heading">
             <h3 id="embedded-view-heading">Embedded in the data: {{ embeddedView.label }}</h3>
             <p class="explain">
-              The nodes of the Zarr store, each shown within the fields its format and its declared or recognised conventions (and the
-              selected ones) allow, and validated against them. Only Zarr metadata, which is JSON, can be read here; the Observatory
-              also reads netCDF and TIFF metadata.
+              The nodes of the {{ READER_LABEL[embeddedView.kind] }}, each shown within the fields its format and its declared or
+              recognised conventions (and the selected ones) allow, and validated against them.
+              <template v-if="embeddedView.kind === 'netcdf'">The netCDF header is read by HTTP range requests (only the metadata
+                blocks of a netCDF-4 file); classic files, and files on servers without range requests, are downloaded up to 64 MiB.</template>
+              <template v-else-if="embeddedView.kind === 'tiff'">The TIFF header and image directories are read by HTTP range requests;
+                GeoTIFF keys and GDAL metadata are decoded from their tags.</template>
             </p>
             <p v-if="embeddedView.status === 'loading'" class="explain">Loading…</p>
             <p v-else-if="embeddedView.status === 'error'" class="error">⚠ {{ embeddedView.error }}</p>
+            <p v-for="note in embeddedView.notes" :key="note" class="explain">ⓘ {{ note }}</p>
             <NodeCard
               v-for="node in embeddedView.nodes"
               :key="node.key"

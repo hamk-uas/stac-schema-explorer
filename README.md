@@ -36,9 +36,15 @@ asking the schemas themselves.
   own quick-select list grouped by kind: Zarr conventions, attribute conventions (CF, ACDD), format extensions
   (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). Format fields, the counterparts of STAC core, are shown with
   STAC core fields.
-- **Explore Zarr metadata**: open a Zarr store, its `zarr.json` or its `.zmetadata`, or follow the “embedded metadata
-  of asset …” link of a STAC document with a Zarr asset. Every node is shown within the fields its format and its
-  declared (`zarr_conventions`, `Conventions`) or recognised conventions allow, and validated against them.
+- **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
+  file, or follow the “embedded metadata of asset …” link of a STAC document with such an asset. Every node is shown
+  within the fields its format and its declared (`zarr_conventions`, `Conventions`) or recognised conventions allow,
+  and validated against them. netCDF and TIFF files are read in a worker
+  ([src/reader.worker.ts](src/reader.worker.ts)) by HTTP range requests, fetching only their headers: netCDF-4 with
+  [h5wasm](https://github.com/usnistgov/h5wasm), TIFF with [geotiff.js](https://geotiffjs.github.io/). Classic netCDF
+  files, and netCDF files on servers without range requests, are downloaded instead, up to 64 MiB. The readers
+  ([src/lib/readers](src/lib/readers)) produce the same nodes as the Observatory's: the format schemas below are their
+  contract.
 
 Extensions are chosen from quick-select buttons (the extensions discussed in the
 [Observatory](https://github.com/hamk-uas/observatory) project) or added as any JSON Schema URL or `name@version`
@@ -52,7 +58,7 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | `v` | STAC version of the example (`1.1.0` default, `1.0.0`) |
 | `ext` | an extension, repeatable: `name@version` or a schema URL; `noext=1` for none |
 | `conv` | a data convention, repeatable: `name@version` (`proj@v0.1`, `cf@1.13`) or a schema URL; `noconv=1` for none; absent for the defaults |
-| `href` | STAC document, Zarr store or Zarr metadata document to explore |
+| `href` | STAC document, or data file to explore: a Zarr store or metadata document, a netCDF or TIFF file |
 | `sel`, `ptr` | selected document (`catalog`, `subcatalog`, `collection`, `item`, a URL, or `node:…` for a node of embedded metadata) and object (JSON Pointer) |
 | `view` | `matrix` for the placement matrix |
 | `focus` | an extension whose fields are highlighted (others dimmed) |
@@ -127,9 +133,9 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 - Exploring a URL needs the server to allow cross-origin requests (CORS), as do custom schema URLs.
 - In STAC 1.0.0 the example Collection has `item_assets` even without the Item Assets extension, which 1.0.0 core does
   not validate.
-- Only Zarr metadata, which is JSON, can be explored; netCDF and TIFF metadata need binary readers, which the
-  [Observatory](https://github.com/hamk-uas/observatory) has. The placement matrix covers STAC objects only, and a Zarr
-  store without consolidated metadata shows only the node that was opened.
+- The placement matrix covers STAC objects only, and a Zarr store without consolidated metadata shows only the node
+  that was opened. Reading a netCDF or TIFF file also needs CORS on its server (the Earth Genome COGs, for example,
+  have none). Long TIFF tag arrays (tile offsets) are shown by their length, and at most 64 TIFF images are read.
 
 ## Vendored schemas
 
@@ -206,7 +212,9 @@ others summarise their specifications in our own words and link to them. The tes
 ([test/authored.test.ts](test/authored.test.ts)) check that every authored schema compiles, documents every field and
 lists allowed values as titled constants, that the registry and crosswalk point to existing schemas and fields, and
 that the embedded metadata of the Observatory lab's catalogs (Arctic CH4, Blue Marble and TESSERA Zarr v3, EOPF Zarr v2,
-a HIKET netCDF-4 file and an Earth Genome COG, in [test/fixtures/embedded](test/fixtures/embedded)) validates.
+a HIKET netCDF-4 file and an Earth Genome COG, in [test/fixtures/embedded](test/fixtures/embedded)) validates. The
+reader tests ([test/readers.test.ts](test/readers.test.ts)) check that what the netCDF and TIFF readers produce from
+generated files validates as well.
 
 ## Development
 

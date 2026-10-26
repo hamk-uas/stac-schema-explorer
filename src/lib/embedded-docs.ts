@@ -3,15 +3,15 @@ import type { EmbeddedProbeResult, EmbeddedSourceInfo, NodeTemplate } from './em
 import { CORE, type Json, type JsonObject, type TypeTemplate } from './model';
 import { documentView, templateView, type ObjectView } from './tree';
 
-/** A node of embedded metadata shown as a card: a node template of the example, or a node of a real Zarr store. */
+/** A node of embedded metadata shown as a card: a node template of the example, or a node read from a data asset. */
 export interface NodeEntry {
     key: string;
     format: string;
     formatTitle: string;
     nodeType: string;
-    /** Path of the node in its store (`''` for the root), or the template's node type. */
+    /** Path of the node in its store or file (`''` for the root), or the template's node type. */
     title: string;
-    /** The metadata document the node comes from (`zarr.json`, `.zmetadata`). */
+    /** The JSON metadata document the node comes from (a Zarr `zarr.json` or `.zmetadata`); none for binary files. */
     href?: string;
     doc: JsonObject;
     view: ObjectView;
@@ -24,7 +24,9 @@ export interface NodeEntry {
 }
 
 const isObject = (value: unknown): value is JsonObject => typeof value === 'object' && value !== null && !Array.isArray(value);
-const STRUCTURE = ['attributes', 'tags', 'geo_keys', 'zarr_conventions'];
+/** Members whose entries are fields of their own (as `CONTAINERS` of the probe, not imported to keep the probe off this thread). */
+const CONTAINER_KEYS = ['attributes', 'tags', 'geo_keys'];
+const STRUCTURE = [...CONTAINER_KEYS, 'zarr_conventions'];
 
 /** A node template as a {@link TypeTemplate}, so that the STAC tree views can show it; format fields only with `showCore`. */
 function asTemplate(template: NodeTemplate, formatSchema: string, showCore: boolean): TypeTemplate {
@@ -57,7 +59,11 @@ export function realNodeView(node: JsonObject, template: NodeTemplate | undefine
     const asCore = sources.map((s) => (s.key === formatSchema ? { ...s, key: CORE, fields: [...s.fields, ...STRUCTURE] } : s));
     const placements = (template?.placements ?? []).map((p) => (p.source === formatSchema ? { ...p, source: CORE } : p));
     const typeTemplate = template ? { ...asTemplate(template, formatSchema, true), placements } : undefined;
-    return documentView(node, typeTemplate, asCore, showCore);
+    const view = documentView(node, typeTemplate, asCore, showCore);
+    // Objects within a format field (netCDF `filters`, Zarr `codecs`, `chunk_grid`) are that field's value, not places of
+    // fields: a key there (a filter's `id`) is not the convention field of the same name (ACDD `id`).
+    const inContainer = (pointer: string) => CONTAINER_KEYS.includes(pointer.split('/')[1] ?? '');
+    return { ...view, children: view.children.filter((child) => child.pointers.every(inContainer)) };
 }
 
 /** A Zarr metadata document of a store or one of its nodes. */
@@ -113,17 +119,47 @@ export function nodeConventions(format: string, node: JsonObject, root: JsonObje
     return [...out];
 }
 
-/** Assets of a STAC document whose embedded metadata this app can read: Zarr stores and their metadata documents. */
-export function zarrAssets(doc: JsonObject | undefined, baseHref: string | undefined): { key: string; href: string }[] {
+/** Which reader can read the embedded metadata of a data asset; a Zarr store's version is found when it is read. */
+export type ReaderKind = 'zarr' | 'netcdf' | 'tiff';
+
+export const READER_LABEL: Record<ReaderKind, string> = { zarr: 'Zarr store', netcdf: 'netCDF file', tiff: 'TIFF file' };
+
+const ZARR_DOCUMENT = /\/(zarr\.json|\.zmetadata|\.zgroup|\.zarray|\.zattrs)$/i;
+
+/**
+ * The reader of an asset's embedded metadata from its media type, or from its file name when it has none: Zarr stores (and
+ * their `zarr.json` or `.zmetadata`), netCDF files and TIFF files; `undefined` for others. Same rules as the Observatory's
+ * `embeddedReaderKind`.
+ */
+export function readerKind(href: string, mediaType?: string): ReaderKind | undefined {
+    let path: string;
+    try {
+        path = new URL(href, 'https://example.invalid/').pathname;
+    } catch {
+        return undefined;
+    }
+    const [essence = ''] = (mediaType ?? '').toLowerCase().replace(/\s+/g, '').split(';');
+    if (essence.includes('zarr')) return 'zarr';
+    if (['application/netcdf', 'application/x-netcdf', 'application/x-netcdf4'].includes(essence)) return 'netcdf';
+    if (essence === 'image/tiff' || essence === 'image/geotiff') return 'tiff';
+    if (ZARR_DOCUMENT.test(path)) return 'zarr';
+    if (essence && essence !== 'application/octet-stream') return undefined;
+    if (/\.zarr\/?$/i.test(path)) return 'zarr';
+    if (/\.(nc|nc4|netcdf|cdf)(\.gz)?$/i.test(path)) return 'netcdf';
+    if (/\.tiff?$/i.test(path)) return 'tiff';
+    return undefined;
+}
+
+/** Assets of a STAC document whose embedded metadata this app can read, with their resolved hrefs. */
+export function readableAssets(doc: JsonObject | undefined, baseHref: string | undefined): { key: string; href: string; kind: ReaderKind }[] {
     const assets = isObject(doc?.assets) ? doc.assets : {};
-    const out: { key: string; href: string }[] = [];
+    const out: { key: string; href: string; kind: ReaderKind }[] = [];
     for (const [key, asset] of Object.entries(assets)) {
         if (!isObject(asset) || typeof asset.href !== 'string') continue;
-        const type = typeof asset.type === 'string' ? asset.type.toLowerCase() : '';
-        const path = asset.href.split(/[?#]/)[0];
-        if (!type.includes('zarr') && !/(\.zarr\/?|\/zarr\.json|\/\.zmetadata)$/i.test(path)) continue;
+        const kind = readerKind(asset.href, typeof asset.type === 'string' ? asset.type : undefined);
+        if (!kind) continue;
         try {
-            out.push({ key, href: new URL(asset.href, baseHref).toString() });
+            out.push({ key, href: new URL(asset.href, baseHref).toString(), kind });
         } catch {
             // An href that is not a URL cannot be read.
         }
@@ -135,6 +171,8 @@ export function zarrAssets(doc: JsonObject | undefined, baseHref: string | undef
 export function zarrMetadataUrls(href: string): string[] {
     const path = href.split(/[?#]/)[0];
     if (/(\/zarr\.json|\/\.zmetadata|\.json)$/i.test(path)) return [href];
-    const base = href.replace(/\/+$/, '');
-    return [`${base}/zarr.json`, `${base}/.zmetadata`];
+    // A Zarr v2 node document is read with the rest of its store's consolidated metadata.
+    const base = path.replace(/\/\.(zgroup|zarray|zattrs)$/i, '').replace(/\/+$/, '');
+    const query = /\?[^#]*/.exec(href)?.[0] ?? '';
+    return [`${base}/zarr.json${query}`, `${base}/.zmetadata${query}`];
 }
