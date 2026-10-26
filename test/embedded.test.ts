@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_CONVENTIONS, embeddedCounterparts, fromConventionShortId, KNOWN_CONVENTIONS, stacCounterparts, toConventionShortId } from '../src/lib/conventions';
 import { probeEmbedded, validateNode } from '../src/lib/embedded-probe';
+import { buildMatrix } from '../src/lib/matrix';
 import { fixtureStore } from './helpers';
 
 const ZC = (name: string) => `https://raw.githubusercontent.com/zarr-conventions/${name}/refs/tags/v0.1/schema.json`;
@@ -58,6 +59,29 @@ describe('embedded placement probing', () => {
         const file = result.nodes.find((n) => n.key === 'tiff:file')!;
         expect(file.placements.some((p) => p.field === 'gdal_structural_metadata')).toBe(true);
         expect(file.placements.some((p) => p.field === 'GDAL_NODATA')).toBe(false);
+    });
+
+    it('places the fields a convention adds to another convention only where that one is used', async () => {
+        const alone = await probeEmbedded(fixtureStore(), [ZC('spatial')]);
+        const spatial = alone.sources.find((s) => s.key === ZC('spatial'))!;
+        expect(spatial.fields).not.toContain('multiscales');
+        for (const node of alone.nodes) {
+            expect(node.placements.filter((p) => p.field === 'multiscales'), node.key).toEqual([]);
+            expect(node.placements.filter((p) => p.location.includes('multiscales')), node.key).toEqual([]);
+        }
+        const both = await probeEmbedded(fixtureStore(), [ZC('multiscales'), ZC('spatial')]);
+        const group = both.nodes.find((n) => n.key === 'zarr-v3:group')!;
+        expect(group.errors).toEqual([]);
+        expect(group.placements.find((p) => p.field === 'multiscales')?.source).toBe(ZC('multiscales'));
+        const nested = group.placements.filter((p) => p.source === ZC('spatial') && p.location.startsWith('/attributes/multiscales/layout/'));
+        expect(nested.map((p) => p.field)).toEqual(expect.arrayContaining(['spatial:shape', 'spatial:transform']));
+        expect(both.nodes.find((n) => n.key === 'zarr-v3:array')!.placements.some((p) => p.location.includes('multiscales'))).toBe(false);
+
+        const groups = both.nodes.filter((n) => n.format === 'zarr-v3').map((n) => ({ type: `node:${n.key}`, label: n.nodeType, tone: 'node', doc: n.doc, placements: n.placements }));
+        const matrix = buildMatrix(groups, both.sources.filter((s) => s.formats.includes('zarr-v3')), new Set([`${B}zarr/v3/schema.json`]));
+        expect(matrix.cells.get(`${ZC('spatial')}|spatial:shape|node:zarr-v3:group attributes › multiscales › layout[]`)).toBeDefined();
+        expect(matrix.cells.get(`${ZC('multiscales')}|multiscales|node:zarr-v3:group attributes`)?.kind).toBe('validated');
+        expect(matrix.rows.some((r) => r.source === `${B}zarr/v3/schema.json`)).toBe(false);
     });
 
     it('validates a real node against its format and declared conventions', async () => {

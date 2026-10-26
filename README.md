@@ -16,11 +16,14 @@ asking the schemas themselves.
 - **Example catalog**: a conceptual catalog tree (Catalog → sub-catalog, Collection → Item) showing the *extreme case*:
   every field of the selected schemas placed everywhere the schemas allow it. Separate JSON documents are cards,
   objects inside a document are indented rows (`{}` objects, `[{}]` objects in arrays), Item `properties` are a green
-  GeoJSON box, and fields are chips coloured by extension. Click a chip group to list its fields, an object to highlight
-  it in the JSON panel. The generated example documents validate against STAC core and every selected extension and can
-  be copied or downloaded.
+  GeoJSON box, and fields are chips coloured by extension. Click a chip to see its field's information and the field in
+  the JSON panel (a chip group lists its fields and highlights them), an object to highlight it in the JSON panel. The
+  generated example documents validate against STAC core and every selected extension and can be copied or downloaded.
 - **Placement matrix**: every field × every conceptual location (Collection › Asset › Band, Item › properties ›
-  cube:variable, …) on one screen, for comparing extensions with each other.
+  cube:variable, …) on one screen, for comparing extensions with each other. Below it, one matrix per data format the
+  selected conventions apply to (Zarr v3, Zarr v2, netCDF, TIFF), since each format has its own node types and
+  conventions: its node types and their containers (`attributes`, `tags`, …) against its format and convention fields.
+  Click a cell to see the field in the example JSON.
 - **Explore a STAC URL**: open a Catalog, Collection or Item (static or STAC API) and browse its children. Each object
   shows its populated fields highlighted within all fields the schemas would allow at the same place: dotted chips are
   allowed but absent, red chips are present but not placed there by any selected schema. Documents are validated
@@ -119,6 +122,13 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
    there (`multiscales` in an array). As for STAC, a field is validated where an invalid value fails and presence-only
    where any value passes.
 
+   Conventions compose like STAC extensions. A convention whose container entries have a prefix (`proj:`, `spatial:`)
+   owns only those; its other entries are objects of other conventions to which it adds fields. The spatial schema, for
+   example, defines a `multiscales` key only to add `spatial:shape` and `spatial:transform` to the `layout` items of the
+   multiscales convention. Such fields are placed in a last pass, only inside the objects a selected convention
+   supplies (`attributes › multiscales › layout[]` when multiscales is selected too), never on their own: selecting
+   spatial alone does not place `multiscales`.
+
 ### Limitations
 
 - Only what the schemas check is found. Prose rules of an extension's README that its schema does not enforce are
@@ -133,7 +143,8 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 - Exploring a URL needs the server to allow cross-origin requests (CORS), as do custom schema URLs.
 - In STAC 1.0.0 the example Collection has `item_assets` even without the Item Assets extension, which 1.0.0 core does
   not validate.
-- The placement matrix covers STAC objects only, and a Zarr store without consolidated metadata shows only the node
+- The placement matrix of embedded metadata shows the example nodes of the selected conventions; real Zarr, netCDF and
+  TIFF nodes are compared in the explore view. A Zarr store without consolidated metadata shows only the node
   that was opened. Reading a netCDF or TIFF file also needs CORS on its server (the Earth Genome COGs, for example,
   have none). Long TIFF tag arrays (tile offsets) are shown by their length, and at most 64 TIFF images are read.
 

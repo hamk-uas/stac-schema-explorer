@@ -18,9 +18,9 @@ import { nodeConventions, READER_LABEL, readerKind, realNodeView, templateEntrie
 import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-probe';
 import { Engine } from './lib/engine';
 import { describeUrl, normalizeSchemaUrl } from './lib/extensions';
-import { conceptPath } from './lib/matrix';
-import { STAC_TYPES, STAC_VERSIONS, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
-import { objectLocations } from './lib/pointer';
+import { conceptPath, stacMatrixGroups, type MatrixGroup } from './lib/matrix';
+import { CORE, STAC_TYPES, STAC_VERSIONS, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
+import { getAt, joinPointer, objectLocations } from './lib/pointer';
 import { readEmbeddedFile } from './lib/reader';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
 import { documentView, fieldIndex, templateView } from './lib/tree';
@@ -357,9 +357,13 @@ const paneStyle = computed(() => ({
     ...(jsonWidth.value === undefined || !jsonOpen.value ? {} : { '--json-col': `min(${jsonWidth.value}px, 70vw)` }),
 }));
 
-function select(key: string, pointers: string[]) {
+/** Fields of a clicked chip, shown in the selected objects of the JSON. */
+const focusNames = ref<string[]>([]);
+
+function select(key: string, pointers: string[], names: string[] = []) {
     state.selected = key;
     selectedPointers.value = pointers;
+    focusNames.value = names;
     state.pointer = pointers.find((p) => p !== '') ?? '';
     jsonOpen.value = true;
 }
@@ -380,6 +384,12 @@ const selectedNode = computed(() => currentNodes.value.find((n) => n.key === sta
 const selectedEntry = computed(() => find(currentRoot.value, state.selected) ?? (state.mode === 'href' && detached.value?.key === state.selected ? detached.value : undefined));
 const selectedDocument = computed(() => selectedEntry.value ?? selectedNode.value);
 const jsonIndex = computed(() => (selectedDocument.value?.view ? fieldIndex(selectedDocument.value.view) : new Map()));
+/** What the JSON highlights and scrolls to: the clicked fields where they occur in the selected objects, else those objects. */
+const jsonPointers = computed(() => {
+    const doc = selectedDocument.value?.doc;
+    const occurrences = doc ? selectedPointers.value.flatMap((p) => focusNames.value.map((name) => joinPointer(p, name))).filter((p) => getAt(doc, p) !== undefined) : [];
+    return occurrences.length ? occurrences : selectedPointers.value;
+});
 const jsonTitle = computed(() => {
     if (selectedEntry.value) return `${TYPE_LABEL[selectedEntry.value.type]} — ${selectedEntry.value.title}`;
     const node = selectedNode.value;
@@ -394,9 +404,22 @@ watch(() => [state.mode, state.selected, hrefRoot.value?.status], () => {
     void load(detached.value);
 });
 
-function selectFromMatrix(type: string, pointers: string[]) {
-    select(EXAMPLE_KEYS[type as StacType], pointers);
+function selectFromMatrix(type: string, pointers: string[], field: string) {
+    select(type.startsWith('node:') ? type : EXAMPLE_KEYS[type as StacType], pointers, [field]);
 }
+
+const stacGroups = computed(() => (result.value ? stacMatrixGroups(result.value.templates) : []));
+/** One placement matrix per data format a selected convention applies to: its node types against its format and conventions. */
+const embeddedMatrices = computed(() => {
+    const probed = embeddedResult.value;
+    if (!probed) return [];
+    return DATA_FORMATS.filter((format) => probed.nodes.some((n) => n.format === format.id)).map((format) => ({
+        format,
+        sources: probed.sources.filter((s) => s.formats.includes(format.id)),
+        groups: probed.nodes.filter((n) => n.format === format.id)
+            .map((n): MatrixGroup => ({ type: `node:${n.key}`, label: n.nodeType, tone: 'node', doc: n.doc, placements: n.placements })),
+    }));
+});
 
 function setMode(mode: AppState['mode']) {
     state.mode = mode;
@@ -480,8 +503,9 @@ const fieldPanel = computed(() => {
 
 function showPlace(place: FieldPlace) {
     if (state.mode !== 'example') setMode('example');
-    if (place.type.startsWith('node:')) select(place.type, place.locations);
-    else select(EXAMPLE_KEYS[place.type as StacType], place.locations);
+    const names = fieldPanel.value ? [fieldPanel.value.name] : [];
+    if (place.type.startsWith('node:')) select(place.type, place.locations, names);
+    else select(EXAMPLE_KEYS[place.type as StacType], place.locations, names);
 }
 
 const fullAppUrl = computed(() => {
@@ -633,14 +657,41 @@ onMounted(() => {
             />
           </section>
         </div>
-        <MatrixView
-          v-else-if="state.view === 'matrix' && result"
-          :result="result"
-          :show-core="state.showCore"
-          :focus="state.focus"
-          @select="selectFromMatrix"
-          @field="(s: string, n: string) => openField(s, n)"
-        />
+        <template v-else-if="state.view === 'matrix'">
+          <MatrixView
+            v-if="result"
+            :groups="stacGroups"
+            :sources="result.sources"
+            :hidden="state.showCore ? [] : [CORE]"
+            :focus="state.focus"
+            intro="Where each field can be placed, per STAC object type and conceptual location."
+            legend
+            @select="selectFromMatrix"
+            @field="(s: string, n: string) => openField(s, n)"
+          />
+          <section class="embedded-section" aria-labelledby="embedded-matrix-heading">
+            <h3 id="embedded-matrix-heading">Embedded in the data</h3>
+            <p class="explain">
+              One matrix per data format: the conventions of different formats are distinct, as are their node types. A convention
+              that applies to several formats (CF to netCDF and Zarr) appears in each.
+              <template v-if="!state.showCore">Format fields (the counterparts of STAC core) are shown with “Show STAC core and data format fields”.</template>
+            </p>
+            <p v-if="state.conventions.length === 0" class="explain">Select data conventions to see where their fields go.</p>
+            <MatrixView
+              v-for="m in embeddedMatrices"
+              :key="m.format.id"
+              :groups="m.groups"
+              :sources="m.sources"
+              :hidden="state.showCore ? [] : [m.format.schema]"
+              :focus="state.focus"
+              :intro="`${m.format.title}: ${m.groups.map((g) => g.label).join(' and ')} nodes.`"
+              top-label="node"
+              class="format-matrix"
+              @select="selectFromMatrix"
+              @field="(s: string, n: string) => openField(s, n, m.sources)"
+            />
+          </section>
+        </template>
       </template>
 
       <template v-else>
@@ -736,7 +787,7 @@ onMounted(() => {
         :title="jsonTitle"
         :href="selectedDocument?.href"
         :index="jsonIndex"
-        :pointers="selectedPointers"
+        :pointers="jsonPointers"
       />
     </div>
 
@@ -1034,6 +1085,9 @@ onMounted(() => {
   margin-top: 22px;
   padding-top: 10px;
   border-top: 1px dashed #cbd5e1;
+}
+.format-matrix {
+  margin-top: 14px;
 }
 .embedded-section h3 {
   margin: 0 0 4px;

@@ -16,11 +16,17 @@ const props = defineProps<{
     selectedPointers: string[];
 }>();
 const emit = defineEmits<{
-    select: [key: string, pointers: string[]];
+    /** Select a node and objects in it; `names` are the fields to show in them (a clicked chip). */
+    select: [key: string, pointers: string[], names?: string[]];
     field: [source: string, name: string, sources: SourceInfo[]];
 }>();
 
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
+
+function pick(pointers: string[], source: string, name: string) {
+    emit('select', props.entry.key, pointers, [name]);
+    emit('field', source, name, props.entry.sources);
+}
 const pointers = computed(() => (isSelected.value ? props.selectedPointers : []));
 const DOCUMENT: Record<string, string> = { 'zarr-v3': 'zarr.json', 'zarr-v2': '.zgroup/.zarray + .zattrs', netcdf: 'netCDF header', tiff: 'TIFF directory' };
 const validityTitle = computed(() => {
@@ -51,7 +57,7 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
     <div class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">node</span>
-        <FieldChips :fields="entry.view.fields" :sources="entry.sources" :group="group" :focus="focus" @field="(s: string, n: string) => emit('field', s, n, entry.sources)" />
+        <FieldChips :fields="entry.view.fields" :sources="entry.sources" :group="group" :focus="focus" @field="(s: string, n: string) => pick([''], s, n)" @group="(_: string, names: string[]) => emit('select', entry.key, [''], names)" />
       </div>
       <ObjectNode
         v-for="child in entry.view.children"
@@ -61,7 +67,7 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
         :group="group"
         :focus="focus"
         :selected="pointers"
-        @select="(p: string[]) => emit('select', entry.key, p)"
+        @select="(p: string[], names?: string[]) => emit('select', entry.key, p, names)"
         @field="(s: string, n: string) => emit('field', s, n, entry.sources)"
       />
       <div v-if="notApplicable.length" class="na" title="These selected conventions define no field for this node type">

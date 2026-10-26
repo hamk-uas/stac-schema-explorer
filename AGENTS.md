@@ -182,11 +182,10 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
   distinguish app support from downstream integration still to be done.
 - [ ] Establish an explicit software license; attribution of Apache-licensed
   source documentation in the README is not a repository-wide license.
-- [ ] Embedded metadata: the placement matrix covers STAC objects only, and
-  explored data-file views are not restored from a shared link of a STAC document
-  (only when the file itself is `href`). The netCDF/TIFF readers duplicate the
-  Observatory's (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`);
-  until one shared package exists, change both together.
+- [ ] Embedded metadata: explored data-file views are not restored from a shared
+  link of a STAC document (only when the file itself is `href`). The netCDF/TIFF
+  readers duplicate the Observatory's (`@observatory/data` `readNetCDFMetadata`,
+  `readTiffMetadata`); until one shared package exists, change both together.
 
 ## Keep this guide current
 

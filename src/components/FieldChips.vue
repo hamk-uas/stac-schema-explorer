@@ -11,7 +11,11 @@ const props = defineProps<{
     group: boolean;
     focus: string;
 }>();
-const emit = defineEmits<{ field: [source: string, name: string] }>();
+const emit = defineEmits<{
+    field: [source: string, name: string];
+    /** A chip of several fields of one source was clicked (to list them). */
+    group: [source: string, names: string[]];
+}>();
 
 const expanded = ref(new Set<string>());
 const groups = computed(() => groupFields(props.fields, props.sources));
@@ -23,6 +27,7 @@ function toggle(group: FieldGroup) {
     if (next.has(source)) next.delete(source);
     else next.add(source);
     expanded.value = next;
+    emit('group', source, group.fields.map((f) => f.name));
 }
 
 const STATE_TEXT = {

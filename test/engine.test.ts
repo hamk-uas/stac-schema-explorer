@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_EXTENSIONS, fromShortId, repoUrl, toShortId } from '../src/lib/extensions';
-import { buildMatrix } from '../src/lib/matrix';
-import type { ProbeResult, StacType } from '../src/lib/model';
+import { buildMatrix, stacMatrixGroups } from '../src/lib/matrix';
+import { CORE, type ProbeResult, type StacType } from '../src/lib/model';
 import { probe } from '../src/lib/probe';
 import { stringFromRegex } from '../src/lib/sampler';
 import { formatErrors } from '../src/lib/schemas';
@@ -223,7 +223,7 @@ describe('views', () => {
 
     it('builds a placement matrix with conceptual columns', async () => {
         const result = await defaultProbe();
-        const matrix = buildMatrix(result.templates, result.sources, false);
+        const matrix = buildMatrix(stacMatrixGroups(result.templates), result.sources, new Set([CORE]));
         const keys = matrix.columns.map((c) => c.key);
         expect(keys).toContain('Feature properties › cube:variable');
         expect(keys).toContain('Collection Item Asset › Band');

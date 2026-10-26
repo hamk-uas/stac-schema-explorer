@@ -19,7 +19,8 @@ const props = defineProps<{
     selectedPointers: string[];
 }>();
 const emit = defineEmits<{
-    select: [key: string, pointers: string[]];
+    /** Select a document and objects in it; `names` are the fields to show in them (a clicked chip). */
+    select: [key: string, pointers: string[], names?: string[]];
     toggle: [entry: DocEntry];
     more: [entry: DocEntry];
     field: [source: string, name: string, sources: SourceInfo[]];
@@ -30,6 +31,11 @@ const emit = defineEmits<{
 const readable = computed(() => (props.entry.href ? readableAssets(props.entry.doc, props.entry.href) : []));
 
 const docSources = computed(() => props.entry.sources ?? props.sources);
+
+function pick(pointers: string[], source: string, name: string) {
+    emit('select', props.entry.key, pointers, [name]);
+    emit('field', source, name, docSources.value);
+}
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
 const pointers = computed(() => (isSelected.value ? props.selectedPointers : []));
 const notApplicable = computed(() => (props.entry.template?.notApplicable ?? []).map((k) => sourceLabel(k, docSources.value)));
@@ -72,7 +78,7 @@ const validityTitle = computed(() => {
     <div v-if="entry.view && !entry.compact" class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">top level</span>
-        <FieldChips :fields="entry.view.fields" :sources="docSources" :group="group" :focus="focus" @field="(s: string, n: string) => emit('field', s, n, docSources)" />
+        <FieldChips :fields="entry.view.fields" :sources="docSources" :group="group" :focus="focus" @field="(s: string, n: string) => pick([''], s, n)" @group="(_: string, names: string[]) => emit('select', entry.key, [''], names)" />
       </div>
       <ObjectNode
         v-for="child in entry.view.children"
@@ -82,7 +88,7 @@ const validityTitle = computed(() => {
         :group="group"
         :focus="focus"
         :selected="pointers"
-        @select="(p: string[]) => emit('select', entry.key, p)"
+        @select="(p: string[], names?: string[]) => emit('select', entry.key, p, names)"
         @field="(s: string, n: string) => emit('field', s, n, docSources)"
       />
       <div v-if="notApplicable.length && !entry.href" class="na" title="These selected extensions define no field for this object type">
@@ -106,7 +112,7 @@ const validityTitle = computed(() => {
         :focus="focus"
         :selected-doc="selectedDoc"
         :selected-pointers="selectedPointers"
-        @select="(k: string, p: string[]) => emit('select', k, p)"
+        @select="(k: string, p: string[], names?: string[]) => emit('select', k, p, names)"
         @toggle="(e: DocEntry) => emit('toggle', e)"
         @more="(e: DocEntry) => emit('more', e)"
         @field="(s: string, n: string, src: SourceInfo[]) => emit('field', s, n, src)"

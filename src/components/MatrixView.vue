@@ -2,19 +2,32 @@
 import { computed } from 'vue';
 
 import { colorOf, sourceLabel } from '../lib/colors';
-import { buildMatrix, TYPE_LABEL, type MatrixCell } from '../lib/matrix';
-import { STAC_TYPES, type ProbeResult } from '../lib/model';
+import { buildMatrix, type MatrixCell, type MatrixGroup } from '../lib/matrix';
+import type { SourceInfo } from '../lib/model';
 
-const props = defineProps<{ result: ProbeResult; showCore: boolean; focus: string }>();
-const emit = defineEmits<{ select: [type: string, pointers: string[]]; field: [source: string, name: string] }>();
+const props = defineProps<{
+    groups: MatrixGroup[];
+    sources: SourceInfo[];
+    /** Sources whose fields are left out (core and format fields unless shown). */
+    hidden: string[];
+    focus: string;
+    /** Label of the top-level column: `top level` of a STAC object, `node` of embedded metadata. */
+    topLabel?: string;
+    intro?: string;
+    /** Explain the marks. */
+    legend?: boolean;
+}>();
+const emit = defineEmits<{ select: [type: string, pointers: string[], field: string]; field: [source: string, name: string] }>();
 
-const matrix = computed(() => buildMatrix(props.result.templates, props.result.sources, props.showCore));
-const typeSpans = computed(() => STAC_TYPES.map((type) => ({ type, count: matrix.value.columns.filter((c) => c.type === type).length })).filter((t) => t.count > 0));
+const matrix = computed(() => buildMatrix(props.groups, props.sources, new Set(props.hidden)));
+const typeSpans = computed(() => props.groups
+    .map((g) => ({ type: g.type, label: g.label, tone: g.tone, count: matrix.value.columns.filter((c) => c.type === g.type).length }))
+    .filter((t) => t.count > 0));
 const rows = computed(() => {
     const out: { header?: string; source: string; field?: string }[] = [];
     let last = '';
     for (const row of matrix.value.rows) {
-        if (row.source !== last) out.push({ header: sourceLabel(row.source, props.result.sources), source: row.source });
+        if (row.source !== last) out.push({ header: sourceLabel(row.source, props.sources), source: row.source });
         out.push(row);
         last = row.source;
     }
@@ -31,29 +44,32 @@ function cellTitle(field: string, c: MatrixCell): string {
 }
 
 function fieldTitle(source: string, field: string): string {
-    const doc = props.result.sources.find((s) => s.key === source)?.docs[field];
+    const doc = props.sources.find((s) => s.key === source)?.docs[field];
     return [doc?.title, doc?.type, 'Click for details.'].filter(Boolean).join('\n');
 }
 </script>
 
 <template>
   <div class="matrix-wrap">
-    <p class="intro">
-      Where each field can be placed, per STAC object type and conceptual location. <span class="mark validated" /> validated
-      by the schema, <span class="mark presence" /> presence only (counts towards the extension's “at least one field”
-      requirement), <span class="mark validated partial" /> only in some objects of that kind (hover for details). Click a
-      cell to see it in the example JSON.
+    <p v-if="intro || legend" class="intro">
+      {{ intro }}
+      <template v-if="legend">
+        <span class="mark validated" /> validated by the schema, <span class="mark presence" /> presence only (counts towards the
+        extension's “at least one field” requirement), <span class="mark validated partial" /> only in some objects of that kind
+        (hover for details). Click a cell to see it in the example JSON.
+      </template>
     </p>
-    <div class="scroll">
+    <p v-if="!matrix.rows.length" class="empty">No fields to place.</p>
+    <div v-else class="scroll">
       <table>
         <thead>
           <tr>
             <th class="corner" rowspan="2">Field</th>
-            <th v-for="t in typeSpans" :key="t.type" :colspan="t.count" class="type" :class="`type-${t.type}`">{{ TYPE_LABEL[t.type] }}</th>
+            <th v-for="t in typeSpans" :key="t.type" :colspan="t.count" class="type" :class="`type-${t.tone}`">{{ t.label }}</th>
           </tr>
           <tr>
-            <th v-for="col in matrix.columns" :key="col.key" class="col" :class="`type-${col.type}`">
-              <span>{{ col.path.length ? col.path.join(' › ') : 'top level' }}</span>
+            <th v-for="col in matrix.columns" :key="col.key" class="col" :class="`type-${col.tone}`">
+              <span>{{ col.path.length ? col.path.join(' › ') : (topLabel ?? 'top level') }}</span>
             </th>
           </tr>
         </thead>
@@ -66,7 +82,7 @@ function fieldTitle(source: string, field: string): string {
               <th class="field" :style="{ '--c': colorOf(row.source) }">
                 <button type="button" :title="fieldTitle(row.source, row.field!)" @click="emit('field', row.source, row.field!)">{{ row.field }}</button>
               </th>
-              <td v-for="col in matrix.columns" :key="col.key" :class="`type-${col.type}`">
+              <td v-for="col in matrix.columns" :key="col.key" :class="`type-${col.tone}`">
                 <button
                   v-if="cell(row.source, row.field!, col.key)"
                   type="button"
@@ -74,7 +90,7 @@ function fieldTitle(source: string, field: string): string {
                   :class="[cell(row.source, row.field!, col.key)!.kind, { partial: cell(row.source, row.field!, col.key)!.partial }]"
                   :style="{ '--c': colorOf(row.source) }"
                   :title="cellTitle(row.field!, cell(row.source, row.field!, col.key)!)"
-                  @click="emit('select', col.type, cell(row.source, row.field!, col.key)!.locations)"
+                  @click="emit('select', col.type, cell(row.source, row.field!, col.key)!.locations, row.field!)"
                 />
               </td>
             </tr>
@@ -136,6 +152,13 @@ th.type-Collection {
 }
 th.type-Feature {
   color: #b45309;
+}
+th.type-node {
+  color: #475569;
+}
+.empty {
+  font-size: 12px;
+  color: #94a3b8;
 }
 th.col {
   height: 130px;
