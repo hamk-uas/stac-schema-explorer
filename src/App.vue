@@ -705,6 +705,9 @@ const fullAppUrl = computed(() => {
     return url.toString();
 });
 
+/** The app without URL parameters: its default state, at whatever path it is deployed. */
+const homeUrl = location.pathname;
+
 const findings = computed(() => {
     const probed = result.value;
     if (!probed) return [];
@@ -741,7 +744,7 @@ onMounted(() => {
   <div ref="appEl" class="app" :class="{ 'no-json': !jsonOpen, embed: state.embed }" :style="paneStyle">
     <header v-if="!state.embed" class="top">
       <div class="brand">
-        <h1>STAC Schema Explorer</h1>
+        <h1><a class="home" :href="homeUrl" title="Start over: reset all settings and selections">STAC Schema Explorer</a></h1>
         <p>Where can each field of STAC core and STAC extensions go? Derived by probing the JSON Schemas themselves.</p>
       </div>
       <nav class="modes" aria-label="View">
@@ -1066,6 +1069,13 @@ onMounted(() => {
   margin: 0;
   font: 700 18px var(--sans);
   color: #0f172a;
+}
+.brand .home {
+  color: inherit;
+  text-decoration: none;
+}
+.brand .home:hover {
+  text-decoration: underline;
 }
 .brand p {
   margin: 2px 0 0;
