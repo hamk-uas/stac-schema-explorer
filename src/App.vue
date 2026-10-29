@@ -15,7 +15,7 @@ import { isProbeableLocation } from './lib/base-docs';
 import { colorOf, sourceLabel } from './lib/colors';
 import { DATA_FORMATS, embeddedCounterparts, embeddedSchemaLabel, stacCounterparts } from './lib/conventions';
 import { TYPE_LABEL, type DocEntry } from './lib/docs';
-import { nodeConventions, READER_LABEL, readerKind, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type NodeEntry, type ReaderKind } from './lib/embedded-docs';
+import { nodeConventions, READER_LABEL, readableAssets, readerKind, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type NodeEntry, type ReaderKind } from './lib/embedded-docs';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-probe';
 import { Engine } from './lib/engine';
 import { describeUrl, normalizeSchemaUrl } from './lib/extensions';
@@ -294,6 +294,31 @@ async function openHref(href: string, keepSelection = false) {
         root.expanded = true;
         await loadMore(root);
     }
+    if (hrefRoot.value === root && !embeddedView.value) {
+        const zarr = firstZarrAsset(root);
+        if (zarr) await openEmbedded(zarr.href, zarr.label, 'zarr');
+    }
+}
+
+/**
+ * The first Zarr asset of the loaded documents, breadth first and preferring the `data` role, read without a click:
+ * its metadata is a few small JSON documents. netCDF and TIFF files can need large downloads and stay behind their links.
+ */
+function firstZarrAsset(root: DocEntry): { href: string; label: string } | undefined {
+    const queue = [root];
+    for (let entry = queue.shift(); entry; entry = queue.shift()) {
+        if (entry.status === 'ready' && entry.doc && entry.href) {
+            const assets = readableAssets(entry.doc, entry.href).filter((a) => a.kind === 'zarr');
+            const rolesOf = (key: string) => ((entry!.doc!.assets as Record<string, { roles?: unknown }>)[key]?.roles);
+            const asset = assets.find((a) => {
+                const roles = rolesOf(a.key);
+                return Array.isArray(roles) && roles.includes('data');
+            }) ?? assets[0];
+            if (asset) return { href: asset.href, label: `asset ${asset.key} of ${entry.title}` };
+        }
+        queue.push(...entry.children);
+    }
+    return undefined;
 }
 
 function walk(entry: DocEntry | undefined, visit: (e: DocEntry) => void) {
@@ -779,7 +804,8 @@ onMounted(() => {
         </p>
         <p class="explain">
           Populated fields are highlighted within the fields the schemas would allow at the same place (dotted = allowed but
-          absent; red = present but not placed there by any selected schema). Expand a document to load its children.
+          absent; red = present but not placed there by any selected schema). Expand a document to load its children. The first
+          Zarr asset found is read automatically; other data assets are read from their “embedded metadata” links.
         </p>
         <div class="tree">
           <DocCard

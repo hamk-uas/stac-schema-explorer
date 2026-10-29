@@ -40,7 +40,8 @@ asking the schemas themselves.
   (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). Format fields, the counterparts of STAC core, are shown with
   STAC core fields.
 - **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
-  file, or follow the “embedded metadata of asset …” link of a STAC document with such an asset. Every node is shown
+  file, or follow the “embedded metadata of asset …” link of a STAC document with such an asset. The first Zarr asset
+  of an opened STAC URL (preferring the `data` role) is read automatically. Every node is shown
   within the fields its format and its declared (`zarr_conventions`, `Conventions`) or recognised conventions allow,
   and validated against them. netCDF and TIFF files are read in a worker
   ([src/reader.worker.ts](src/reader.worker.ts)) by HTTP range requests, fetching only their headers: netCDF-4 with
