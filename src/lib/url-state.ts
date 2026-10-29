@@ -24,6 +24,8 @@ export interface AppState {
     focus: string;
     /** Field shown in the field information panel: `<source key>|<field name>`. */
     field: string;
+    /** Schema (extension, convention, format or core) shown in the information panel instead of a field. */
+    schema: string;
     /** Embedded in another app (an iframe): no page header. */
     embed: boolean;
 }
@@ -43,6 +45,7 @@ export function defaultState(): AppState {
         view: 'tree',
         focus: '',
         field: '',
+        schema: '',
         embed: false,
     };
 }
@@ -72,6 +75,8 @@ export function readState(search: string): AppState {
         const source = field.slice(0, at);
         state.field = `${source === 'core' ? 'core' : fromShortId(source)}|${field.slice(at + 1)}`;
     }
+    const schema = params.get('schema');
+    if (schema && !state.field) state.schema = schema === 'core' || schema.startsWith('?') ? schema : fromShortId(schema);
     state.embed = params.get('embed') === '1';
     return state;
 }
@@ -96,6 +101,8 @@ export function writeState(state: AppState): string {
         const at = state.field.indexOf('|');
         const source = state.field.slice(0, at);
         params.set('field', `${source === 'core' ? 'core' : toShortId(source)}|${state.field.slice(at + 1)}`);
+    } else if (state.schema) {
+        params.set('schema', state.schema === 'core' || state.schema.startsWith('?') ? state.schema : toShortId(state.schema));
     }
     if (state.embed) params.set('embed', '1');
     return `?${params.toString().replaceAll('%40', '@').replaceAll('%2F', '/').replaceAll('%3A', ':').replaceAll('%7C', '|')}`;

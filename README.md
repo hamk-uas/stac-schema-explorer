@@ -66,6 +66,7 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | `view` | `matrix` for the placement matrix |
 | `focus` | an extension whose fields are highlighted (others dimmed) |
 | `field` | field shown in the field information panel: `<extension>\|<field>`, e.g. `cf@1.0.0\|cf:cell_methods`, or `core\|license` |
+| `schema` | extension, data convention or format shown in the information panel instead of a field (`name@version`, a schema URL or `core`) |
 | `core=1`, `group=0`, `declared=0` | show STAC core fields; list fields one by one; ignore extensions declared by explored documents |
 | `embed=1` | embedded in another app: no page header, a link to open the full app instead |
 

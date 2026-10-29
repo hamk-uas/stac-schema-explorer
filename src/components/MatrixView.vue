@@ -17,7 +17,11 @@ const props = defineProps<{
     /** Explain the marks. */
     legend?: boolean;
 }>();
-const emit = defineEmits<{ select: [type: string, pointers: string[], field: string]; field: [source: string, name: string] }>();
+const emit = defineEmits<{
+    select: [type: string, pointers: string[], field: string];
+    field: [source: string, name: string];
+    schema: [source: string];
+}>();
 
 const matrix = computed(() => buildMatrix(props.groups, props.sources, new Set(props.hidden)));
 const typeSpans = computed(() => props.groups
@@ -76,7 +80,9 @@ function fieldTitle(source: string, field: string): string {
         <tbody>
           <template v-for="(row, i) in rows" :key="i">
             <tr v-if="row.header" class="source-row">
-              <th :colspan="matrix.columns.length + 1" :style="{ '--c': colorOf(row.source) }">{{ row.header }}</th>
+              <th :colspan="matrix.columns.length + 1" :style="{ '--c': colorOf(row.source) }">
+                <button type="button" :title="`About ${row.header}`" @click="emit('schema', row.source)">{{ row.header }}</button>
+              </th>
             </tr>
             <tr v-else :class="{ dimmed: focus && focus !== row.source }">
               <th class="field" :style="{ '--c': colorOf(row.source) }">
@@ -90,7 +96,7 @@ function fieldTitle(source: string, field: string): string {
                   :class="[cell(row.source, row.field!, col.key)!.kind, { partial: cell(row.source, row.field!, col.key)!.partial }]"
                   :style="{ '--c': colorOf(row.source) }"
                   :title="cellTitle(row.field!, cell(row.source, row.field!, col.key)!)"
-                  @click="emit('select', col.type, cell(row.source, row.field!, col.key)!.locations, row.field!)"
+                  @click="emit('select', col.type, cell(row.source, row.field!, col.key)!.locations, row.field!); emit('field', row.source, row.field!)"
                 />
               </td>
             </tr>
@@ -181,6 +187,17 @@ th.col span {
   border-top: 1px solid #e2e8f0;
   position: sticky;
   left: 0;
+}
+.source-row button {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.source-row button:hover {
+  text-decoration: underline;
 }
 th.field {
   position: sticky;

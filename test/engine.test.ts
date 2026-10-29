@@ -53,6 +53,7 @@ describe('url state', () => {
         state.showCore = true;
         state.view = 'matrix';
         state.focus = CF;
+        state.schema = SEMANTICS;
         const search = writeState(state);
         expect(search).toContain('ext=cf@1.0.0');
         expect(readState(search)).toEqual(state);

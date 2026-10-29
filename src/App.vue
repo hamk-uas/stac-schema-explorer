@@ -9,6 +9,7 @@ import JsonView from './components/JsonView.vue';
 import Legend from './components/Legend.vue';
 import MatrixView from './components/MatrixView.vue';
 import NodeCard from './components/NodeCard.vue';
+import SchemaInfo from './components/SchemaInfo.vue';
 import Splitter from './components/Splitter.vue';
 import { isProbeableLocation } from './lib/base-docs';
 import { colorOf, sourceLabel } from './lib/colors';
@@ -366,6 +367,11 @@ function select(key: string, pointers: string[], names: string[] = []) {
     focusNames.value = names;
     state.pointer = pointers.find((p) => p !== '') ?? '';
     jsonOpen.value = true;
+    // The information panel describes what the JSON highlights: selecting objects without fields leaves nothing to describe.
+    if (names.length === 0) {
+        state.field = '';
+        state.schema = '';
+    }
 }
 
 function find(entry: DocEntry | undefined, key: string): DocEntry | undefined {
@@ -437,6 +443,12 @@ function toggleFocus(source: string) {
     state.focus = state.focus === source ? '' : source;
 }
 
+/** A schema clicked in the sidebar: highlight its fields and describe it. */
+function focusFromPicker(source: string) {
+    toggleFocus(source);
+    if (state.focus === source) openSchema(source);
+}
+
 // ---- Field information --------------------------------------------------------------------------------------------
 
 /** Sources of the document whose field was clicked (a real document may declare extensions beyond the selection). */
@@ -445,6 +457,7 @@ const fieldContext = shallowRef<SourceInfo[]>();
 function openField(source: string, name: string, context?: SourceInfo[]) {
     fieldContext.value = context ? markRaw(context) : undefined;
     state.field = `${source}|${name}`;
+    state.schema = '';
     jsonOpen.value = true;
 }
 
@@ -506,6 +519,63 @@ function showPlace(place: FieldPlace) {
     const names = fieldPanel.value ? [fieldPanel.value.name] : [];
     if (place.type.startsWith('node:')) select(place.type, place.locations, names);
     else select(EXAMPLE_KEYS[place.type as StacType], place.locations, names);
+}
+
+// ---- Schema information -------------------------------------------------------------------------------------------
+
+/** Sources of the document whose grouped chip was clicked, and the schema's fields in the clicked object. */
+const schemaContext = shallowRef<SourceInfo[]>();
+const schemaHere = ref<string[]>([]);
+
+function openSchema(source: string, names: string[] = [], context?: SourceInfo[]) {
+    schemaContext.value = context ? markRaw(context) : undefined;
+    schemaHere.value = names;
+    state.schema = source;
+    state.field = '';
+    jsonOpen.value = true;
+}
+
+const schemaPanel = computed(() => {
+    const source = state.schema;
+    if (!source) return undefined;
+    const pools = [schemaContext.value, sources.value, embeddedSources.value, selectedEntry.value?.sources, selectedNode.value?.sources]
+        .filter((p): p is SourceInfo[] => !!p);
+    const pool = pools.find((p) => p.some((s) => s.key === source)) ?? pools[0] ?? [];
+    const info = pool.find((s) => s.key === source);
+    const places: FieldPlace[] = [];
+    const probed = result.value;
+    if (probed?.sources.some((s) => s.key === source)) {
+        for (const type of STAC_TYPES) {
+            const own = probed.templates[type].placements.filter((p) => p.source === source);
+            if (own.length) {
+                places.push({ label: TYPE_LABEL[type], type, locations: [...new Set(own.map((p) => p.location))],
+                    kind: own.some((p) => p.kind === 'validated') ? 'validated' : 'presence' });
+            }
+        }
+    }
+    for (const template of embeddedResult.value?.nodes ?? []) {
+        const own = template.placements.filter((p) => p.source === source);
+        if (own.length) {
+            places.push({ label: `${template.formatTitle} ${template.nodeType}`, type: `node:${template.key}`, locations: [...new Set(own.map((p) => p.location))],
+                kind: own.some((p) => p.kind === 'validated') ? 'validated' : 'presence' });
+        }
+    }
+    return { source, info, sources: pool, places, here: schemaHere.value.filter((name) => !info || info.fields.includes(name) || source.startsWith('?')) };
+});
+
+function showSchemaPlace(place: FieldPlace) {
+    const names = schemaPanel.value?.info?.fields ?? [];
+    if (state.mode !== 'example') setMode('example');
+    schemaHere.value = [];
+    if (place.type.startsWith('node:')) select(place.type, place.locations, names);
+    else select(EXAMPLE_KEYS[place.type as StacType], place.locations, names);
+}
+
+function showSchemaField(name: string) {
+    const panel = schemaPanel.value;
+    if (!panel) return;
+    select(state.selected, selectedPointers.value, [name]);
+    openField(panel.source, name, panel.sources);
 }
 
 const fullAppUrl = computed(() => {
@@ -571,12 +641,12 @@ onMounted(() => {
       </section>
       <section>
         <h2>Extensions</h2>
-        <ExtensionPicker v-model="state.extensions" :sources="sources" @focus="toggleFocus" />
+        <ExtensionPicker v-model="state.extensions" :sources="sources" @focus="focusFromPicker" />
       </section>
       <section>
         <h2>Data conventions</h2>
         <p class="hint">Conventions of metadata embedded in data files (Zarr, netCDF, TIFF): the counterparts of STAC extensions.</p>
-        <ConventionPicker v-model="state.conventions" :sources="embeddedSources" @focus="toggleFocus" />
+        <ConventionPicker v-model="state.conventions" :sources="embeddedSources" @focus="focusFromPicker" />
       </section>
       <section>
         <h2>Display</h2>
@@ -628,6 +698,7 @@ onMounted(() => {
             @select="select"
             @toggle="toggle"
             @field="openField"
+            @schema="openSchema"
           />
           <details v-if="findings.length" class="findings" open>
             <summary>Findings ({{ findings.length }})</summary>
@@ -654,6 +725,7 @@ onMounted(() => {
               :selected-pointers="selectedPointers"
               @select="select"
               @field="openField"
+              @schema="openSchema"
             />
           </section>
         </div>
@@ -668,6 +740,7 @@ onMounted(() => {
             legend
             @select="selectFromMatrix"
             @field="(s: string, n: string) => openField(s, n)"
+            @schema="(s: string) => openSchema(s)"
           />
           <section class="embedded-section" aria-labelledby="embedded-matrix-heading">
             <h3 id="embedded-matrix-heading">Embedded in the data</h3>
@@ -689,6 +762,7 @@ onMounted(() => {
               class="format-matrix"
               @select="selectFromMatrix"
               @field="(s: string, n: string) => openField(s, n, m.sources)"
+              @schema="(s: string) => openSchema(s, [], m.sources)"
             />
           </section>
         </template>
@@ -720,6 +794,7 @@ onMounted(() => {
             @toggle="toggle"
             @more="loadMore"
             @field="openField"
+            @schema="openSchema"
             @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
           />
           <template v-if="detached && !find(hrefRoot, detached.key)">
@@ -735,6 +810,7 @@ onMounted(() => {
               @toggle="toggle"
               @more="loadMore"
               @field="openField"
+              @schema="openSchema"
               @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
             />
           </template>
@@ -761,6 +837,7 @@ onMounted(() => {
               :selected-pointers="selectedPointers"
               @select="select"
               @field="openField"
+              @schema="openSchema"
             />
           </section>
         </div>
@@ -780,6 +857,19 @@ onMounted(() => {
         :counterparts-title="fieldPanel.counterpartsTitle"
         @close="state.field = ''"
         @place="showPlace"
+      />
+      <SchemaInfo
+        v-else-if="schemaPanel"
+        :source="schemaPanel.source"
+        :info="schemaPanel.info"
+        :sources="schemaPanel.sources"
+        :places="schemaPanel.places"
+        :here="schemaPanel.here"
+        :focused="state.focus === schemaPanel.source"
+        @close="state.schema = ''"
+        @field="showSchemaField"
+        @place="showSchemaPlace"
+        @focus="toggleFocus(schemaPanel.source)"
       />
       <JsonView
         class="json-view"

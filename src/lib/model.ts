@@ -46,6 +46,8 @@ export interface SourceInfo {
     /** Field prefixes such as `cube`; empty for unprefixed extensions like Themes. */
     prefixes: string[];
     version?: string;
+    /** The schema's own description of itself. */
+    description?: string;
     /** Fields found in the schema. */
     fields: string[];
     /** Fields for which no valid example value could be generated. */

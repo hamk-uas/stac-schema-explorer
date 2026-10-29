@@ -16,11 +16,18 @@ const emit = defineEmits<{
     /** Select objects; `names` are the fields to show in them (a clicked chip). */
     select: [pointers: string[], names?: string[]];
     field: [source: string, name: string];
+    /** A grouped chip was clicked: the schema and its fields in this object. */
+    schema: [source: string, names: string[]];
 }>();
 
 function pickField(source: string, name: string) {
     emit('select', props.node.pointers, [name]);
     emit('field', source, name);
+}
+
+function pickGroup(source: string, names: string[]) {
+    emit('select', props.node.pointers, names);
+    emit('schema', source, names);
 }
 
 const ARRAY_KINDS = new Set(['link', 'provider', 'band', 'column']);
@@ -37,7 +44,7 @@ function isSelected(): boolean {
       <span class="label">{{ node.label }}</span>
       <span v-if="node.kind === 'properties'" class="tag geojson" title="Item properties are the properties of a GeoJSON Feature">GeoJSON Feature properties</span>
       <span v-if="node.kind === 'summaries'" class="tag" title="Collection summaries: values are sets, ranges or JSON Schemas of fields used in the Items">summaries of Item fields</span>
-      <FieldChips :fields="node.fields" :sources="sources" :group="group" :focus="focus" @field="pickField" @group="(_: string, names: string[]) => emit('select', node.pointers, names)" />
+      <FieldChips :fields="node.fields" :sources="sources" :group="group" :focus="focus" @field="pickField" @group="pickGroup" />
     </div>
     <div v-if="node.children.length" class="children">
       <ObjectNode
@@ -50,6 +57,7 @@ function isSelected(): boolean {
         :selected="selected"
         @select="(p: string[], names?: string[]) => emit('select', p, names)"
         @field="(s: string, n: string) => emit('field', s, n)"
+        @schema="(s: string, n: string[]) => emit('schema', s, n)"
       />
     </div>
   </div>

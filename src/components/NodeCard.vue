@@ -19,6 +19,8 @@ const emit = defineEmits<{
     /** Select a node and objects in it; `names` are the fields to show in them (a clicked chip). */
     select: [key: string, pointers: string[], names?: string[]];
     field: [source: string, name: string, sources: SourceInfo[]];
+    /** A grouped chip was clicked: the schema, its fields in the object, and the node's sources. */
+    schema: [source: string, names: string[], sources: SourceInfo[]];
 }>();
 
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
@@ -26,6 +28,11 @@ const isSelected = computed(() => props.selectedDoc === props.entry.key);
 function pick(pointers: string[], source: string, name: string) {
     emit('select', props.entry.key, pointers, [name]);
     emit('field', source, name, props.entry.sources);
+}
+
+function pickGroup(pointers: string[], source: string, names: string[]) {
+    emit('select', props.entry.key, pointers, names);
+    emit('schema', source, names, props.entry.sources);
 }
 const pointers = computed(() => (isSelected.value ? props.selectedPointers : []));
 const DOCUMENT: Record<string, string> = { 'zarr-v3': 'zarr.json', 'zarr-v2': '.zgroup/.zarray + .zattrs', netcdf: 'netCDF header', tiff: 'TIFF directory' };
@@ -57,7 +64,7 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
     <div class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">node</span>
-        <FieldChips :fields="entry.view.fields" :sources="entry.sources" :group="group" :focus="focus" @field="(s: string, n: string) => pick([''], s, n)" @group="(_: string, names: string[]) => emit('select', entry.key, [''], names)" />
+        <FieldChips :fields="entry.view.fields" :sources="entry.sources" :group="group" :focus="focus" @field="(s: string, n: string) => pick([''], s, n)" @group="(s: string, names: string[]) => pickGroup([''], s, names)" />
       </div>
       <ObjectNode
         v-for="child in entry.view.children"
@@ -69,6 +76,7 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
         :selected="pointers"
         @select="(p: string[], names?: string[]) => emit('select', entry.key, p, names)"
         @field="(s: string, n: string) => emit('field', s, n, entry.sources)"
+        @schema="(s: string, n: string[]) => emit('schema', s, n, entry.sources)"
       />
       <div v-if="notApplicable.length" class="na" title="These selected conventions define no field for this node type">
         not applicable: {{ notApplicable.join(', ') }}

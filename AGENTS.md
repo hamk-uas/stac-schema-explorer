@@ -48,8 +48,13 @@ technical visual language; it need not adopt Observatory instance branding.
 - Data conventions (`conv`) get the same treatment as extensions (`ext`), visibly
   apart: their own picker grouped by kind, square markers, node cards marked
   "embedded in the data" (`NodeCard`), and format fields hidden with STAC core.
-  Reuse `templateView`/`documentView`, `FieldChips` and `FieldInfo` for nodes;
+  Reuse `templateView`/`documentView`, `FieldChips`, `FieldInfo` and `SchemaInfo` for nodes;
   only the probing differs (format nodes instead of STAC objects).
+- The information panel above the JSON describes what the JSON highlights: a
+  field chip or matrix cell opens `FieldInfo`, a grouped chip, picker name or
+  matrix schema header opens `SchemaInfo`, and selecting objects without
+  fields closes the panel. Do not let it show something the JSON no longer
+  highlights.
 - Remote catalogs are explored incrementally; do not eagerly download entire
   trees to render the first screen.
 - This app is browser-side/static. Relative Vite deployment paths and embedded
@@ -136,7 +141,7 @@ components rather than introducing another design library.
   not core navigation/inspection capability. Avoid fixed widths that defeat
   the narrow-screen mode.
 - **Components:** reuse `DocCard`, `ExtensionPicker`, `FieldChips`, `FieldInfo`,
-  `MatrixView`, `JsonView`, `ObjectNode` and `JsonNode` for corresponding roles.
+  `SchemaInfo`, `MatrixView`, `JsonView`, `ObjectNode` and `JsonNode` for corresponding roles.
   Maintain selection and validation styling consistently across tree, matrix
   and JSON views.
 - **Accessibility:** use keyboard-native selection/expand controls, visible focus,

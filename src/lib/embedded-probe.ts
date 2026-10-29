@@ -276,7 +276,9 @@ function describe(store: SchemaStore, url: string, fields: NodeField[], kind: Em
     }
     const names = [...new Set(fields.map((f) => f.name))];
     const prefixes = [...new Set(names.map((n) => /^([a-z0-9_]+):/i.exec(n)?.[1]).filter((p): p is string => !!p))];
-    return { key: url, url, title, version, prefixes, fields: names, unsampled: [], docs, kind, containers, formats };
+    const schema = store.getDocument(url) as { description?: unknown } | undefined;
+    const description = typeof schema?.description === 'string' ? schema.description : undefined;
+    return { key: url, url, title, version, description, prefixes, fields: names, unsampled: [], docs, kind, containers, formats };
 }
 
 async function probeNode(store: SchemaStore, sampler: Sampler, format: DataFormat, nodeType: string, formatFields: NodeField[],

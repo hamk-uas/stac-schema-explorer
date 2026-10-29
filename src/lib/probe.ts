@@ -100,8 +100,9 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
 
     for (const entry of loaded) {
         const { name, version, known } = describeUrl(entry.url);
-        const schema = store.getDocument(entry.url) as { title?: unknown } | undefined;
+        const schema = store.getDocument(entry.url) as { title?: unknown; description?: unknown } | undefined;
         const title = !known && typeof schema?.title === 'string' ? schema.title.replace(/ Extension$/i, '') : name;
+        const description = typeof schema?.description === 'string' ? schema.description : undefined;
         if (!entry.validator) {
             infos.push({ key: entry.url, url: entry.url, title: name, prefixes: [], version, fields: [], unsampled: [], docs: {}, error: entry.error });
             continue;
@@ -123,7 +124,7 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
         const validators: Partial<Record<StacType, ValidateFunction>> = {};
         for (const type of STAC_TYPES) validators[type] = entry.validator;
         sources.push({ key: entry.url, declaration, fields: [...fields.keys()], samples, validators });
-        infos.push({ key: entry.url, url: entry.url, title, prefixes, version, fields: [...fields.keys()], unsampled, docs: documentFields(store, fields) });
+        infos.push({ key: entry.url, url: entry.url, title, prefixes, version, description, fields: [...fields.keys()], unsampled, docs: documentFields(store, fields) });
     }
     return { sources, infos };
 }
