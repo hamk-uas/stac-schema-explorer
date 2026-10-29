@@ -8,6 +8,7 @@
     <li><span class="chip presence">cube:*</span> presence only: the value is not validated there, but counts towards the extension's “use at least one field” rule</li>
     <li><span class="chip possible">cf:*</span> allowed, not populated (STAC URL view)</li>
     <li><span class="chip unexpected">foo:bar</span> populated, but no selected schema places it there</li>
+    <li><span class="chip added">cube:dimensions ×</span> <span class="chip possible removed">sci:doi +</span> added or removed by a rewrite (STAC URL view: + adds, − removes, × undoes)</li>
   </ul>
   <p class="note">
     Click a field to see its meaning, type and allowed values, a field group to list its fields, an object to highlight it
@@ -81,6 +82,16 @@
   background: #fef2f2;
   color: #b91c1c;
   text-decoration: underline wavy #dc2626 1px;
+}
+.chip.added,
+.chip.removed {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+  margin: 2px 2px 2px 0;
+}
+.chip.removed {
+  outline-style: dashed;
+  text-decoration: line-through #b45309;
 }
 .note {
   font-size: 11px;

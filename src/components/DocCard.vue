@@ -5,6 +5,7 @@ import { sourceLabel } from '../lib/colors';
 import { TYPE_LABEL, type DocEntry } from '../lib/docs';
 import { READER_LABEL, readableAssets, type ReaderKind } from '../lib/embedded-docs';
 import type { SourceInfo } from '../lib/model';
+import type { FieldView } from '../lib/tree';
 import FieldChips from './FieldChips.vue';
 import ObjectNode from './ObjectNode.vue';
 
@@ -28,6 +29,10 @@ const emit = defineEmits<{
     schema: [source: string, names: string[], sources: SourceInfo[]];
     /** Explore the embedded metadata of a data asset (a Zarr store, a netCDF or TIFF file). */
     embedded: [href: string, label: string, kind: ReaderKind];
+    /** Rewrite a field of a document in some of its objects. */
+    edit: [key: string, pointers: string[], field: FieldView];
+    /** Undo every rewrite of a document. */
+    reset: [key: string];
 }>();
 
 const readable = computed(() => (props.entry.href ? readableAssets(props.entry.doc, props.entry.href) : []));
@@ -44,6 +49,8 @@ function pickGroup(pointers: string[], source: string, names: string[]) {
     emit('schema', source, names, docSources.value);
 }
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
+/** Real documents (not the example) can be rewritten. */
+const editable = computed(() => !!props.entry.original && props.entry.status === 'ready');
 const pointers = computed(() => (isSelected.value ? props.selectedPointers : []));
 const notApplicable = computed(() => (props.entry.template?.notApplicable ?? []).map((k) => sourceLabel(k, docSources.value)));
 const hasChildren = computed(() => props.entry.children.length > 0 || props.entry.remaining.length > 0 || !!props.entry.itemsHref);
@@ -80,12 +87,16 @@ const validityTitle = computed(() => {
       <span v-else-if="entry.view" class="validity" :class="{ ok: entry.valid, bad: entry.valid === false }" :title="validityTitle">
         {{ entry.valid === undefined ? '…' : entry.valid ? '✓ valid' : `✗ ${entry.errors?.length ?? 0} error(s)` }}
       </span>
+      <span v-if="entry.rewrites" class="rewritten" :title="`${entry.rewrites} rewrite(s) applied to this document: it is shown and validated as rewritten`">
+        ✎ {{ entry.rewrites }} rewrite{{ entry.rewrites === 1 ? '' : 's' }}
+        <button type="button" :aria-label="`Undo the rewrites of ${entry.title}`" @click.stop="emit('reset', entry.key)">undo</button>
+      </span>
       <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the JSON in a new tab" @click.stop>↗</a>
     </header>
     <div v-if="entry.view && !entry.compact" class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">top level</span>
-        <FieldChips :fields="entry.view.fields" :sources="docSources" :group="group" :focus="focus" @field="(s: string, n: string) => pick([''], s, n)" @group="(s: string, names: string[]) => pickGroup([''], s, names)" />
+        <FieldChips :fields="entry.view.fields" :sources="docSources" :group="group" :focus="focus" :editable="editable" @field="(s: string, n: string) => pick([''], s, n)" @group="(s: string, names: string[]) => pickGroup([''], s, names)" @edit="(f: FieldView) => emit('edit', entry.key, [''], f)" />
       </div>
       <ObjectNode
         v-for="child in entry.view.children"
@@ -95,9 +106,11 @@ const validityTitle = computed(() => {
         :group="group"
         :focus="focus"
         :selected="pointers"
+        :editable="editable"
         @select="(p: string[], names?: string[]) => emit('select', entry.key, p, names)"
         @field="(s: string, n: string) => emit('field', s, n, docSources)"
         @schema="(s: string, n: string[]) => emit('schema', s, n, docSources)"
+        @edit="(p: string[], f: FieldView) => emit('edit', entry.key, p, f)"
       />
       <div v-if="notApplicable.length && !entry.href" class="na" title="These selected extensions define no field for this object type">
         not applicable: {{ notApplicable.join(', ') }}
@@ -125,6 +138,8 @@ const validityTitle = computed(() => {
         @more="(e: DocEntry) => emit('more', e)"
         @field="(s: string, n: string, src: SourceInfo[]) => emit('field', s, n, src)"
         @schema="(s: string, n: string[], src: SourceInfo[]) => emit('schema', s, n, src)"
+        @edit="(k: string, p: string[], f: FieldView) => emit('edit', k, p, f)"
+        @reset="(k: string) => emit('reset', k)"
         @embedded="(h: string, l: string, k: ReaderKind) => emit('embedded', h, l, k)"
       />
       <button v-if="entry.remaining.length || entry.itemsHref" type="button" class="more" @click="emit('more', entry)">

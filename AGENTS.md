@@ -29,7 +29,7 @@ technical visual language; it need not adopt Observatory instance branding.
 | --- | --- |
 | [src/App.vue](src/App.vue) | App orchestration, URL state, selection, remote/example flows and layout. |
 | [src/components](src/components) | Document cards, object/JSON trees, field chips/info, extension picker, matrix and legend; `NodeCard` and `ConventionPicker` for embedded metadata. |
-| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, reader kind of assets, Zarr documents), [readers](src/lib/readers) (netCDF and TIFF readers, ports of the Observatory's). |
+| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, reader kind of assets, Zarr documents), [readers](src/lib/readers) (netCDF and TIFF readers, ports of the Observatory's). [rewrites.ts](src/lib/rewrites.ts): local rewrites of real documents and nodes. |
 | [src/engine.worker.ts](src/engine.worker.ts), [src/lib/engine.ts](src/lib/engine.ts) | Worker-backed probing/validation protocol. |
 | [src/reader.worker.ts](src/reader.worker.ts), [src/lib/reader.ts](src/lib/reader.ts) | Separate, lazily created worker reading netCDF/TIFF files. netCDF-4 range reads are synchronous XHR: keep them out of the engine worker and the page. |
 | [schemas](schemas) | Reviewed, documentation-enriched schema source consumed by this app and Observatory: vendored copies, plus authored embedded-metadata schemas under `schemas/hamk-uas.github.io/stac-schema-explorer/schemas/`. |
@@ -55,6 +55,12 @@ technical visual language; it need not adopt Observatory instance branding.
   matrix schema header opens `SchemaInfo`, and selecting objects without
   fields closes the panel. Do not let it show something the JSON no longer
   highlights.
+- Rewrites (`rw`) change only the explorer's copy of a real document or node:
+  keep the loaded `original` and derive the shown `doc` by applying them in
+  order, taking added values from the template (never storing values in the
+  URL). Anything showing a rewritten document must say so (banner, card badge,
+  "rewritten" JSON marker, amber chip outlines). Example templates are not
+  editable.
 - Remote catalogs are explored incrementally; do not eagerly download entire
   trees to render the first screen.
 - This app is browser-side/static. Relative Vite deployment paths and embedded

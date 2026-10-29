@@ -10,11 +10,15 @@ const props = defineProps<{
     sources: SourceInfo[];
     group: boolean;
     focus: string;
+    /** Fields of a real document can be rewritten: added, removed, or their rewrite undone. */
+    editable?: boolean;
 }>();
 const emit = defineEmits<{
     field: [source: string, name: string];
     /** A chip of several fields of one source was clicked (to list them). */
     group: [source: string, names: string[]];
+    /** Add, remove, or undo the rewrite of a field. */
+    edit: [field: FieldView];
 }>();
 
 const expanded = ref(new Set<string>());
@@ -42,9 +46,20 @@ function fieldTitle(field: FieldView): string {
         : field.kind === 'validated' ? 'validated here by the schema' : '';
     const doc = docOf(field);
     const about = doc ? [`${doc.title ?? ''}${doc.title ? ' — ' : ''}${doc.type}`, firstSentence(doc.description)] : [];
-    return [field.name, ...about, '', sourceLabel(field.source, props.sources), STATE_TEXT[field.state], how, '', 'Click for details.']
+    const state = field.edit ? EDIT_TEXT[field.edit] : STATE_TEXT[field.state];
+    return [field.name, ...about, '', sourceLabel(field.source, props.sources), state, how, '', 'Click for details.']
         .filter((line, i, all) => line !== undefined && !(line === '' && all[i - 1] === ''))
         .join('\n');
+}
+
+const EDIT_TEXT = { added: 'added by a rewrite (example value)', removed: 'removed by a rewrite' };
+
+/** The edit button of a field: add an absent field, remove a present one, or undo its rewrite. */
+function editAction(field: FieldView): { symbol: string; label: string } {
+    if (field.edit === 'added') return { symbol: '×', label: `Undo adding ${field.name}` };
+    if (field.edit === 'removed') return { symbol: '+', label: `Restore ${field.name}` };
+    if (field.state === 'possible') return { symbol: '+', label: `Add ${field.name} with an example value (rewrite)` };
+    return { symbol: '−', label: `Remove ${field.name} (rewrite)` };
 }
 
 function docOf(field: FieldView) {
@@ -69,7 +84,7 @@ function groupTitle(group: FieldGroup): string {
     if (group.fields.length === 1) return fieldTitle(group.fields[0]);
     const lines = group.fields.map((f) => {
         const title = docOf(f)?.title;
-        return `• ${f.name}${title ? ` (${title})` : ''}${f.kind === 'presence' ? ', presence only' : ''} — ${STATE_TEXT[f.state]}`;
+        return `• ${f.name}${title ? ` (${title})` : ''}${f.kind === 'presence' ? ', presence only' : ''} — ${f.edit ? EDIT_TEXT[f.edit] : STATE_TEXT[f.state]}`;
     });
     return `${sourceLabel(group.source, props.sources)}\n${lines.join('\n')}\n\nClick to ${expanded.value.has(group.source) ? 'collapse' : 'list the fields'}.`;
 }
@@ -95,7 +110,7 @@ function dimmed(source: string): boolean {
         <button
           type="button"
           class="chip group"
-          :class="[`state-${groupState(g)}`, { presence: g.fields.every((f) => f.kind === 'presence'), dimmed: dimmed(g.source), open: expanded.has(g.source) }]"
+          :class="[`state-${groupState(g)}`, { presence: g.fields.every((f) => f.kind === 'presence'), dimmed: dimmed(g.source), open: expanded.has(g.source), edited: g.fields.some((f) => f.edit) }]"
           :style="{ '--c': colorOf(g.source) }"
           :title="groupTitle(g)"
           @click.stop="toggle(g)"
@@ -105,33 +120,33 @@ function dimmed(source: string): boolean {
           <span v-if="version(g.source)" class="ver">v{{ version(g.source) }}</span>
         </button>
         <template v-if="expanded.has(g.source)">
-          <button
+          <span
             v-for="f in g.fields"
             :key="f.name"
-            type="button"
             class="chip field sub"
-            :class="[`state-${f.state}`, { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
+            :class="[`state-${f.state}`, f.edit ? `edit-${f.edit}` : '', { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
             :style="{ '--c': colorOf(f.source) }"
-            :title="fieldTitle(f)"
-            @click.stop="emit('field', f.source, f.name)"
-          >{{ f.name }}</button>
+          >
+            <button type="button" class="pick" :title="fieldTitle(f)" @click.stop="emit('field', f.source, f.name)">{{ f.name }}</button>
+            <button v-if="editable" type="button" class="edit" :title="editAction(f).label" :aria-label="editAction(f).label" @click.stop="emit('edit', f)">{{ editAction(f).symbol }}</button>
+          </span>
         </template>
       </template>
     </template>
     <template v-else>
-      <button
+      <span
         v-for="f in fields"
         :key="`${f.source}|${f.name}`"
-        type="button"
         class="chip field"
-        :class="[`state-${f.state}`, { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
+        :class="[`state-${f.state}`, f.edit ? `edit-${f.edit}` : '', { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
         :style="{ '--c': colorOf(f.source) }"
-        :title="fieldTitle(f)"
-        @click.stop="emit('field', f.source, f.name)"
       >
-        <span class="name">{{ f.name }}</span>
-        <span v-if="version(f.source)" class="ver">v{{ version(f.source) }}</span>
-      </button>
+        <button type="button" class="pick" :title="fieldTitle(f)" @click.stop="emit('field', f.source, f.name)">
+          <span class="name">{{ f.name }}</span>
+          <span v-if="version(f.source)" class="ver">v{{ version(f.source) }}</span>
+        </button>
+        <button v-if="editable" type="button" class="edit" :title="editAction(f).label" :aria-label="editAction(f).label" @click.stop="emit('edit', f)">{{ editAction(f).symbol }}</button>
+      </span>
     </template>
   </span>
 </template>
@@ -164,8 +179,49 @@ function dimmed(source: string): boolean {
 button.chip {
   cursor: pointer;
 }
-button.chip:hover {
+button.chip:hover,
+.chip.field:hover {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 25%, transparent);
+}
+.chip .pick {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+.chip .edit {
+  border: 0;
+  border-left: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+  background: none;
+  margin-left: 1px;
+  padding: 0 0 0 5px;
+  font: 700 12px/1 var(--sans);
+  color: inherit;
+  cursor: pointer;
+}
+.chip .edit:hover {
+  color: #b45309;
+}
+/* Rewritten fields: amber, the colour of caution, and a removed field struck through. */
+.chip.edit-added,
+.chip.edit-removed,
+button.chip.edited {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+.chip.edit-removed {
+  outline-style: dashed;
+}
+.chip.edit-removed .pick {
+  text-decoration: line-through;
+  text-decoration-color: #b45309;
 }
 button.chip.open {
   background: color-mix(in srgb, var(--c) 22%, white);

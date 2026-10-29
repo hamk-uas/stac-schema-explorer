@@ -1,6 +1,22 @@
 import { DEFAULT_CONVENTIONS, fromConventionShortId, toConventionShortId } from './conventions';
 import { DEFAULT_EXTENSIONS, fromShortId, toShortId } from './extensions';
 import { STAC_VERSIONS } from './model';
+import type { Rewrite } from './rewrites';
+
+const sourceId = (source: string) => (source === 'core' || source.startsWith('?') ? source : toShortId(source));
+const sourceUrl = (id: string) => (id === 'core' || id.startsWith('?') ? id : fromShortId(id));
+
+/** `add|<schema>|<document>|<pointer>|<field>` (or `remove|…`): the value is regenerated from the template. */
+function writeRewrite(r: Rewrite): string {
+    return [r.op, sourceId(r.source), r.doc, r.pointer, r.field].join('|');
+}
+
+function readRewrite(value: string): Rewrite | undefined {
+    const parts = value.split('|');
+    if (parts.length < 5 || (parts[0] !== 'add' && parts[0] !== 'remove')) return undefined;
+    // A field name has no `|`; the pointer takes whatever is left between the document and the field.
+    return { op: parts[0], source: sourceUrl(parts[1]), doc: parts[2], pointer: parts.slice(3, -1).join('|'), field: parts[parts.length - 1] };
+}
 
 export type Mode = 'example' | 'href';
 
@@ -26,6 +42,8 @@ export interface AppState {
     field: string;
     /** Schema (extension, convention, format or core) shown in the information panel instead of a field. */
     schema: string;
+    /** Local changes to real documents, in the order they were made. */
+    rewrites: Rewrite[];
     /** Embedded in another app (an iframe): no page header. */
     embed: boolean;
 }
@@ -46,6 +64,7 @@ export function defaultState(): AppState {
         focus: '',
         field: '',
         schema: '',
+        rewrites: [],
         embed: false,
     };
 }
@@ -77,6 +96,7 @@ export function readState(search: string): AppState {
     }
     const schema = params.get('schema');
     if (schema && !state.field) state.schema = schema === 'core' || schema.startsWith('?') ? schema : fromShortId(schema);
+    state.rewrites = params.getAll('rw').map(readRewrite).filter((r): r is Rewrite => !!r);
     state.embed = params.get('embed') === '1';
     return state;
 }
@@ -104,6 +124,7 @@ export function writeState(state: AppState): string {
     } else if (state.schema) {
         params.set('schema', state.schema === 'core' || state.schema.startsWith('?') ? state.schema : toShortId(state.schema));
     }
+    for (const rewrite of state.rewrites) params.append('rw', writeRewrite(rewrite));
     if (state.embed) params.set('embed', '1');
     return `?${params.toString().replaceAll('%40', '@').replaceAll('%2F', '/').replaceAll('%3A', ':').replaceAll('%7C', '|')}`;
 }

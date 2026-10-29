@@ -1,7 +1,7 @@
 import { DATA_FORMATS, KNOWN_CONVENTIONS } from './conventions';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo, NodeTemplate } from './embedded-probe';
 import { CORE, type Json, type JsonObject, type TypeTemplate } from './model';
-import { documentView, templateView, type ObjectView } from './tree';
+import { documentView, templateView, type FieldEdits, type ObjectView } from './tree';
 
 /** A node of embedded metadata shown as a card: a node template of the example, or a node read from a data asset. */
 export interface NodeEntry {
@@ -21,6 +21,8 @@ export interface NodeEntry {
     notApplicable?: string[];
     valid?: boolean;
     errors?: string[];
+    /** Number of rewrites applied to `doc` (a node read from data). */
+    rewrites?: number;
 }
 
 const isObject = (value: unknown): value is JsonObject => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -53,13 +55,13 @@ export function templateEntries(result: EmbeddedProbeResult, showCore: boolean):
 }
 
 /** The view of a real node within the fields its format and conventions allow at the same place (cf. `documentView`). */
-export function realNodeView(node: JsonObject, template: NodeTemplate | undefined, sources: EmbeddedSourceInfo[], formatSchema: string, showCore: boolean): ObjectView {
+export function realNodeView(node: JsonObject, template: NodeTemplate | undefined, sources: EmbeddedSourceInfo[], formatSchema: string, showCore: boolean, edits?: FieldEdits): ObjectView {
     // The format's fields play the part of STAC core: hidden unless core fields are shown. Containers and the declaration of
     // Zarr conventions are structure, like `stac_extensions` in STAC.
     const asCore = sources.map((s) => (s.key === formatSchema ? { ...s, key: CORE, fields: [...s.fields, ...STRUCTURE] } : s));
     const placements = (template?.placements ?? []).map((p) => (p.source === formatSchema ? { ...p, source: CORE } : p));
     const typeTemplate = template ? { ...asTemplate(template, formatSchema, true), placements } : undefined;
-    const view = documentView(node, typeTemplate, asCore, showCore);
+    const view = documentView(node, typeTemplate, asCore, showCore, edits);
     // Objects within a format field (netCDF `filters`, Zarr `codecs`, `chunk_grid`) are that field's value, not places of
     // fields: a key there (a filter's `id`) is not the convention field of the same name (ACDD `id`).
     const inContainer = (pointer: string) => CONTAINER_KEYS.includes(pointer.split('/')[1] ?? '');

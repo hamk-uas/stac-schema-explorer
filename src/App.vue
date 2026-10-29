@@ -23,8 +23,9 @@ import { conceptPath, stacMatrixGroups, type MatrixGroup } from './lib/matrix';
 import { CORE, STAC_TYPES, STAC_VERSIONS, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
 import { getAt, joinPointer, objectLocations } from './lib/pointer';
 import { readEmbeddedFile } from './lib/reader';
+import { addedSchemas, applyRewrites, declareConventionsAttribute, declareStacExtensions, declareZarrConventions, fieldEdits, templateValue, toggleRewrite, type Rewrite } from './lib/rewrites';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
-import { documentView, fieldIndex, templateView } from './lib/tree';
+import { documentView, fieldIndex, templateView, type FieldView } from './lib/tree';
 import { readState, writeState, type AppState } from './lib/url-state';
 import { isVendored } from './lib/vendored';
 
@@ -92,8 +93,15 @@ interface EmbeddedView {
     /** What the reader left out or how it had to read the file. */
     notes: string[];
     nodes: NodeEntry[];
+    /** The nodes as read, before rewrites, and the metadata document they were read from. */
+    document?: { format: string; nodes: { path: string; node: JsonObject }[]; read?: string };
 }
 const embeddedView = ref<EmbeddedView>();
+
+/** The rewrites of one document, in the order they were made. */
+const rewritesOf = (doc: string) => state.rewrites.filter((r) => r.doc === doc);
+/** Schemas of rewritten fields, which the probe and the view need even when the document does not declare them. */
+const rewriteSchemas = (rewrites: Rewrite[]) => rewrites.map((r) => r.source).filter((s) => s !== CORE && !s.startsWith('?'));
 
 async function fetchJson(url: string): Promise<unknown> {
     const response = await fetch(url, { headers: { accept: 'application/json' } });
@@ -130,28 +138,59 @@ async function openEmbedded(href: string, label: string, kind: ReaderKind, json?
             document = { format: kind, nodes: read.nodes };
             view.notes = read.notes;
         }
-        const format = DATA_FORMATS.find((f) => f.id === document.format)!;
-        const root = document.nodes.find((n) => n.path === '')?.node;
-        const urls = [...new Set([...document.nodes.flatMap((n) => nodeConventions(format.id, n.node, root)), ...state.conventions])];
-        const probed = await engine.probeEmbedded(urls, [format.id]);
-        view.nodes = document.nodes.map(({ path, node }) => {
-            const own = nodeConventions(format.id, node, root);
-            const nodeType = String(node.node_type);
-            const template = probed.nodes.find((t) => t.key === `${format.id}:${nodeType}`);
-            const nodeSources = probed.sources.filter((s) => s.kind === 'format' ? s.key === format.schema : own.includes(s.key) || state.conventions.includes(s.key));
-            return markRaw({ key: `node:${document.read ?? href}#${path}`, format: format.id, formatTitle: format.title, nodeType, title: path, href: document.read, doc: node,
-                view: realNodeView(node, template, nodeSources, format.schema, state.showCore), sources: nodeSources, conventions: own });
-        });
-        view.status = 'ready';
-        await Promise.all(view.nodes.map(async (entry, i) => {
-            const errors = await engine.validateNode(entry.doc, format.schema, entry.conventions);
-            view.nodes[i] = markRaw({ ...entry, errors, valid: errors.length === 0 });
-        }));
+        view.document = markRaw(document);
+        await buildNodes(view);
     } catch (error) {
         view.status = 'error';
         view.error = error instanceof Error ? error.message : String(error);
         if (error instanceof TypeError) view.error += ' (network error or the server does not allow cross-origin requests)';
     }
+}
+
+const nodeRuns = new WeakMap<object, number>();
+
+/** Node cards of the nodes read, with their rewrites applied, each checked against its format and conventions. */
+async function buildNodes(view: EmbeddedView) {
+    const source = view.document;
+    if (!source) return;
+    const run = (nodeRuns.get(view) ?? 0) + 1;
+    nodeRuns.set(view, run);
+    const format = DATA_FORMATS.find((f) => f.id === source.format)!;
+    const keyOf = (path: string) => `node:${source.read ?? view.href}#${path}`;
+    const originalRoot = source.nodes.find((n) => n.path === '')?.node;
+    const rewrites = source.nodes.flatMap((n) => rewritesOf(keyOf(n.path)));
+    const added = addedSchemas(rewrites, [format.schema]);
+    const edited = rewriteSchemas(rewrites);
+    const urls = [...new Set([...source.nodes.flatMap((n) => nodeConventions(format.id, n.node, originalRoot)), ...state.conventions, ...edited])];
+    const probed = await engine.probeEmbedded(urls, [format.id]);
+    if (nodeRuns.get(view) !== run) return;
+    const templateOf = (node: JsonObject) => probed.nodes.find((t) => t.key === `${format.id}:${String(node.node_type)}`);
+    const nodes = source.nodes.map(({ path, node }) => {
+        const own = rewritesOf(keyOf(path));
+        if (!own.length) return { path, node, rewrites: own };
+        const template = templateOf(node);
+        const rewritten = applyRewrites(node, own, (r) => templateValue(template, r));
+        return { path, node: declareZarrConventions(rewritten, addedSchemas(own, [format.schema]), template?.doc), rewrites: own };
+    });
+    // Attribute conventions (CF, ACDD) of added fields are declared in the root's global `Conventions` attribute.
+    const rootAt = nodes.findIndex((n) => n.path === '');
+    if (rootAt >= 0 && added.length) nodes[rootAt] = { ...nodes[rootAt], node: declareConventionsAttribute(nodes[rootAt].node, added) };
+    const root = rootAt >= 0 ? nodes[rootAt].node : undefined;
+    view.nodes = nodes.map(({ path, node, rewrites: own }) => {
+        const conventions = nodeConventions(format.id, node, root);
+        const nodeType = String(node.node_type);
+        const template = templateOf(node);
+        const nodeSources = probed.sources.filter((s) => s.kind === 'format'
+            ? s.key === format.schema
+            : conventions.includes(s.key) || state.conventions.includes(s.key) || edited.includes(s.key));
+        return markRaw({ key: keyOf(path), format: format.id, formatTitle: format.title, nodeType, title: path, href: source.read, doc: markRaw(node),
+            view: realNodeView(node, template, nodeSources, format.schema, state.showCore, fieldEdits(own)), sources: nodeSources, conventions, rewrites: own.length });
+    });
+    view.status = 'ready';
+    await Promise.all(view.nodes.map(async (entry, i) => {
+        const errors = await engine.validateNode(entry.doc, format.schema, entry.conventions);
+        if (nodeRuns.get(view) === run) view.nodes[i] = markRaw({ ...entry, errors, valid: errors.length === 0 });
+    }));
 }
 
 // ---- Example catalog -------------------------------------------------------------------------------------------
@@ -191,28 +230,44 @@ function fill(entry: DocEntry, real: RealDoc) {
     entry.type = real.type;
     entry.title = real.title;
     entry.doc = markRaw(real.json);
+    entry.original = entry.doc;
     entry.remaining = [...real.childLinks];
     entry.itemsHref = real.itemsHref;
     entry.status = 'ready';
 }
 
-function declaredOf(entry: DocEntry): string[] {
-    const declared = entry.doc?.stac_extensions;
+function declaredOf(doc: JsonObject | undefined): string[] {
+    const declared = doc?.stac_extensions;
     return Array.isArray(declared) ? declared.filter((u): u is string => typeof u === 'string') : [];
 }
 
+const analyses = new WeakMap<object, number>();
+
+/** Compares a real document, with its rewrites applied, with the template of its type, and validates it. */
 async function analyze(entry: DocEntry) {
-    if (!entry.doc) return;
-    const version = stacVersionFor(entry.doc.stac_version);
-    const urls = [...new Set([...state.extensions, ...(state.includeDeclared ? declaredOf(entry) : [])].map(normalizeSchemaUrl))];
+    const original = entry.original ?? entry.doc;
+    if (!original) return;
+    const run = (analyses.get(entry) ?? 0) + 1;
+    analyses.set(entry, run);
+    const rewrites = rewritesOf(entry.key);
+    const version = stacVersionFor(original.stac_version);
+    const urls = [...new Set([...state.extensions, ...(state.includeDeclared ? declaredOf(original) : []), ...rewriteSchemas(rewrites)].map(normalizeSchemaUrl))];
+    const probed = await engine.probe(version, urls);
+    if (analyses.get(entry) !== run) return;
+    const template = probed.templates[entry.type];
+    const doc = rewrites.length
+        ? declareStacExtensions(applyRewrites(original, rewrites, (r) => templateValue(template, r)), addedSchemas(rewrites))
+        : original;
+    entry.doc = markRaw(doc);
+    entry.rewrites = rewrites.length;
     entry.stacVersion = version;
     entry.templateUrls = urls;
-    const probed = await engine.probe(version, urls);
-    entry.template = markRaw(probed.templates[entry.type]);
+    entry.template = markRaw(template);
     entry.sources = markRaw(probed.sources);
-    entry.view = markRaw(documentView(entry.doc, entry.template, probed.sources, state.showCore));
+    entry.view = markRaw(documentView(doc, template, probed.sources, state.showCore, fieldEdits(rewrites)));
     if (entry.valid === undefined) {
-        const errors = await engine.validate(entry.doc, version, declaredOf(entry).map(normalizeSchemaUrl));
+        const errors = await engine.validate(doc, version, declaredOf(doc).map(normalizeSchemaUrl));
+        if (analyses.get(entry) !== run) return;
         entry.errors = errors;
         entry.valid = errors.length === 0;
     }
@@ -333,11 +388,52 @@ watch(() => [state.extensions.join('\n'), state.includeDeclared], () => {
 });
 watch(() => state.showCore, () => {
     const refresh = (e: DocEntry) => {
-        if (e.doc && e.template && e.sources) e.view = markRaw(documentView(e.doc, e.template, e.sources, state.showCore));
+        if (e.doc && e.template && e.sources) e.view = markRaw(documentView(e.doc, e.template, e.sources, state.showCore, fieldEdits(rewritesOf(e.key))));
     };
     walk(hrefRoot.value, refresh);
     if (detached.value) refresh(detached.value);
 });
+
+// ---- Rewrites --------------------------------------------------------------------------------------------------
+
+/** Re-analyzes the documents and nodes whose rewrites changed. */
+watch(() => state.rewrites, (now, before) => {
+    const signature = (list: Rewrite[], doc: string) => JSON.stringify(list.filter((r) => r.doc === doc));
+    const docs = new Set([...now, ...(before ?? [])].map((r) => r.doc));
+    const changed = new Set([...docs].filter((doc) => signature(now, doc) !== signature(before ?? [], doc)));
+    if (!changed.size) return;
+    const refresh = (e: DocEntry) => {
+        if (!changed.has(e.key) || e.status !== 'ready') return;
+        e.valid = undefined;
+        void analyze(e);
+    };
+    walk(hrefRoot.value, refresh);
+    if (detached.value) refresh(detached.value);
+    const view = embeddedView.value;
+    if (view?.status === 'ready' && view.nodes.some((n) => changed.has(n.key))) {
+        buildNodes(view).catch((error: unknown) => {
+            view.status = 'error';
+            view.error = error instanceof Error ? error.message : String(error);
+        });
+    }
+});
+
+/** Adds or removes a field of a real document or node in some of its objects, or undoes its rewrite. */
+function editField(doc: string, pointers: string[], field: FieldView) {
+    let source = field.source;
+    // Format fields of a node are shown as core fields; their template placements are those of the format schema.
+    const node = doc.startsWith('node:') ? embeddedView.value?.nodes.find((n) => n.key === doc) : undefined;
+    if (node && source === CORE) source = DATA_FORMATS.find((f) => f.id === node.format)?.schema ?? source;
+    const present = field.edit ? field.edit === 'added' : field.state !== 'possible';
+    state.rewrites = toggleRewrite(state.rewrites, doc, pointers, field.name, source, present);
+    select(doc, pointers, [field.name]);
+}
+
+function resetRewrites(doc?: string) {
+    state.rewrites = doc ? state.rewrites.filter((r) => r.doc !== doc) : [];
+}
+
+const rewrittenDocs = computed(() => new Set(state.rewrites.map((r) => r.doc)).size);
 
 // ---- Selection and JSON panel ----------------------------------------------------------------------------------
 
@@ -806,6 +902,14 @@ onMounted(() => {
           Populated fields are highlighted within the fields the schemas would allow at the same place (dotted = allowed but
           absent; red = present but not placed there by any selected schema). Expand a document to load its children. The first
           Zarr asset found is read automatically; other data assets are read from their “embedded metadata” links.
+          Use + and − on a field to add it with an example value or remove it: a local rewrite, kept in the share link.
+        </p>
+        <p v-if="state.rewrites.length" class="rewrites-banner" role="status">
+          <strong>✎ Rewrites applied:</strong>
+          {{ state.rewrites.length }} change{{ state.rewrites.length === 1 ? '' : 's' }} to {{ rewrittenDocs }}
+          document{{ rewrittenDocs === 1 ? '' : 's' }} or node{{ rewrittenDocs === 1 ? '' : 's' }}. The tree, the JSON (copy and
+          download) and validation show the rewritten versions; the originals are unchanged.
+          <button type="button" @click="resetRewrites()">Undo all</button>
         </p>
         <div class="tree">
           <DocCard
@@ -821,6 +925,8 @@ onMounted(() => {
             @more="loadMore"
             @field="openField"
             @schema="openSchema"
+            @edit="editField"
+            @reset="resetRewrites"
             @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
           />
           <template v-if="detached && !find(hrefRoot, detached.key)">
@@ -837,6 +943,8 @@ onMounted(() => {
               @more="loadMore"
               @field="openField"
               @schema="openSchema"
+              @edit="editField"
+              @reset="resetRewrites"
               @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
             />
           </template>
@@ -861,9 +969,12 @@ onMounted(() => {
               :focus="state.focus"
               :selected-doc="state.selected"
               :selected-pointers="selectedPointers"
+              editable
               @select="select"
               @field="openField"
               @schema="openSchema"
+              @edit="editField"
+              @reset="resetRewrites"
             />
           </section>
         </div>
@@ -902,6 +1013,7 @@ onMounted(() => {
         :doc="selectedDocument?.doc"
         :title="jsonTitle"
         :href="selectedDocument?.href"
+        :rewrites="selectedDocument?.rewrites"
         :index="jsonIndex"
         :pointers="jsonPointers"
       />
@@ -1209,6 +1321,27 @@ onMounted(() => {
   margin: 0 0 4px;
   font: 600 14px var(--sans);
   color: #334155;
+}
+.rewrites-banner {
+  margin: 4px 0 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #78350f;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-left-width: 4px;
+  border-radius: 6px;
+}
+.rewrites-banner button {
+  margin-left: 6px;
+  font: 600 12px var(--sans);
+  border: 1px solid #d97706;
+  border-radius: 5px;
+  background: white;
+  color: #92400e;
+  padding: 1px 8px;
+  cursor: pointer;
 }
 @media (max-width: 1100px) {
   .app {

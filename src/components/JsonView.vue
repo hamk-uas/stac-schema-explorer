@@ -9,6 +9,8 @@ const props = defineProps<{
     doc: JsonObject | undefined;
     title: string;
     href?: string;
+    /** Number of rewrites applied to `doc`: it is not the document as published. */
+    rewrites?: number;
     index: Map<string, FieldView>;
     pointers: string[];
 }>();
@@ -47,6 +49,7 @@ watch(() => [props.pointers, props.doc], async () => {
   <section class="json-panel">
     <div class="bar">
       <strong class="title" :title="title">{{ title }}</strong>
+      <span v-if="rewrites" class="rewritten" :title="`${rewrites} rewrite(s) applied: this is not the published document`">✎ rewritten</span>
       <span class="spacer" />
       <a v-if="href" :href="href" target="_blank" rel="noopener">open ↗</a>
       <button type="button" :disabled="!doc" @click="copy">{{ copied ? 'copied' : 'copy' }}</button>

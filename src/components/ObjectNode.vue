@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SourceInfo } from '../lib/model';
-import type { ObjectView } from '../lib/tree';
+import type { FieldView, ObjectView } from '../lib/tree';
 import FieldChips from './FieldChips.vue';
 
 defineOptions({ name: 'ObjectNode' });
@@ -11,6 +11,7 @@ const props = defineProps<{
     group: boolean;
     focus: string;
     selected: string[];
+    editable?: boolean;
 }>();
 const emit = defineEmits<{
     /** Select objects; `names` are the fields to show in them (a clicked chip). */
@@ -18,6 +19,8 @@ const emit = defineEmits<{
     field: [source: string, name: string];
     /** A grouped chip was clicked: the schema and its fields in this object. */
     schema: [source: string, names: string[]];
+    /** Rewrite a field in the objects of this node (merged siblings change together). */
+    edit: [pointers: string[], field: FieldView];
 }>();
 
 function pickField(source: string, name: string) {
@@ -44,7 +47,7 @@ function isSelected(): boolean {
       <span class="label">{{ node.label }}</span>
       <span v-if="node.kind === 'properties'" class="tag geojson" title="Item properties are the properties of a GeoJSON Feature">GeoJSON Feature properties</span>
       <span v-if="node.kind === 'summaries'" class="tag" title="Collection summaries: values are sets, ranges or JSON Schemas of fields used in the Items">summaries of Item fields</span>
-      <FieldChips :fields="node.fields" :sources="sources" :group="group" :focus="focus" @field="pickField" @group="pickGroup" />
+      <FieldChips :fields="node.fields" :sources="sources" :group="group" :focus="focus" :editable="editable" @field="pickField" @group="pickGroup" @edit="(f: FieldView) => emit('edit', node.pointers, f)" />
     </div>
     <div v-if="node.children.length" class="children">
       <ObjectNode
@@ -55,9 +58,11 @@ function isSelected(): boolean {
         :group="group"
         :focus="focus"
         :selected="selected"
+        :editable="editable"
         @select="(p: string[], names?: string[]) => emit('select', p, names)"
         @field="(s: string, n: string) => emit('field', s, n)"
         @schema="(s: string, n: string[]) => emit('schema', s, n)"
+        @edit="(p: string[], f: FieldView) => emit('edit', p, f)"
       />
     </div>
   </div>

@@ -28,6 +28,12 @@ asking the schemas themselves.
   shows its populated fields highlighted within all fields the schemas would allow at the same place: dotted chips are
   allowed but absent, red chips are present but not placed there by any selected schema. Documents are validated
   against STAC core and the extensions they declare.
+- **Rewrites**: in an explored STAC document or data node, + on an absent field adds it with the example value of the
+  template, − on a present field removes it (struck through, + restores it), × undoes an addition. Adding a field of
+  an undeclared extension or convention also declares it (`stac_extensions`, a `zarr_conventions` entry, or a token
+  of the root's `Conventions` attribute). The rewritten documents are shown, validated, copied and downloaded, marked
+  “✎ rewritten”, with a banner while any rewrite applies; the originals are kept and the rewrites are part of the share
+  link. Fields of merged objects (`Asset data, metadata`) change in all of them.
 - **Field information**: click any field (a chip, or a row of the matrix) to see what it means: its title, description
   and type, the allowed values with their meanings, and every place it can go. The text comes from the schemas; see
   [Vendored schemas](#vendored-schemas). Where a field has a counterpart on the other side of the
@@ -68,6 +74,7 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | `focus` | an extension whose fields are highlighted (others dimmed) |
 | `field` | field shown in the field information panel: `<extension>\|<field>`, e.g. `cf@1.0.0\|cf:cell_methods`, or `core\|license` |
 | `schema` | extension, data convention or format shown in the information panel instead of a field (`name@version`, a schema URL or `core`) |
+| `rw` | a rewrite, repeatable, in order: `add\|<schema>\|<document>\|<pointer>\|<field>` or `remove\|…`; the document is a URL or `node:<metadata document>#<path>`; added values are regenerated from the template |
 | `core=1`, `group=0`, `declared=0` | show STAC core fields; list fields one by one; ignore extensions declared by explored documents |
 | `embed=1` | embedded in another app: no page header, a link to open the full app instead |
 

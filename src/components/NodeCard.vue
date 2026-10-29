@@ -4,6 +4,7 @@ import { computed } from 'vue';
 import { embeddedSchemaLabel } from '../lib/conventions';
 import type { NodeEntry } from '../lib/embedded-docs';
 import type { SourceInfo } from '../lib/model';
+import type { FieldView } from '../lib/tree';
 import FieldChips from './FieldChips.vue';
 import ObjectNode from './ObjectNode.vue';
 
@@ -14,6 +15,8 @@ const props = defineProps<{
     focus: string;
     selectedDoc: string;
     selectedPointers: string[];
+    /** A node read from data, which can be rewritten (not a node template of the example). */
+    editable?: boolean;
 }>();
 const emit = defineEmits<{
     /** Select a node and objects in it; `names` are the fields to show in them (a clicked chip). */
@@ -21,6 +24,10 @@ const emit = defineEmits<{
     field: [source: string, name: string, sources: SourceInfo[]];
     /** A grouped chip was clicked: the schema, its fields in the object, and the node's sources. */
     schema: [source: string, names: string[], sources: SourceInfo[]];
+    /** Rewrite a field of the node in some of its objects. */
+    edit: [key: string, pointers: string[], field: FieldView];
+    /** Undo every rewrite of the node. */
+    reset: [key: string];
 }>();
 
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
@@ -59,12 +66,16 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
       <span class="validity" :class="{ ok: entry.valid, bad: entry.valid === false }" :title="validityTitle">
         {{ entry.valid === undefined ? '…' : entry.valid ? '✓ valid' : `✗ ${entry.errors?.length ?? 0} error(s)` }}
       </span>
+      <span v-if="entry.rewrites" class="rewritten" :title="`${entry.rewrites} rewrite(s) applied to this node: it is shown and validated as rewritten`">
+        ✎ {{ entry.rewrites }} rewrite{{ entry.rewrites === 1 ? '' : 's' }}
+        <button type="button" :aria-label="`Undo the rewrites of node ${entry.title || 'root'}`" @click="emit('reset', entry.key)">undo</button>
+      </span>
       <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the metadata document in a new tab">↗</a>
     </header>
     <div class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">node</span>
-        <FieldChips :fields="entry.view.fields" :sources="entry.sources" :group="group" :focus="focus" @field="(s: string, n: string) => pick([''], s, n)" @group="(s: string, names: string[]) => pickGroup([''], s, names)" />
+        <FieldChips :fields="entry.view.fields" :sources="entry.sources" :group="group" :focus="focus" :editable="editable" @field="(s: string, n: string) => pick([''], s, n)" @group="(s: string, names: string[]) => pickGroup([''], s, names)" @edit="(f: FieldView) => emit('edit', entry.key, [''], f)" />
       </div>
       <ObjectNode
         v-for="child in entry.view.children"
@@ -74,9 +85,11 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
         :group="group"
         :focus="focus"
         :selected="pointers"
+        :editable="editable"
         @select="(p: string[], names?: string[]) => emit('select', entry.key, p, names)"
         @field="(s: string, n: string) => emit('field', s, n, entry.sources)"
         @schema="(s: string, n: string[]) => emit('schema', s, n, entry.sources)"
+        @edit="(p: string[], f: FieldView) => emit('edit', entry.key, p, f)"
       />
       <div v-if="notApplicable.length" class="na" title="These selected conventions define no field for this node type">
         not applicable: {{ notApplicable.join(', ') }}

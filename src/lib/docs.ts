@@ -9,7 +9,12 @@ export interface DocEntry {
     role?: string;
     title: string;
     href?: string;
+    /** The document as shown, validated and downloaded: `original` with its rewrites applied. */
     doc?: JsonObject;
+    /** The document as loaded, of a real document. */
+    original?: JsonObject;
+    /** Number of rewrites applied to `original`. */
+    rewrites?: number;
     view?: ObjectView;
     template?: TypeTemplate;
     sources?: SourceInfo[];

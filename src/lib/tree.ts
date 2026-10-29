@@ -14,12 +14,23 @@ export type ObjectKind =
  */
 export type FieldState = 'populated' | 'possible' | 'unexpected';
 
+/** A rewrite of the document: the field was added, or removed (and is shown although absent). */
+export type FieldEdit = 'added' | 'removed';
+
+/** How the rewrites of a document mark its fields, per object. */
+export interface FieldEdits {
+    at(pointer: string, field: string): FieldEdit | undefined;
+    /** Removed fields of an object, which are shown although absent. */
+    removedAt(pointer: string): string[];
+}
+
 export interface FieldView {
     name: string;
     /** Source key, `?prefix` for fields of an unknown prefix, or `?` for other unknown fields. */
     source: SourceKey;
     state: FieldState;
     kind?: PlacementKind;
+    edit?: FieldEdit;
 }
 
 export interface ObjectView {
@@ -96,7 +107,7 @@ function labelOf(kind: ObjectKind, pointer: string, names: string[]): string {
 }
 
 function fieldSignature(fields: FieldView[]): string {
-    return fields.map((f) => `${f.source}|${f.name}|${f.state}|${f.kind ?? ''}`).sort().join(',');
+    return fields.map((f) => `${f.source}|${f.name}|${f.state}|${f.kind ?? ''}|${f.edit ?? ''}`).sort().join(',');
 }
 
 function signature(node: ObjectView): string {
@@ -171,9 +182,9 @@ export function templateView(template: TypeTemplate, showCore: boolean): ObjectV
 
 /**
  * The view of a real document against the template of its type: populated fields are highlighted within all fields
- * the schemas would allow at the same place.
+ * the schemas would allow at the same place. `edits` marks the fields rewritten in `doc`; removed ones are kept as chips.
  */
-export function documentView(doc: JsonObject, template: TypeTemplate | undefined, sources: SourceInfo[], showCore: boolean): ObjectView {
+export function documentView(doc: JsonObject, template: TypeTemplate | undefined, sources: SourceInfo[], showCore: boolean, edits?: FieldEdits): ObjectView {
     // When several schemas claim a prefix, the most specific one (fewest prefixes) owns it.
     const bySpecificity = [...sources].sort((a, b) => a.prefixes.length - b.prefixes.length);
     const knownPrefixes = new Map<string, SourceKey>();
@@ -199,25 +210,32 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
         const node = getAt(doc, pointer);
         if (!node || typeof node !== 'object' || Array.isArray(node)) return [];
         const present = new Set(Object.keys(node));
+        const removed = edits?.removedAt(pointer).filter((name) => !present.has(name)) ?? [];
         const possible = possibleByShape.get(shapeOf(pointer)) ?? new Map();
         const out: FieldView[] = [];
-        for (const [name, { source, kind }] of possible) out.push({ name, source, kind, state: present.has(name) ? 'populated' : 'possible' });
-        for (const name of present) {
+        const mark = (field: FieldView): FieldView => {
+            const edit = edits?.at(pointer, field.name);
+            return edit ? { ...field, edit } : field;
+        };
+        for (const [name, { source, kind }] of possible) out.push(mark({ name, source, kind, state: present.has(name) ? 'populated' : 'possible' }));
+        for (const name of [...present, ...removed]) {
             if (possible.has(name)) continue;
+            // A removed field that no schema places here is shown as it was, but absent.
+            const state = present.has(name) ? 'unexpected' : 'possible';
             const owner = ownerByField.get(name);
             if (owner === CORE && !showCore) continue;
             // Summaries may summarize any field of the Items, so known fields there are never out of place.
-            if (owner) out.push({ name, source: owner, state: pointer === '/summaries' ? 'populated' : 'unexpected' });
-            else if (prefixOf(name)) out.push({ name, source: knownPrefixes.get(prefixOf(name)!) ?? `?${prefixOf(name)}`, state: 'unexpected' });
+            if (owner) out.push(mark({ name, source: owner, state: pointer === '/summaries' && state === 'unexpected' ? 'populated' : state }));
+            else if (prefixOf(name)) out.push(mark({ name, source: knownPrefixes.get(prefixOf(name)!) ?? `?${prefixOf(name)}`, state }));
             else if (!CORE_KEYS.has(name) && pointer !== '/summaries' && kindOf(pointer) !== 'dimension' && kindOf(pointer) !== 'variable' && kindOf(pointer) !== 'column') {
-                out.push({ name, source: '?', state: 'unexpected' });
+                out.push(mark({ name, source: '?', state }));
             }
         }
         return out;
     };
 
     const shapes = new Set(possibleByShape.keys());
-    const locations = objectLocations(doc).filter((l) => isProbeableLocation(l) && (shapes.has(shapeOf(l)) || ALWAYS_SHOWN.includes(kindOf(l)) || fieldsAt(l).some((f) => f.state === 'unexpected' && f.source !== '?')));
+    const locations = objectLocations(doc).filter((l) => isProbeableLocation(l) && (shapes.has(shapeOf(l)) || ALWAYS_SHOWN.includes(kindOf(l)) || fieldsAt(l).some((f) => (f.state === 'unexpected' && f.source !== '?') || f.edit)));
     const tree = buildTree(doc, locations, fieldsAt);
     return pruneEmpty(tree, (n) => ALWAYS_SHOWN.includes(n.kind));
 }
