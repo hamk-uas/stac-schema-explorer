@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { writeArrayBuffer } from 'geotiff';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { readableAssets, readerKind, realNodeView, zarrMetadataUrls } from '../src/lib/embedded-docs';
+import { dataFiles, readableAssets, readerKind, realNodeView, zarrMetadataUrls } from '../src/lib/embedded-docs';
 import { validateNode } from '../src/lib/embedded-probe';
 import { readNetCDF, type H5Module } from '../src/lib/readers/netcdf';
 import { parseGDALMetadata, readTiff } from '../src/lib/readers/tiff';
@@ -199,5 +199,19 @@ describe('readable assets', () => {
         expect(zarrMetadataUrls('https://h/s.zarr/?sig=1')).toEqual(['https://h/s.zarr/zarr.json?sig=1', 'https://h/s.zarr/.zmetadata?sig=1']);
         expect(zarrMetadataUrls('https://h/s.zarr/.zgroup')).toEqual(['https://h/s.zarr/zarr.json', 'https://h/s.zarr/.zmetadata']);
         expect(zarrMetadataUrls('https://h/s.zarr/zarr.json')).toEqual(['https://h/s.zarr/zarr.json']);
+    });
+
+    it('groups assets naming the same Zarr store into one data file', () => {
+        const doc = { assets: {
+            data: { href: 's.zarr', type: 'application/vnd.zarr; version=3' },
+            metadata: { href: 's.zarr/zarr.json', type: 'application/json' },
+            other: { href: 'https://h/t.zarr/?sig=1', type: 'application/vnd.zarr' },
+            cog: { href: 'b04.tif', type: 'image/tiff; application=geotiff' },
+        } };
+        expect(dataFiles(doc, 'https://h/items/item.json')).toEqual([
+            { assets: ['data', 'metadata'], href: 'https://h/items/s.zarr', kind: 'zarr' },
+            { assets: ['other'], href: 'https://h/t.zarr?sig=1', kind: 'zarr' },
+            { assets: ['cog'], href: 'https://h/items/b04.tif', kind: 'tiff' },
+        ]);
     });
 });

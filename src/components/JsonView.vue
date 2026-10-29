@@ -66,7 +66,7 @@ watch(() => [props.pointers, props.doc], async () => {
         :depth="0"
         :last="true"
       />
-      <p v-else class="empty">Select a document in the tree.</p>
+      <p v-else class="empty">Select a document or a data node in the tree.</p>
     </div>
   </section>
 </template>

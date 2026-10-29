@@ -37,7 +37,7 @@ function toggle(group: FieldGroup) {
 const STATE_TEXT = {
     populated: 'populated',
     possible: 'allowed here, not populated',
-    unexpected: 'populated, but no selected schema places it here',
+    unexpected: 'populated, but no selected or declared schema places it here',
 };
 
 function fieldTitle(field: FieldView): string {

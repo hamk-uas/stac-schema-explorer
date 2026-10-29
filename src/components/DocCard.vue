@@ -3,10 +3,11 @@ import { computed } from 'vue';
 
 import { sourceLabel } from '../lib/colors';
 import { TYPE_LABEL, type DocEntry } from '../lib/docs';
-import { READER_LABEL, readableAssets, type ReaderKind } from '../lib/embedded-docs';
+import { READER_LABEL, type DataView } from '../lib/embedded-docs';
 import type { SourceInfo } from '../lib/model';
 import type { FieldView } from '../lib/tree';
 import FieldChips from './FieldChips.vue';
+import NodeCard from './NodeCard.vue';
 import ObjectNode from './ObjectNode.vue';
 
 defineOptions({ name: 'DocCard' });
@@ -27,15 +28,13 @@ const emit = defineEmits<{
     field: [source: string, name: string, sources: SourceInfo[]];
     /** A grouped chip was clicked: the schema, its fields in the object, and the document's sources. */
     schema: [source: string, names: string[], sources: SourceInfo[]];
-    /** Explore the embedded metadata of a data asset (a Zarr store, a netCDF or TIFF file). */
-    embedded: [href: string, label: string, kind: ReaderKind];
+    /** Show or hide the embedded metadata of one of the document's data files, reading it when first shown. */
+    data: [entry: DocEntry, file: DataView];
     /** Rewrite a field of a document in some of its objects. */
     edit: [key: string, pointers: string[], field: FieldView];
     /** Undo every rewrite of a document. */
     reset: [key: string];
 }>();
-
-const readable = computed(() => (props.entry.href ? readableAssets(props.entry.doc, props.entry.href) : []));
 
 const docSources = computed(() => props.entry.sources ?? props.sources);
 
@@ -49,6 +48,16 @@ function pickGroup(pointers: string[], source: string, names: string[]) {
     emit('schema', source, names, docSources.value);
 }
 const isSelected = computed(() => props.selectedDoc === props.entry.key);
+/** Data files shown as sections: Zarr stores and files read or being read; the others are listed compactly until read. */
+const shownFiles = computed(() => (props.entry.data ?? []).filter((f) => f.kind === 'zarr' || f.status !== 'idle' || f.expanded));
+const unreadFiles = computed(() => {
+    const byKind = new Map<string, DataView[]>();
+    for (const file of props.entry.data ?? []) {
+        if (shownFiles.value.includes(file)) continue;
+        byKind.set(file.kind, [...(byKind.get(file.kind) ?? []), file]);
+    }
+    return [...byKind.entries()].map(([kind, files]) => ({ kind: kind as DataView['kind'], files }));
+});
 /** Real documents (not the example) can be rewritten. */
 const editable = computed(() => !!props.entry.original && props.entry.status === 'ready');
 const pointers = computed(() => (isSelected.value ? props.selectedPointers : []));
@@ -115,14 +124,65 @@ const validityTitle = computed(() => {
       <div v-if="notApplicable.length && !entry.href" class="na" title="These selected extensions define no field for this object type">
         not applicable: {{ notApplicable.join(', ') }}
       </div>
-      <div v-if="readable.length" class="embedded-links">
-        <span class="glyph">data</span>
-        <button v-for="asset in readable" :key="asset.key" type="button" class="embedded-link" :title="`Read the embedded metadata of this ${READER_LABEL[asset.kind]}\n${asset.href}`"
-          @click.stop="emit('embedded', asset.href, `asset ${asset.key} of ${entry.title}`, asset.kind)">
-          embedded metadata of asset <code>{{ asset.key }}</code> ›
-        </button>
-      </div>
     </div>
+    <section
+      v-for="file in shownFiles"
+      :key="file.href"
+      class="data"
+      :aria-label="`Metadata embedded in the ${READER_LABEL[file.kind]} of asset ${file.assets.join(', ')}`"
+    >
+      <div class="data-head">
+        <button type="button" class="data-toggle" :aria-expanded="file.expanded" @click="emit('data', entry, file)">
+          <span class="data-twisty" aria-hidden="true">{{ file.expanded ? '▾' : '▸' }}</span>
+          <span class="data-icon" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="14" height="14"><ellipse cx="8" cy="3.5" rx="5.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
+          </span>
+          <span class="data-kind">{{ READER_LABEL[file.kind] }}</span>
+          <span class="data-tag">embedded in the data, not STAC</span>
+          <span class="data-assets">asset <code v-for="key in file.assets" :key="key">{{ key }}</code></span>
+        </button>
+        <span v-if="file.status === 'loading'" class="status">reading…</span>
+        <span v-else-if="file.status === 'error'" class="status error" :title="file.error">⚠ {{ file.error }}</span>
+        <span v-else-if="file.status === 'ready'" class="status">{{ file.nodes.length }} node{{ file.nodes.length === 1 ? '' : 's' }}</span>
+        <a class="open" :href="file.href" target="_blank" rel="noopener" :title="`Open the ${READER_LABEL[file.kind]}\n${file.href}`">↗</a>
+      </div>
+      <div v-if="file.expanded" class="data-nodes">
+        <p v-for="note in file.notes" :key="note" class="note">ⓘ {{ note }}</p>
+        <NodeCard
+          v-for="node in file.nodes"
+          :key="node.key"
+          :entry="node"
+          :group="group"
+          :focus="focus"
+          :selected-doc="selectedDoc"
+          :selected-pointers="selectedPointers"
+          editable
+          @select="(k: string, p: string[], names?: string[]) => emit('select', k, p, names)"
+          @field="(s: string, n: string, src: SourceInfo[]) => emit('field', s, n, src)"
+          @schema="(s: string, n: string[], src: SourceInfo[]) => emit('schema', s, n, src)"
+          @edit="(k: string, p: string[], f: FieldView) => emit('edit', k, p, f)"
+          @reset="(k: string) => emit('reset', k)"
+        />
+      </div>
+    </section>
+    <section v-for="group in unreadFiles" :key="group.kind" class="data unread" :aria-label="`${READER_LABEL[group.kind]}s of assets, not read`">
+      <div class="data-head">
+        <span class="data-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="14" height="14"><ellipse cx="8" cy="3.5" rx="5.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
+        </span>
+        <span class="data-kind">{{ READER_LABEL[group.kind] }}{{ group.files.length === 1 ? '' : 's' }}</span>
+        <span class="data-tag">embedded in the data, not STAC</span>
+        <span class="hint">not read (reading may download the file header): asset</span>
+        <button
+          v-for="file in group.files"
+          :key="file.href"
+          type="button"
+          class="data-file"
+          :title="`Read the embedded metadata of this ${READER_LABEL[file.kind]}\n${file.href}`"
+          @click="emit('data', entry, file)"
+        ><code>{{ file.assets.join(', ') }}</code> ›</button>
+      </div>
+    </section>
     <div v-if="entry.expanded && hasChildren" class="child-docs">
       <DocCard
         v-for="child in entry.children"
@@ -140,7 +200,7 @@ const validityTitle = computed(() => {
         @schema="(s: string, n: string[], src: SourceInfo[]) => emit('schema', s, n, src)"
         @edit="(k: string, p: string[], f: FieldView) => emit('edit', k, p, f)"
         @reset="(k: string) => emit('reset', k)"
-        @embedded="(h: string, l: string, k: ReaderKind) => emit('embedded', h, l, k)"
+        @data="(e: DocEntry, f: DataView) => emit('data', e, f)"
       />
       <button v-if="entry.remaining.length || entry.itemsHref" type="button" class="more" @click="emit('more', entry)">
         {{ entry.remaining.length ? `Show more (${entry.remaining.length} not loaded)` : 'Load items' }}
@@ -266,24 +326,87 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.embedded-links {
+/* Data files of assets: slate and dashed like the node cards they hold, never like the STAC objects above them. */
+.data {
+  margin: 0 10px 8px 12px;
+  border: 1px dashed #94a3b8;
+  border-left: 4px solid #475569;
+  border-radius: 8px;
+  background: #f1f5f9;
+}
+.data-head {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
   flex-wrap: wrap;
+}
+.data-toggle {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 4px;
-  padding: 3px 6px;
-}
-.embedded-link {
-  border: 1px dashed #94a3b8;
-  border-radius: 6px;
-  background: #f8fafc;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
   color: #334155;
   font: 500 12px var(--sans);
-  padding: 1px 8px;
+  flex-wrap: wrap;
+  text-align: left;
+}
+.data-twisty {
+  width: 14px;
+  color: #475569;
+}
+.data-icon {
+  display: inline-flex;
+  color: #475569;
+}
+.data-kind {
+  font: 700 12px var(--sans);
+  color: #1e293b;
+}
+.data-tag {
+  font: 600 10px var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  background: #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.data-assets code {
+  margin-left: 4px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  padding: 0 3px;
+}
+.data-head .status {
+  margin-left: auto;
+}
+.data-nodes {
+  padding: 0 8px 4px;
+}
+.data-nodes .note {
+  margin: 2px 0;
+  font-size: 11px;
+  color: #64748b;
+}
+.data .hint {
+  font-size: 11px;
+  color: #64748b;
+}
+.data-file {
+  border: 1px dashed #94a3b8;
+  border-radius: 6px;
+  background: white;
+  color: #334155;
+  font: 500 11px var(--sans);
+  padding: 0 6px;
   cursor: pointer;
 }
-.embedded-link:hover {
+.data-file:hover {
   border-color: #475569;
 }
 .na {

@@ -169,6 +169,46 @@ export function readableAssets(doc: JsonObject | undefined, baseHref: string | u
     return out;
 }
 
+/** The store of a Zarr asset, whether it names the store or one of its metadata documents. */
+function zarrStore(href: string): string {
+    const [path, query = ''] = href.split(/(?=[?#])/);
+    return path.replace(ZARR_DOCUMENT, '').replace(/\/+$/, '') + query;
+}
+
+/**
+ * The data files of a STAC document's readable assets: assets naming the same Zarr store (a `data` store and its
+ * `metadata` zarr.json) are one file, read from the store.
+ */
+export function dataFiles(doc: JsonObject | undefined, baseHref: string | undefined): { assets: string[]; href: string; kind: ReaderKind }[] {
+    const files = new Map<string, { assets: string[]; href: string; kind: ReaderKind }>();
+    for (const asset of readableAssets(doc, baseHref)) {
+        const id = asset.kind === 'zarr' ? `zarr ${zarrStore(asset.href)}` : `${asset.kind} ${asset.href}`;
+        const file = files.get(id);
+        if (file) file.assets.push(asset.key);
+        else files.set(id, { assets: [asset.key], href: asset.kind === 'zarr' ? zarrStore(asset.href) : asset.href, kind: asset.kind });
+    }
+    return [...files.values()];
+}
+
+/** Metadata embedded in a data file (a Zarr store, a netCDF or TIFF file), read from the data and shown as node cards. */
+export interface DataView {
+    /** What the file is: the URL opened, or the assets of a STAC document that name it. */
+    label: string;
+    href: string;
+    kind: ReaderKind;
+    /** Keys of the STAC assets naming the file; none for a file opened directly. */
+    assets: string[];
+    /** Node cards shown (an asset's file is read when first expanded). */
+    expanded: boolean;
+    status: 'idle' | 'loading' | 'ready' | 'error';
+    error?: string;
+    /** What the reader left out or how it had to read the file. */
+    notes: string[];
+    nodes: NodeEntry[];
+    /** The nodes as read, before rewrites, and the metadata document they were read from. */
+    document?: { format: string; nodes: { path: string; node: JsonObject }[]; read?: string };
+}
+
 /** URLs to try for the metadata of a Zarr store or document: the URL itself when it names a document, else `zarr.json` and `.zmetadata`. */
 export function zarrMetadataUrls(href: string): string[] {
     const path = href.split(/[?#]/)[0];

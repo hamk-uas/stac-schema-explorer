@@ -6,9 +6,9 @@
     <li><span class="geo">properties</span> GeoJSON Feature properties of an Item</li>
     <li><span class="chip">cube:*</span> fields validated there by the schema; <code>prefix:*</code> means all fields of that prefix, otherwise they are named</li>
     <li><span class="chip presence">cube:*</span> presence only: the value is not validated there, but counts towards the extension's “use at least one field” rule</li>
-    <li><span class="chip possible">cf:*</span> allowed, not populated (STAC URL view)</li>
-    <li><span class="chip unexpected">foo:bar</span> populated, but no selected schema places it there</li>
-    <li><span class="chip added">cube:dimensions ×</span> <span class="chip possible removed">sci:doi +</span> added or removed by a rewrite (STAC URL view: + adds, − removes, × undoes)</li>
+    <li><span class="chip possible">cf:*</span> allowed, not populated (explored URLs)</li>
+    <li><span class="chip unexpected">foo:bar</span> populated, but no selected or declared schema places it there (declared: in <code>stac_extensions</code>, <code>zarr_conventions</code> or <code>Conventions</code>)</li>
+    <li><span class="chip added">cube:dimensions ×</span> <span class="chip possible removed">sci:doi +</span> added or removed by a rewrite (explored URLs: + adds, − removes, × undoes)</li>
   </ul>
   <p class="note">
     Click a field to see its meaning, type and allowed values, a field group to list its fields, an object to highlight it

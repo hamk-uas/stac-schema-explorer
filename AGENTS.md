@@ -48,6 +48,9 @@ technical visual language; it need not adopt Observatory instance branding.
 - Data conventions (`conv`) get the same treatment as extensions (`ext`), visibly
   apart: their own picker grouped by kind, square markers, node cards marked
   "embedded in the data" (`NodeCard`), and format fields hidden with STAC core.
+  Data files of a STAC document's assets are shown inside its `DocCard`, in
+  slate dashed sections that must never look like its STAC objects; Zarr is
+  read when the document loads, netCDF/TIFF only on request or for a share link.
   Reuse `templateView`/`documentView`, `FieldChips`, `FieldInfo` and `SchemaInfo` for nodes;
   only the probing differs (format nodes instead of STAC objects).
 - The information panel above the JSON describes what the JSON highlights: a
@@ -193,10 +196,9 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
   distinguish app support from downstream integration still to be done.
 - [ ] Establish an explicit software license; attribution of Apache-licensed
   source documentation in the README is not a repository-wide license.
-- [ ] Embedded metadata: explored data-file views are not restored from a shared
-  link of a STAC document (only when the file itself is `href`). The netCDF/TIFF
-  readers duplicate the Observatory's (`@observatory/data` `readNetCDFMetadata`,
-  `readTiffMetadata`); until one shared package exists, change both together.
+- [ ] Embedded metadata: the netCDF/TIFF readers duplicate the Observatory's
+  (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`); until one
+  shared package exists, change both together.
 
 ## Keep this guide current
 

@@ -24,10 +24,11 @@ asking the schemas themselves.
   selected conventions apply to (Zarr v3, Zarr v2, netCDF, TIFF), since each format has its own node types and
   conventions: its node types and their containers (`attributes`, `tags`, …) against its format and convention fields.
   Click a cell to see the field in the example JSON.
-- **Explore a STAC URL**: open a Catalog, Collection or Item (static or STAC API) and browse its children. Each object
-  shows its populated fields highlighted within all fields the schemas would allow at the same place: dotted chips are
-  allowed but absent, red chips are present but not placed there by any selected schema. Documents are validated
-  against STAC core and the extensions they declare.
+- **Explore a STAC or data URL**: open a Catalog, Collection or Item (static or STAC API) and browse its children, or
+  a data file (see *Explore embedded metadata* below). Each object shows its populated fields highlighted within all
+  fields the schemas would allow at the same place: dotted chips are allowed but absent, red chips are present but not
+  placed there by any selected or declared schema (with “Include extensions the documents declare”, the default).
+  Documents are validated against STAC core and the extensions they declare.
 - **Rewrites**: in an explored STAC document or data node, + on an absent field adds it with the example value of the
   template, − on a present field removes it (struck through, + restores it), × undoes an addition. Adding a field of
   an undeclared extension or convention also declares it (`stac_extensions`, a `zarr_conventions` entry, or a token
@@ -46,8 +47,11 @@ asking the schemas themselves.
   (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). Format fields, the counterparts of STAC core, are shown with
   STAC core fields.
 - **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
-  file, or follow the “embedded metadata of asset …” link of a STAC document with such an asset. The first Zarr asset
-  of an opened STAC URL (preferring the `data` role) is read automatically. Every node is shown
+  file directly, or open a STAC document with such assets: their data files appear inside the document's card, in
+  slate “embedded in the data, not STAC” sections apart from its STAC objects. Assets naming the same Zarr store
+  (a `data` store and its `metadata` zarr.json) are one file. Zarr stores are read as soon as their document loads;
+  netCDF and TIFF files, which can need larger downloads, are listed compactly and read when clicked, or when a share
+  link selects or rewrites one of their nodes. Every node is shown
   within the fields its format and its declared (`zarr_conventions`, `Conventions`) or recognised conventions allow,
   and validated against them. netCDF and TIFF files are read in a worker
   ([src/reader.worker.ts](src/reader.worker.ts)) by HTTP range requests, fetching only their headers: netCDF-4 with

@@ -15,7 +15,7 @@ import { isProbeableLocation } from './lib/base-docs';
 import { colorOf, sourceLabel } from './lib/colors';
 import { DATA_FORMATS, embeddedCounterparts, embeddedSchemaLabel, stacCounterparts } from './lib/conventions';
 import { TYPE_LABEL, type DocEntry } from './lib/docs';
-import { nodeConventions, READER_LABEL, readableAssets, readerKind, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type NodeEntry, type ReaderKind } from './lib/embedded-docs';
+import { dataFiles, nodeConventions, READER_LABEL, readerKind, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type DataView, type NodeEntry, type ReaderKind } from './lib/embedded-docs';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-probe';
 import { Engine } from './lib/engine';
 import { describeUrl, normalizeSchemaUrl } from './lib/extensions';
@@ -83,20 +83,8 @@ watch(() => state.conventions.join('\n'), runEmbeddedProbe, { immediate: true })
 const embeddedSources = computed<EmbeddedSourceInfo[]>(() => embeddedResult.value?.sources ?? []);
 const exampleNodes = computed<NodeEntry[]>(() => (embeddedResult.value ? templateEntries(embeddedResult.value, state.showCore) : []));
 
-/** Metadata embedded in a data asset (a Zarr store, a netCDF or TIFF file), read from the data and shown as node cards. */
-interface EmbeddedView {
-    label: string;
-    href: string;
-    kind: ReaderKind;
-    status: 'loading' | 'ready' | 'error';
-    error?: string;
-    /** What the reader left out or how it had to read the file. */
-    notes: string[];
-    nodes: NodeEntry[];
-    /** The nodes as read, before rewrites, and the metadata document they were read from. */
-    document?: { format: string; nodes: { path: string; node: JsonObject }[]; read?: string };
-}
-const embeddedView = ref<EmbeddedView>();
+/** A data file opened directly as the URL (a Zarr store, a netCDF or TIFF file), shown below the (absent) STAC tree. */
+const embeddedView = ref<DataView>();
 
 /** The rewrites of one document, in the order they were made. */
 const rewritesOf = (doc: string) => state.rewrites.filter((r) => r.doc === doc);
@@ -126,16 +114,22 @@ async function readZarr(href: string, json?: unknown): Promise<{ format: string;
     throw new Error('no Zarr metadata (zarr.json or .zmetadata) found');
 }
 
-/** Reads the embedded metadata of a data asset and checks each node against its format and conventions. */
+/** Opens a data file given as the URL: its embedded metadata, each node checked against its format and conventions. */
 async function openEmbedded(href: string, label: string, kind: ReaderKind, json?: unknown) {
-    const view: EmbeddedView = reactive({ label, href, kind, status: 'loading', nodes: [], notes: [] });
+    const view: DataView = reactive({ label, href, kind, assets: [], expanded: true, status: 'idle', nodes: [], notes: [] });
     embeddedView.value = view;
+    await readData(view, json);
+}
+
+/** Reads the embedded metadata of a data file into its view. */
+async function readData(view: DataView, json?: unknown) {
+    view.status = 'loading';
     try {
         let document: { format: string; nodes: { path: string; node: JsonObject }[]; read?: string };
-        if (kind === 'zarr') document = await readZarr(href, json);
+        if (view.kind === 'zarr') document = await readZarr(view.href, json);
         else {
-            const read = await readEmbeddedFile(kind, href);
-            document = { format: kind, nodes: read.nodes };
+            const read = await readEmbeddedFile(view.kind, view.href);
+            document = { format: view.kind, nodes: read.nodes };
             view.notes = read.notes;
         }
         view.document = markRaw(document);
@@ -150,7 +144,7 @@ async function openEmbedded(href: string, label: string, kind: ReaderKind, json?
 const nodeRuns = new WeakMap<object, number>();
 
 /** Node cards of the nodes read, with their rewrites applied, each checked against its format and conventions. */
-async function buildNodes(view: EmbeddedView) {
+async function buildNodes(view: DataView) {
     const source = view.document;
     if (!source) return;
     const run = (nodeRuns.get(view) ?? 0) + 1;
@@ -278,6 +272,7 @@ async function load(entry: DocEntry) {
     try {
         fill(entry, await fetchDoc(entry.href!));
         await analyze(entry);
+        attachData(entry);
     } catch (error) {
         entry.status = 'error';
         entry.error = error instanceof Error ? error.message : String(error);
@@ -301,6 +296,7 @@ async function loadMore(entry: DocEntry) {
             await Promise.all(added.map(async (child, i) => {
                 fill(child, docs[i]);
                 await analyze(child);
+                attachData(child);
             }));
         } catch (error) {
             entry.error = `items: ${error instanceof Error ? error.message : String(error)}`;
@@ -338,7 +334,7 @@ async function openHref(href: string, keepSelection = false) {
     if (kind || zarrDocument(json as never)) {
         hrefRoot.value = undefined;
         await openEmbedded(trimmed, trimmed, kind ?? 'zarr', json);
-        const opened = embeddedView.value as EmbeddedView | undefined;
+        const opened = embeddedView.value as DataView | undefined;
         if (!keepSelection && opened?.nodes[0]) state.selected = opened.nodes[0].key;
         return;
     }
@@ -349,31 +345,34 @@ async function openHref(href: string, keepSelection = false) {
         root.expanded = true;
         await loadMore(root);
     }
-    if (hrefRoot.value === root && !embeddedView.value) {
-        const zarr = firstZarrAsset(root);
-        if (zarr) await openEmbedded(zarr.href, zarr.label, 'zarr');
-    }
 }
 
 /**
- * The first Zarr asset of the loaded documents, breadth first and preferring the `data` role, read without a click:
- * its metadata is a few small JSON documents. netCDF and TIFF files can need large downloads and stay behind their links.
+ * Attaches the data files of a loaded document's assets, shown under it. Zarr metadata (a few small JSON documents) is
+ * read at once; a netCDF or TIFF file, which can need a large download, when expanded or when the share link selects or
+ * rewrites one of its nodes.
  */
-function firstZarrAsset(root: DocEntry): { href: string; label: string } | undefined {
-    const queue = [root];
-    for (let entry = queue.shift(); entry; entry = queue.shift()) {
-        if (entry.status === 'ready' && entry.doc && entry.href) {
-            const assets = readableAssets(entry.doc, entry.href).filter((a) => a.kind === 'zarr');
-            const rolesOf = (key: string) => ((entry!.doc!.assets as Record<string, { roles?: unknown }>)[key]?.roles);
-            const asset = assets.find((a) => {
-                const roles = rolesOf(a.key);
-                return Array.isArray(roles) && roles.includes('data');
-            }) ?? assets[0];
-            if (asset) return { href: asset.href, label: `asset ${asset.key} of ${entry.title}` };
-        }
-        queue.push(...entry.children);
-    }
-    return undefined;
+function attachData(entry: DocEntry) {
+    if (entry.data || !entry.original || !entry.href) return;
+    entry.data = dataFiles(entry.original, entry.href).map((file) => reactive<DataView>({
+        label: `asset ${file.assets.join(', ')} of ${entry.title}`, ...file, expanded: false, status: 'idle', nodes: [], notes: [],
+    }));
+    const linked = (file: DataView) => [state.selected, ...state.rewrites.map((r) => r.doc)].some((key) => key.startsWith(`node:${file.href}#`));
+    for (const file of entry.data) if (file.kind === 'zarr' || linked(file)) void toggleData(entry, file);
+}
+
+async function toggleData(_entry: DocEntry, file: DataView) {
+    file.expanded = !file.expanded;
+    if (file.expanded && file.status === 'idle') await readData(file);
+}
+
+/** Every data file read or attached: the one opened as the URL and those of the loaded documents' assets. */
+function dataViews(): DataView[] {
+    const out: DataView[] = embeddedView.value ? [embeddedView.value] : [];
+    const collect = (e: DocEntry) => out.push(...(e.data ?? []));
+    walk(hrefRoot.value, collect);
+    if (detached.value) collect(detached.value);
+    return out;
 }
 
 function walk(entry: DocEntry | undefined, visit: (e: DocEntry) => void) {
@@ -409,8 +408,8 @@ watch(() => state.rewrites, (now, before) => {
     };
     walk(hrefRoot.value, refresh);
     if (detached.value) refresh(detached.value);
-    const view = embeddedView.value;
-    if (view?.status === 'ready' && view.nodes.some((n) => changed.has(n.key))) {
+    for (const view of dataViews()) {
+        if (view.status !== 'ready' || !view.nodes.some((n) => changed.has(n.key))) continue;
         buildNodes(view).catch((error: unknown) => {
             view.status = 'error';
             view.error = error instanceof Error ? error.message : String(error);
@@ -422,7 +421,7 @@ watch(() => state.rewrites, (now, before) => {
 function editField(doc: string, pointers: string[], field: FieldView) {
     let source = field.source;
     // Format fields of a node are shown as core fields; their template placements are those of the format schema.
-    const node = doc.startsWith('node:') ? embeddedView.value?.nodes.find((n) => n.key === doc) : undefined;
+    const node = doc.startsWith('node:') ? dataNodes.value.find((n) => n.key === doc) : undefined;
     if (node && source === CORE) source = DATA_FORMATS.find((f) => f.id === node.format)?.schema ?? source;
     const present = field.edit ? field.edit === 'added' : field.state !== 'possible';
     state.rewrites = toggleRewrite(state.rewrites, doc, pointers, field.name, source, present);
@@ -506,7 +505,9 @@ function find(entry: DocEntry | undefined, key: string): DocEntry | undefined {
 }
 
 const currentRoot = computed(() => (state.mode === 'example' ? exampleRoot.value : hrefRoot.value));
-const currentNodes = computed(() => (state.mode === 'example' ? exampleNodes.value : embeddedView.value?.nodes ?? []));
+/** Nodes of every data file read, which can be selected like documents. */
+const dataNodes = computed(() => dataViews().flatMap((view) => view.nodes));
+const currentNodes = computed(() => (state.mode === 'example' ? exampleNodes.value : dataNodes.value));
 const selectedNode = computed(() => currentNodes.value.find((n) => n.key === state.selected));
 const selectedEntry = computed(() => find(currentRoot.value, state.selected) ?? (state.mode === 'href' && detached.value?.key === state.selected ? detached.value : undefined));
 const selectedDocument = computed(() => selectedEntry.value ?? selectedNode.value);
@@ -745,11 +746,11 @@ onMounted(() => {
     <header v-if="!state.embed" class="top">
       <div class="brand">
         <h1><a class="home" :href="homeUrl" title="Start over: reset all settings and selections">STAC Schema Explorer</a></h1>
-        <p>Where can each field of STAC core and STAC extensions go? Derived by probing the JSON Schemas themselves.</p>
+        <p>Where can each field of STAC, its extensions and the metadata embedded in data (Zarr, netCDF, TIFF) go? Derived by probing the JSON Schemas themselves.</p>
       </div>
       <nav class="modes" aria-label="View">
         <button type="button" :class="{ on: state.mode === 'example' }" @click="setMode('example')">Example catalog</button>
-        <button type="button" :class="{ on: state.mode === 'href' }" @click="setMode('href')">Explore a STAC URL</button>
+        <button type="button" :class="{ on: state.mode === 'href' }" title="A STAC Catalog, Collection or Item (static or STAC API), a Zarr store, a netCDF or TIFF file" @click="setMode('href')">Explore a STAC or data URL</button>
       </nav>
       <button type="button" class="json-toggle" @click="jsonOpen = !jsonOpen">{{ jsonOpen ? 'Hide JSON' : 'Show JSON' }}</button>
       <a class="gh" href="https://github.com/hamk-uas/stac-schema-explorer" target="_blank" rel="noopener">About / source</a>
@@ -903,8 +904,9 @@ onMounted(() => {
         </p>
         <p class="explain">
           Populated fields are highlighted within the fields the schemas would allow at the same place (dotted = allowed but
-          absent; red = present but not placed there by any selected schema). Expand a document to load its children. The first
-          Zarr asset found is read automatically; other data assets are read from their “embedded metadata” links.
+          absent; red = present but not placed there by any selected or declared schema). Expand a document to load its children. The data
+          files of assets (Zarr, netCDF, TIFF) appear inside their document as slate “embedded in the data” sections: Zarr
+          stores are read at once, netCDF and TIFF files when expanded.
           Use + and − on a field to add it with an example value or remove it: a local rewrite, kept in the share link.
         </p>
         <p v-if="state.rewrites.length" class="rewrites-banner" role="status">
@@ -930,7 +932,7 @@ onMounted(() => {
             @schema="openSchema"
             @edit="editField"
             @reset="resetRewrites"
-            @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
+            @data="toggleData"
           />
           <template v-if="detached && !find(hrefRoot, detached.key)">
             <h3 class="detached">Selected document (outside the loaded tree)</h3>
@@ -948,7 +950,7 @@ onMounted(() => {
               @schema="openSchema"
               @edit="editField"
               @reset="resetRewrites"
-              @embedded="(href: string, label: string, kind: ReaderKind) => openEmbedded(href, label, kind)"
+              @data="toggleData"
             />
           </template>
           <section v-if="embeddedView" class="embedded-section" aria-labelledby="embedded-view-heading">

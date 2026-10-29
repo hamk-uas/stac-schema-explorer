@@ -10,7 +10,7 @@ export type ObjectKind =
 /**
  * - `populated`: present in the document.
  * - `possible`: allowed here by the schemas but absent (only in views of real documents).
- * - `unexpected`: present, but no selected schema places this field here.
+ * - `unexpected`: present, but no schema the document is compared with (selected or declared) places this field here.
  */
 export type FieldState = 'populated' | 'possible' | 'unexpected';
 
