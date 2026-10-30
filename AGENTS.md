@@ -29,7 +29,7 @@ technical visual language; it need not adopt Observatory instance branding.
 | --- | --- |
 | [src/App.vue](src/App.vue) | App orchestration, URL state, selection, remote/example flows and layout. |
 | [src/components](src/components) | Document cards, object/JSON trees, field chips/info, extension picker, matrix and legend; `NodeCard` and `ConventionPicker` for embedded metadata. |
-| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, reader kind of assets, Zarr documents), [readers](src/lib/readers) (netCDF and TIFF readers, ports of the Observatory's). [rewrites.ts](src/lib/rewrites.ts): local rewrites of real documents and nodes. |
+| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, reader kind of assets, Zarr documents), [readers](src/lib/readers) (netCDF and TIFF readers, ports of the Observatory's). [rewrites.ts](src/lib/rewrites.ts): local rewrites of real documents and nodes. [software.ts](src/lib/software.ts): which software reads/writes which fields, and its source precedence. |
 | [src/engine.worker.ts](src/engine.worker.ts), [src/lib/engine.ts](src/lib/engine.ts) | Worker-backed probing/validation protocol. |
 | [src/reader.worker.ts](src/reader.worker.ts), [src/lib/reader.ts](src/lib/reader.ts) | Separate, lazily created worker reading netCDF/TIFF files. netCDF-4 range reads are synchronous XHR: keep them out of the engine worker and the page. |
 | [schemas](schemas) | Reviewed, documentation-enriched schema source consumed by this app and Observatory: vendored copies, plus authored embedded-metadata schemas under `schemas/hamk-uas.github.io/stac-schema-explorer/schemas/`. |
@@ -112,9 +112,15 @@ in their description and are published at their `$id` by `vite.config.ts`.
 - `registry.json` and `crosswalk.json` are contracts read by Observatory. Identify
   Zarr conventions by UUID, not name or URL. Changing ids, paths, relations or
   conversion names requires coordinated Observatory changes.
+- `software.json` is published beside them and names conventions and formats by
+  their registry ids and STAC extensions by name. Conventions say who *defines*
+  fields (never overlapping); software says who *uses* them (overlapping freely).
+  Every capability or precedence claim needs a cited source (docs or source code)
+  and the version it depends on; leave out what cannot be verified, and recheck
+  claims when the software changes.
 - Do not copy text whose licence does not allow it: CF text is CC0; ACDD, OGC
   and GDAL texts are summarised in our own words with links.
-- `test/authored.test.ts` checks documentation, registry/crosswalk targets and
+- `test/authored.test.ts` checks documentation, registry/crosswalk/software targets and
   that the lab catalogs' metadata in `test/fixtures/embedded` validates. Fixtures
   must not contain personal data from source files (names, emails, user names).
 
@@ -199,6 +205,13 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
 - [ ] Embedded metadata: the netCDF/TIFF readers duplicate the Observatory's
   (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`); until one
   shared package exists, change both together.
+- [ ] Software and standards, after the first `software.json` slice: a software
+  picker that marks which fields a program interprets, writes or ignores; standards
+  as presets of conventions with requirement levels (GeoZarr, still a draft over the
+  zarr-conventions; COG; CF-compliant netCDF); more software (QGIS, R terra/stars,
+  xpystac, geotiff.js) once their behaviour is verified. Add the geo-embeddings Zarr
+  convention (`geoemb:`, used by TESSERA) when it has a released schema (its declared
+  `refs/tags/v1` schema URL did not resolve when last checked).
 
 ## Keep this guide current
 

@@ -4,6 +4,8 @@ import { computed } from 'vue';
 import { colorOf, sourceLabel } from '../lib/colors';
 import { inlineMarkdown } from '../lib/markdown';
 import type { FieldDoc, SourceInfo } from '../lib/model';
+import type { PrecedenceUse, SoftwareUse } from '../lib/software';
+import SoftwareInfo from './SoftwareInfo.vue';
 
 export interface FieldPlace {
     label: string;
@@ -29,6 +31,9 @@ const props = defineProps<{
     /** Where the field's information also lives: STAC fields of an embedded field, embedded fields of a STAC field. */
     counterparts?: FieldCounterpart[];
     counterpartsTitle?: string;
+    /** Software that reads or writes the field, and the sources each program prefers for what it says. */
+    software?: SoftwareUse[];
+    precedence?: PrecedenceUse[];
 }>();
 const emit = defineEmits<{ close: []; place: [place: FieldPlace] }>();
 
@@ -87,6 +92,7 @@ const vendoredLink = computed(() => {
         </li>
       </ul>
     </div>
+    <SoftwareInfo :uses="software ?? []" :precedence="precedence" />
   </section>
 </template>
 

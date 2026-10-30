@@ -24,6 +24,7 @@ import { CORE, STAC_TYPES, STAC_VERSIONS, type JsonObject, type ProbeProgress, t
 import { getAt, joinPointer, objectLocations } from './lib/pointer';
 import { readEmbeddedFile } from './lib/reader';
 import { addedSchemas, applyRewrites, declareConventionsAttribute, declareStacExtensions, declareZarrConventions, fieldEdits, templateValue, toggleRewrite, type Rewrite } from './lib/rewrites';
+import { precedenceFor, softwareFor } from './lib/software';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
 import { documentView, fieldIndex, templateView, type FieldView } from './lib/tree';
 import { readState, writeState, type AppState } from './lib/url-state';
@@ -576,9 +577,19 @@ function focusFromPicker(source: string) {
 /** Sources of the document whose field was clicked (a real document may declare extensions beyond the selection). */
 const fieldContext = shallowRef<SourceInfo[]>();
 
+/**
+ * The schema of a field shown in a node of embedded metadata: format fields are shown as core fields there (the
+ * counterparts of STAC core), but are documented by, and read or written as, fields of the format schema.
+ */
+function nodeSource(source: string, context?: SourceInfo[]): string {
+    if (source !== CORE || !context) return source;
+    const format = context.find((s) => 'kind' in s && (s as EmbeddedSourceInfo).kind === 'format');
+    return format?.key ?? source;
+}
+
 function openField(source: string, name: string, context?: SourceInfo[]) {
     fieldContext.value = context ? markRaw(context) : undefined;
-    state.field = `${source}|${name}`;
+    state.field = `${nodeSource(source, context)}|${name}`;
     state.schema = '';
     jsonOpen.value = true;
 }
@@ -633,7 +644,13 @@ const fieldPanel = computed(() => {
             counterparts.push({ label: `${embeddedSchemaLabel(entry.embedded.schema)}: ${entry.embedded.path.join('.')}`, relation: entry.relation, note: entry.note });
         }
     }
-    return { source, name, doc, places, counterparts, counterpartsTitle, sources: pool, vendored: source === 'core' ? true : isVendored(source) };
+    // A field's path in a node (`attributes/grid_mapping`), or its name in STAC, as the software list names it.
+    const container = embedded && 'containers' in embedded ? embedded.containers[name] : undefined;
+    const path = container ? [container, name] : [name];
+    return {
+        source, name, doc, places, counterparts, counterpartsTitle, sources: pool, vendored: source === 'core' ? true : isVendored(source),
+        software: softwareFor(source, path), precedence: precedenceFor(source, path),
+    };
 });
 
 function showPlace(place: FieldPlace) {
@@ -652,7 +669,7 @@ const schemaHere = ref<string[]>([]);
 function openSchema(source: string, names: string[] = [], context?: SourceInfo[]) {
     schemaContext.value = context ? markRaw(context) : undefined;
     schemaHere.value = names;
-    state.schema = source;
+    state.schema = nodeSource(source, context);
     state.field = '';
     jsonOpen.value = true;
 }
@@ -997,6 +1014,8 @@ onMounted(() => {
         :vendored="fieldPanel.vendored"
         :counterparts="fieldPanel.counterparts"
         :counterparts-title="fieldPanel.counterpartsTitle"
+        :software="fieldPanel.software"
+        :precedence="fieldPanel.precedence"
         @close="state.field = ''"
         @place="showPlace"
       />

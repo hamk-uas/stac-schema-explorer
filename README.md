@@ -39,7 +39,8 @@ asking the schemas themselves.
   and type, the allowed values with their meanings, and every place it can go. The text comes from the schemas; see
   [Vendored schemas](#vendored-schemas). Where a field has a counterpart on the other side of the
   [STAC crosswalk](#embedded-metadata-schemas), it is listed too: the STAC field of an embedded field (`proj:code` of
-  the Zarr `proj` convention is `proj:code` of the Projection extension), or the embedded fields of a STAC field.
+  the Zarr `proj` convention is `proj:code` of the Projection extension), or the embedded fields of a STAC field. So is
+  the software that reads or writes it, and which source each loader prefers for it (see `software.json` below).
 - **Embedded in the data**: below the example catalog, the nodes of the data formats (Zarr v3 and v2 groups and arrays,
   netCDF groups and variables, TIFF files and images) that the selected **data conventions** apply to, with every field
   placed where the format and convention schemas allow it. Data conventions are chosen apart from extensions, with their
@@ -230,6 +231,14 @@ They have no upstream copy; the build publishes them at their `$id`,
 - [crosswalk.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/crosswalk.json): where embedded fields
   correspond to STAC fields (`proj:code` in both, ACDD `title` and STAC `title`, GeoTIFF `ProjectedCRSGeoKey` and
   `proj:code`, …): the same value, the same value after a named conversion, or related information in different forms.
+- [software.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/software.json): which software (GDAL,
+  rasterio, xarray, rioxarray, netCDF4-python, stackstac, odc-stac, rio-tiler/TiTiler) interprets, passes through or
+  writes which fields of conventions, formats and STAC extensions, since which version, and, per topic (CRS and grid,
+  nodata, scale and offset), which source it prefers when STAC and the data, or two conventions, say the same thing:
+  stackstac and odc-stac place assets by STAC `proj:` and ignore the files' GeoTIFF keys, rio-tiler reads pixels by the
+  files' own. Conventions say who defines fields; software says who uses them, so software overlaps where conventions
+  do not, and software built on other software (`extends`: rasterio on GDAL) is listed with it. Every claim cites
+  documentation or source code; what could not be verified is left out. Field and schema information show it.
 
 The CF attribute descriptions are those of the CF Conventions 1.13 Appendices A and F (public domain, CC0 1.0); the
 others summarise their specifications in our own words and link to them. The tests

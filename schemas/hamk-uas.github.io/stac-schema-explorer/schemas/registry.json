@@ -228,7 +228,7 @@
         "zarr-v3",
         "zarr-v2"
       ],
-      "description": "Metadata written by the GDAL library and rioxarray.",
+      "description": "Metadata defined by the GDAL library: its GeoTIFF tags and its netCDF and Zarr georeferencing attributes. The software that reads or writes it is listed in software.json.",
       "authored": true,
       "specification": "https://gdal.org/",
       "detection": [

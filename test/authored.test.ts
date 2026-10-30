@@ -187,6 +187,64 @@ describe('STAC crosswalk', () => {
     });
 });
 
+interface Target { convention?: string; format?: string; stac?: string; fields?: string[][]; formats?: string[] }
+interface SoftwareEntry {
+    id: string; title: string; kind: string; url: string; description: string; extends?: string[];
+    supports: (Target & { read?: string; write?: string; source: string })[];
+    precedence?: { topic: string; order: (Target & { label: string })[]; ignores?: (Target & { label: string })[]; source: string }[];
+}
+
+describe('software list', () => {
+    const software: SoftwareEntry[] = read(`${AUTHORED_BASE}software.json`).software;
+    const ids = software.map((s) => s.id);
+    const formatIds = registry.formats.map((format) => format.id);
+    const stacFields = (name: string) => {
+        const fields = new Set<string>();
+        const prefix = name === 'core' ? 'https://schemas.stacspec.org/v1.1.0/' : `https://stac-extensions.github.io/${name}/`;
+        for (const url of vendoredUrls('schemas').filter((u: string) => u.startsWith(prefix))) {
+            walkSchemas(read(url), (node: Record<string, unknown>) => {
+                if (node.properties && typeof node.properties === 'object') Object.keys(node.properties).forEach((key) => fields.add(key));
+            });
+        }
+        return fields;
+    };
+    const targets = software.flatMap((s) => [
+        ...s.supports.map((t) => [`${s.id}: ${JSON.stringify(t).slice(0, 80)}`, t] as const),
+        ...(s.precedence ?? []).flatMap((rule) => [...rule.order, ...(rule.ignores ?? [])])
+            .filter((t) => t.convention || t.format || t.stac).map((t) => [`${s.id}: ${t.label}`, t] as const),
+    ]);
+
+    it('has unique identifiers and builds only on listed software', () => {
+        expect(new Set(ids).size).toBe(ids.length);
+        for (const s of software) for (const parent of s.extends ?? []) expect(ids, `${s.id} extends ${parent}`).toContain(parent);
+    });
+
+    it('cites a source for every claim', () => {
+        for (const s of software) {
+            for (const claim of [...s.supports, ...(s.precedence ?? [])]) expect(claim.source, s.id).toMatch(/^https:\/\//);
+            expect(s.url).toMatch(/^https:\/\//);
+        }
+    });
+
+    it.each(targets)('%s names a known schema and existing fields', (_name, target) => {
+        expect([target.convention, target.format, target.stac].filter(Boolean)).toHaveLength(1);
+        for (const format of target.formats ?? []) expect(formatIds).toContain(format);
+        if (target.stac) {
+            const fields = stacFields(target.stac);
+            expect(fields.size, target.stac).toBeGreaterThan(0);
+            const prefixes = new Set([...fields].map((f) => f.split(':')[0]));
+            // Fields of older extension versions than the vendored one (proj:epsg, raster:bands) share its prefix.
+            for (const [field] of target.fields ?? []) expect(fields.has(field) || prefixes.has(field.split(':')[0]), field).toBe(true);
+            return;
+        }
+        const schema = target.format
+            ? registry.formats.find((format) => format.id === target.format)?.schema
+            : registry.conventions.find((convention) => convention.id === target.convention)?.versions[0]?.schema;
+        expect(schema, target.format ?? target.convention).toBeDefined();
+        for (const path of target.fields ?? []) expect(nodesAt(read(schema!), path).length, path.join('/')).toBeGreaterThan(0);
+    });
+});
+
 describe('embedded metadata of the lab catalogs', () => {
     const zarrNodes = (doc: Schema): Schema[] => {
         const nested = (doc.consolidated_metadata as { metadata?: Record<string, Schema> } | undefined)?.metadata ?? {};

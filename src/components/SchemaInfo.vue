@@ -7,8 +7,10 @@ import type { EmbeddedSourceInfo } from '../lib/embedded-probe';
 import { repoUrl } from '../lib/extensions';
 import { inlineMarkdown } from '../lib/markdown';
 import { CORE, type SourceInfo } from '../lib/model';
+import { softwareFor } from '../lib/software';
 import { isVendored } from '../lib/vendored';
 import type { FieldPlace } from './FieldInfo.vue';
+import SoftwareInfo from './SoftwareInfo.vue';
 
 /** Information on a schema whose fields are grouped together: STAC core, an extension, a data format or a convention. */
 const props = defineProps<{
@@ -72,6 +74,7 @@ const links = computed(() => {
 });
 
 const hereSet = computed(() => new Set(props.here));
+const software = computed(() => softwareFor(props.source));
 const fields = computed(() => props.info?.fields ?? []);
 const fieldTitle = (name: string) => {
     const doc = props.info?.docs[name];
@@ -125,6 +128,7 @@ const fieldTitle = (name: string) => {
       </ul>
     </details>
     <p v-if="info?.unsampled.length" class="missing">No valid example value could be generated for: {{ info.unsampled.join(', ') }}</p>
+    <SoftwareInfo :uses="software" />
     <p class="actions">
       <button type="button" class="toggle" :aria-pressed="focused" @click="emit('focus')">
         {{ focused ? 'Stop highlighting its fields' : 'Highlight its fields' }}
