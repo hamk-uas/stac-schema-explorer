@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, reactive } from 'vue';
 
 import { sourceLabel } from '../lib/colors';
 import { TYPE_LABEL, type DocEntry } from '../lib/docs';
-import { READER_LABEL, type DataView } from '../lib/embedded-docs';
+import { otherAssets, READER_LABEL, type DataView } from '../lib/embedded-docs';
 import type { SourceInfo } from '../lib/model';
+import { joinPointer } from '../lib/pointer';
 import type { FieldView } from '../lib/tree';
 import FieldChips from './FieldChips.vue';
 import NodeCard from './NodeCard.vue';
@@ -60,6 +61,12 @@ const unreadFiles = computed(() => {
 });
 /** Real documents (not the example) can be rewritten. */
 const editable = computed(() => !!props.entry.original && props.entry.status === 'ready');
+/** Assets of a real document whose embedded metadata the app does not read, by media type. */
+const others = computed(() => (props.entry.original && props.entry.href ? otherAssets(props.entry.doc, props.entry.href) : []));
+const ASSETS_SHOWN = 12;
+const expandedTypes = reactive(new Set<string>());
+const shownAssets = <T extends { key: string }>(group: { type?: string; assets: T[] }): T[] =>
+    (expandedTypes.has(group.type ?? '') ? group.assets : group.assets.slice(0, ASSETS_SHOWN));
 const pointers = computed(() => (isSelected.value ? props.selectedPointers : []));
 const notApplicable = computed(() => (props.entry.template?.notApplicable ?? []).map((k) => sourceLabel(k, docSources.value)));
 const hasChildren = computed(() => props.entry.children.length > 0 || props.entry.remaining.length > 0 || !!props.entry.itemsHref);
@@ -190,6 +197,27 @@ const undeclaredTitle = computed(() => [
           :title="`Read the embedded metadata of this ${READER_LABEL[file.kind]}\n${file.href}`"
           @click="emit('data', entry, file)"
         ><code>{{ file.assets.join(', ') }}</code> ›</button>
+      </div>
+    </section>
+    <section v-for="group in others" :key="group.type ?? ''" class="data unread other" :aria-label="`${group.name} assets, without embedded metadata the app reads`">
+      <div class="data-head">
+        <span class="data-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="14" height="14"><ellipse cx="8" cy="3.5" rx="5.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
+        </span>
+        <span class="data-kind">{{ group.name }}</span>
+        <code v-if="group.type && group.type !== group.name" class="media-type" title="Media type of the assets (STAC asset type)">{{ group.type }}</code>
+        <span class="hint">{{ group.assets.length }} asset{{ group.assets.length === 1 ? '' : 's' }}, no embedded metadata the app reads:</span>
+        <button
+          v-for="asset in shownAssets(group)"
+          :key="asset.key"
+          type="button"
+          class="data-file"
+          :title="`Show this asset in the JSON${asset.href ? `\n${asset.href}` : ''}`"
+          @click="emit('select', entry.key, [joinPointer('', 'assets', asset.key)])"
+        ><code>{{ asset.key }}</code></button>
+        <button v-if="group.assets.length > shownAssets(group).length" type="button" class="more-assets" @click="expandedTypes.add(group.type ?? '')">
+          +{{ group.assets.length - shownAssets(group).length }} more
+        </button>
       </div>
     </section>
     <div v-if="entry.expanded && hasChildren" class="child-docs">
@@ -426,6 +454,21 @@ header {
 }
 .data-file:hover {
   border-color: #475569;
+}
+.media-type {
+  font-size: 11px;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.more-assets {
+  border: 0;
+  background: none;
+  color: #4f46e5;
+  font: 500 11px var(--sans);
+  cursor: pointer;
+  padding: 0;
 }
 .na {
   margin-top: 4px;

@@ -1,12 +1,15 @@
+import { formatOfSchema } from './conventions';
 import { PREFIXES_WITHOUT_SCHEMA } from './extensions';
 import { CORE, type SourceInfo, type SourceKey } from './model';
 
 const PALETTE = ['#2563eb', '#db2777', '#16a34a', '#9333ea', '#ea580c', '#0891b2', '#ca8a04', '#4f46e5', '#0d9488', '#7c3aed', '#65a30d', '#a16207', '#0369a1', '#c026d3'];
 const assigned = new Map<SourceKey, string>();
+/** Cores (STAC core and the data formats) share one slate color; extensions and conventions get their own. */
+const CORE_COLOR = '#64748b';
 
 /** A stable color per schema for the page lifetime. */
 export function colorOf(source: SourceKey): string {
-    if (source === CORE) return '#64748b';
+    if (source === CORE || formatOfSchema(source)) return CORE_COLOR;
     if (source.startsWith('?')) return '#dc2626';
     let color = assigned.get(source);
     if (!color) {

@@ -13,6 +13,12 @@ asking the schemas themselves.
 
 ## Views
 
+- **Cores, extensions and conventions**: the sidebar lists the schemas whose fields are shown, in the same way for
+  STAC and for data files. **Cores** are what documents and data files are built on: STAC itself (in version 1.1.0 or
+  1.0.0) and the data formats Zarr v3, Zarr v2, netCDF and TIFF (COG is a layout profile of TIFF, adding no fields).
+  **Extensions** add fields to STAC, **data conventions** to data files. A selected schema shows its fields, and its
+  name highlights them and describes the schema; all cores are selected at the start, no extensions or conventions.
+  STAC objects and data nodes are shown whether or not their core is selected.
 - **Example catalog**: a conceptual catalog tree (Catalog → sub-catalog, Collection → Item) showing the *extreme case*:
   every field of the selected schemas placed everywhere the schemas allow it. Separate JSON documents are cards,
   objects inside a document are indented rows (`{}` objects, `[{}]` objects in arrays), Item `properties` are a green
@@ -20,8 +26,9 @@ asking the schemas themselves.
   the JSON panel (a chip group lists its fields and highlights them), an object to highlight it in the JSON panel. The
   generated example documents validate against STAC core and every selected extension and can be copied or downloaded.
 - **Placement matrix**: every field × every conceptual location (Collection › Asset › Band, Item › properties ›
-  cube:variable, …) on one screen, for comparing extensions with each other. Below it, one matrix per data format the
-  selected conventions apply to (Zarr v3, Zarr v2, netCDF, TIFF), since each format has its own node types and
+  cube:variable, …) on one screen, for comparing extensions with each other. Below it, one matrix per data format that
+  is a selected core or that the selected conventions apply to (Zarr v3, Zarr v2, netCDF, TIFF), since each format has
+  its own node types and
   conventions: its node types and their containers (`attributes`, `tags`, …) against its format and convention fields.
   Click a cell to see the field in the example JSON.
 - **Explore a STAC or data URL**: open a Catalog, Collection or Item (static or STAC API) and browse its children, or
@@ -50,17 +57,19 @@ asking the schemas themselves.
   the Zarr `proj` convention is `proj:code` of the Projection extension), or the embedded fields of a STAC field. So is
   the software that reads or writes it, and which source each loader prefers for it (see `software.json` below).
 - **Embedded in the data**: below the example catalog, the nodes of the data formats (Zarr v3 and v2 groups and arrays,
-  netCDF groups and variables, TIFF files and images) that the selected **data conventions** apply to, with every field
-  placed where the format and convention schemas allow it. Data conventions are chosen apart from extensions, with their
-  own quick-select list grouped by kind: Zarr conventions, attribute conventions (CF, ACDD), format extensions
-  (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). Format fields, the counterparts of STAC core, are shown with
-  STAC core fields.
+  netCDF groups and variables, TIFF files and images) that are selected cores or that the selected **data conventions**
+  apply to, with every field placed where the format and convention schemas allow it. Data conventions are chosen apart
+  from extensions, with their own quick-select list grouped by kind: Zarr conventions, attribute conventions (CF,
+  ACDD), format extensions (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). A format's own fields, the counterparts
+  of STAC core, are shown when its core is selected.
 - **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
   file directly, or open a STAC document with such assets: their data files appear inside the document's card, in
   slate “embedded in the data, not STAC” sections apart from its STAC objects. Assets naming the same Zarr store
   (a `data` store and its `metadata` zarr.json) are one file. Zarr stores are read as soon as their document loads;
   netCDF and TIFF files, which can need larger downloads, are listed compactly and read when clicked, or when a share
-  link selects or rewrites one of their nodes. Every node is shown
+  link selects or rewrites one of their nodes. Assets whose embedded metadata the app does not read (CSV tables, images,
+  documents, …) are listed too, grouped by their media type (the STAC asset `type`, with a readable name for common
+  types); clicking one shows it in the JSON. Every node is shown
   within the fields its format and its declared (`zarr_conventions`, `Conventions`) or recognised conventions allow,
   and validated against them. netCDF and TIFF files are read in a worker
   ([src/reader.worker.ts](src/reader.worker.ts)) by HTTP range requests, fetching only their headers: netCDF-4 with
@@ -79,6 +88,7 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | --- | --- |
 | `mode` | `example` or `href` |
 | `v` | STAC version of the example (`1.1.0` default, `1.0.0`) |
+| `core` | a core whose fields are shown, repeatable: `stac`, `zarr-v3`, `zarr-v2`, `netcdf`, `tiff`; all when absent, none with an empty `core=` |
 | `ext` | an extension, repeatable: `name@version` or a schema URL; none when absent |
 | `conv` | a data convention, repeatable: `name@version` (`proj@v0.1`, `cf@1.13`) or a schema URL; none when absent |
 | `href` | STAC document, or data file to explore: a Zarr store or metadata document, a netCDF or TIFF file |
@@ -88,7 +98,7 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | `field` | field shown in the field information panel: `<extension>\|<field>`, e.g. `cf@1.0.0\|cf:cell_methods`, or `core\|license` |
 | `schema` | extension, data convention or format shown in the information panel instead of a field (`name@version`, a schema URL or `core`) |
 | `rw` | a rewrite, repeatable, in order: `add\|<schema>\|<document>\|<pointer>\|<field>` or `remove\|…`; the document is a URL or `node:<metadata document>#<path>`; added values are regenerated from the template |
-| `core=1`, `group=0`, `declared=0` | show STAC core fields; list fields one by one; ignore extensions declared by explored documents |
+| `group=0`, `declared=0` | list fields one by one; ignore extensions declared by explored documents |
 | `embed=1` | embedded in another app: no page header, a link to open the full app instead |
 
 ### Embedding

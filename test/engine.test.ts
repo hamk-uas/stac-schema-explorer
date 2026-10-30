@@ -50,23 +50,26 @@ describe('url state', () => {
         state.href = 'https://example.com/catalog.json?x=1&y=2';
         state.selected = 'https://example.com/item.json';
         state.pointer = '/assets/data';
-        state.showCore = true;
         state.view = 'matrix';
         state.focus = CF;
         state.schema = SEMANTICS;
+        state.cores = ['stac', 'netcdf'];
         const search = writeState(state);
         expect(search).toContain('ext=cf@1.0.0');
+        expect(search).toContain('core=stac&core=netcdf');
         expect(readState(search)).toEqual(state);
     });
 
-    it('starts with no extensions or conventions and keeps chosen ones', () => {
+    it('starts with every core and no extensions or conventions, and keeps chosen ones', () => {
         const state = readState('');
+        expect(state.cores).toEqual(['stac', 'zarr-v3', 'zarr-v2', 'netcdf', 'tiff']);
         expect(state.extensions).toEqual([]);
         expect(state.conventions).toEqual([]);
-        expect(writeState(state)).not.toMatch(/ext=|conv=/);
+        expect(writeState(state)).not.toMatch(/ext=|conv=|core=/);
         state.conventions = ['https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json'];
+        state.cores = [];
         expect(writeState(state)).toContain('conv=proj@v0.1');
-        expect(readState(writeState(state)).conventions).toEqual(state.conventions);
+        expect(readState(writeState(state))).toMatchObject({ conventions: state.conventions, cores: [] });
     });
 });
 

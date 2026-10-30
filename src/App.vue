@@ -2,6 +2,7 @@
 import { computed, markRaw, onMounted, reactive, ref, shallowRef, watch } from 'vue';
 
 import ConventionPicker from './components/ConventionPicker.vue';
+import CorePicker from './components/CorePicker.vue';
 import DocCard from './components/DocCard.vue';
 import ExtensionPicker from './components/ExtensionPicker.vue';
 import FieldInfo, { type FieldCounterpart, type FieldPlace } from './components/FieldInfo.vue';
@@ -20,7 +21,7 @@ import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-pro
 import { Engine } from './lib/engine';
 import { describeUrl, extensionWithoutVersion, normalizeSchemaUrl } from './lib/extensions';
 import { conceptPath, stacMatrixGroups, type MatrixGroup } from './lib/matrix';
-import { CORE, STAC_TYPES, STAC_VERSIONS, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
+import { CORE, STAC_TYPES, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
 import { getAt, joinPointer, objectLocations } from './lib/pointer';
 import { readEmbeddedFile } from './lib/reader';
 import { addedSchemas, applyRewrites, declareConventionsAttribute, declareStacExtensions, declareZarrConventions, fieldEdits, templateValue, toggleRewrite, type Rewrite } from './lib/rewrites';
@@ -67,23 +68,26 @@ const sources = computed(() => result.value?.sources ?? []);
 const embeddedResult = shallowRef<EmbeddedProbeResult>();
 const embeddedError = ref('');
 let embeddedRunId = 0;
+/** Selected cores of data formats: the example shows their nodes even without conventions. */
+const formatCores = computed(() => state.cores.filter((id) => id !== 'stac'));
+const showsCore = (id: string) => state.cores.includes(id);
 async function runEmbeddedProbe() {
     const id = ++embeddedRunId;
     embeddedError.value = '';
-    if (state.conventions.length === 0) {
+    if (state.conventions.length === 0 && formatCores.value.length === 0) {
         embeddedResult.value = undefined;
         return;
     }
     try {
-        const probed = await engine.probeEmbedded([...state.conventions]);
+        const probed = await engine.probeEmbedded([...state.conventions], [...formatCores.value]);
         if (id === embeddedRunId) embeddedResult.value = markRaw(probed);
     } catch (error) {
         if (id === embeddedRunId) embeddedError.value = error instanceof Error ? error.message : String(error);
     }
 }
-watch(() => state.conventions.join('\n'), runEmbeddedProbe, { immediate: true });
+watch(() => [state.conventions.join('\n'), formatCores.value.join('\n')], runEmbeddedProbe, { immediate: true });
 const embeddedSources = computed<EmbeddedSourceInfo[]>(() => embeddedResult.value?.sources ?? []);
-const exampleNodes = computed<NodeEntry[]>(() => (embeddedResult.value ? templateEntries(embeddedResult.value, state.showCore) : []));
+const exampleNodes = computed<NodeEntry[]>(() => (embeddedResult.value ? templateEntries(embeddedResult.value, showsCore) : []));
 
 /** A data file opened directly as the URL (a Zarr store, a netCDF or TIFF file), shown below the (absent) STAC tree. */
 const embeddedView = ref<DataView>();
@@ -180,7 +184,7 @@ async function buildNodes(view: DataView) {
             ? s.key === format.schema
             : conventions.includes(s.key) || state.conventions.includes(s.key) || edited.includes(s.key));
         return markRaw({ key: keyOf(path), format: format.id, formatTitle: format.title, nodeType, title: path, href: source.read, doc: markRaw(node),
-            view: realNodeView(node, template, nodeSources, format.schema, state.showCore, fieldEdits(own)), sources: nodeSources, conventions, rewrites: own.length });
+            view: realNodeView(node, template, nodeSources, format.schema, showsCore(format.id), fieldEdits(own)), sources: nodeSources, conventions, rewrites: own.length });
     });
     view.status = 'ready';
     await Promise.all(view.nodes.map(async (entry, i) => {
@@ -200,7 +204,7 @@ const exampleRoot = computed<DocEntry | undefined>(() => {
     const make = (key: string, type: StacType, title: string, extra: Partial<DocEntry> = {}): DocEntry => {
         const template = probed.templates[type];
         return {
-            key, type, title, doc: template.doc, template, sources: probed.sources, view: templateView(template, state.showCore),
+            key, type, title, doc: template.doc, template, sources: probed.sources, view: templateView(template, showsCore('stac')),
             valid: template.valid, errors: template.errors, status: 'ready', expanded: exampleExpanded[key] ?? false,
             children: [], remaining: [], ...extra,
         };
@@ -260,7 +264,7 @@ async function analyze(entry: DocEntry) {
     entry.templateUrls = urls;
     entry.template = markRaw(template);
     entry.sources = markRaw(probed.sources);
-    entry.view = markRaw(documentView(doc, template, probed.sources, state.showCore, fieldEdits(rewrites)));
+    entry.view = markRaw(documentView(doc, template, probed.sources, showsCore('stac'), fieldEdits(rewrites)));
     entry.undeclared = undeclaredExtensions(entry.view, declaredOf(doc), (a, b) => extensionWithoutVersion(a) === extensionWithoutVersion(b));
     if (entry.valid === undefined) {
         const errors = await engine.validate(doc, version, declaredOf(doc).map(normalizeSchemaUrl));
@@ -388,9 +392,9 @@ watch(() => [state.extensions.join('\n'), state.includeDeclared], () => {
     walk(hrefRoot.value, (e) => e.status === 'ready' && void analyze(e));
     if (detached.value?.status === 'ready') void analyze(detached.value);
 });
-watch(() => state.showCore, () => {
+watch(() => showsCore('stac'), (show) => {
     const refresh = (e: DocEntry) => {
-        if (e.doc && e.template && e.sources) e.view = markRaw(documentView(e.doc, e.template, e.sources, state.showCore, fieldEdits(rewritesOf(e.key))));
+        if (e.doc && e.template && e.sources) e.view = markRaw(documentView(e.doc, e.template, e.sources, show, fieldEdits(rewritesOf(e.key))));
     };
     walk(hrefRoot.value, refresh);
     if (detached.value) refresh(detached.value);
@@ -404,8 +408,8 @@ function rebuildData(view: DataView) {
         view.error = error instanceof Error ? error.message : String(error);
     });
 }
-// Format fields are shown with STAC core, and selected conventions are compared with every node.
-watch(() => [state.showCore, state.conventions.join('\n')], () => dataViews().forEach(rebuildData));
+// Format fields are shown with their format's core, and selected conventions are compared with every node.
+watch(() => [formatCores.value.join('\n'), state.conventions.join('\n')], () => dataViews().forEach(rebuildData));
 
 // ---- Rewrites --------------------------------------------------------------------------------------------------
 
@@ -787,11 +791,9 @@ onMounted(() => {
 
     <aside id="side-pane" ref="sideEl" class="side">
       <section>
-        <h2>STAC version</h2>
-        <select v-model="state.stacVersion" :disabled="state.mode === 'href'" aria-label="STAC version">
-          <option v-for="v in STAC_VERSIONS" :key="v" :value="v">{{ v }}</option>
-        </select>
-        <p v-if="state.mode === 'href'" class="hint">Each document is compared with the core schemas of its own <code>stac_version</code>.</p>
+        <h2><span aria-hidden="true">{{ LAYERS.standard.symbol }}{{ LAYERS.format.symbol }}</span> Cores</h2>
+        <p class="hint">What STAC documents and data files are built on: STAC itself and the data formats. Like extensions and conventions, a selected core shows its fields.</p>
+        <CorePicker v-model="state.cores" v-model:stac-version="state.stacVersion" :explore="state.mode === 'href'" @focus="focusFromPicker" />
       </section>
       <section>
         <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Extensions</h2>
@@ -804,11 +806,10 @@ onMounted(() => {
       </section>
       <section>
         <h2>Display</h2>
-        <label><input v-model="state.showCore" type="checkbox" /> Show STAC core and data format fields</label>
         <label><input v-model="state.groupFields" type="checkbox" /> Group fields by extension</label>
         <label v-if="state.mode === 'href'"><input v-model="state.includeDeclared" type="checkbox" /> Include extensions the documents declare</label>
         <div v-if="state.focus" class="focus">
-          Highlighting <span class="swatch" :style="{ background: colorOf(state.focus) }" /> {{ sourceLabel(state.focus, sources) }}
+          Highlighting <span class="swatch" :style="{ background: colorOf(state.focus) }" /> {{ sourceLabel(state.focus, [...sources, ...embeddedSources]) }}
           <button type="button" class="link" @click="state.focus = ''">clear</button>
         </div>
       </section>
@@ -863,12 +864,12 @@ onMounted(() => {
           <section class="embedded-section" aria-labelledby="embedded-heading">
             <h3 id="embedded-heading">Embedded in the data</h3>
             <p class="explain">
-              Metadata stored in the data files of assets, not in STAC: the nodes of each format the selected data conventions apply to,
-              with every field placed where the format and convention schemas allow it.
-              <template v-if="!state.showCore">Format fields (the counterparts of STAC core) are shown with “Show STAC core and data format fields”.</template>
+              Metadata stored in the data files of assets, not in STAC: the nodes of each selected format core, and of each format the
+              selected data conventions apply to, with every field placed where the format and convention schemas allow it.
+              A format's own fields (the counterparts of STAC core) are shown when its core is selected.
             </p>
             <p v-if="embeddedError" class="error">{{ embeddedError }}</p>
-            <p v-if="state.conventions.length === 0" class="explain">Select data conventions to see where their fields go.</p>
+            <p v-if="state.conventions.length === 0 && formatCores.length === 0" class="explain">Select format cores or data conventions to see where their fields go.</p>
             <NodeCard
               v-for="node in exampleNodes"
               :key="node.key"
@@ -888,7 +889,7 @@ onMounted(() => {
             v-if="result"
             :groups="stacGroups"
             :sources="result.sources"
-            :hidden="state.showCore ? [] : [CORE]"
+            :hidden="showsCore('stac') ? [] : [CORE]"
             :focus="state.focus"
             intro="Where each field can be placed, per STAC object type and conceptual location."
             legend
@@ -900,16 +901,15 @@ onMounted(() => {
             <h3 id="embedded-matrix-heading">Embedded in the data</h3>
             <p class="explain">
               One matrix per data format: the conventions of different formats are distinct, as are their node types. A convention
-              that applies to several formats (CF to netCDF and Zarr) appears in each.
-              <template v-if="!state.showCore">Format fields (the counterparts of STAC core) are shown with “Show STAC core and data format fields”.</template>
+              that applies to several formats (CF to netCDF and Zarr) appears in each. A format's own fields are shown when its core is selected.
             </p>
-            <p v-if="state.conventions.length === 0" class="explain">Select data conventions to see where their fields go.</p>
+            <p v-if="state.conventions.length === 0 && formatCores.length === 0" class="explain">Select format cores or data conventions to see where their fields go.</p>
             <MatrixView
               v-for="m in embeddedMatrices"
               :key="m.format.id"
               :groups="m.groups"
               :sources="m.sources"
-              :hidden="state.showCore ? [] : [m.format.schema]"
+              :hidden="showsCore(m.format.id) ? [] : [m.format.schema]"
               :focus="state.focus"
               :intro="`${m.format.title}: ${m.groups.map((g) => g.label).join(' and ')} nodes.`"
               top-label="node"

@@ -1,4 +1,5 @@
 import { fromConventionShortId, toConventionShortId } from './conventions';
+import { ALL_CORES } from './cores';
 import { fromShortId, toShortId } from './extensions';
 import { STAC_VERSIONS } from './model';
 import type { Rewrite } from './rewrites';
@@ -31,7 +32,8 @@ export interface AppState {
     selected: string;
     /** Selected object pointer within the selected document. */
     pointer: string;
-    showCore: boolean;
+    /** Cores (`stac` and data format ids) whose fields are shown, like selected extensions and conventions. */
+    cores: string[];
     groupFields: boolean;
     /** Include the extensions a real document declares in its template. */
     includeDeclared: boolean;
@@ -57,7 +59,7 @@ export function defaultState(): AppState {
         href: '',
         selected: 'collection',
         pointer: '',
-        showCore: false,
+        cores: [...ALL_CORES],
         groupFields: true,
         includeDeclared: true,
         view: 'tree',
@@ -80,7 +82,8 @@ export function readState(search: string): AppState {
     if (params.has('conv')) state.conventions = params.getAll('conv').flatMap((v) => v.split(' ')).filter(Boolean).map(fromConventionShortId);
     state.selected = params.get('sel') ?? (state.mode === 'href' ? state.href : state.selected);
     state.pointer = params.get('ptr') ?? '';
-    state.showCore = params.get('core') === '1';
+    // All cores unless listed; `core=` (empty) for none.
+    if (params.has('core')) state.cores = params.getAll('core').flatMap((v) => v.split(' ')).filter((id) => ALL_CORES.includes(id));
     state.groupFields = params.get('group') !== '0';
     state.includeDeclared = params.get('declared') !== '0';
     state.view = params.get('view') === 'matrix' ? 'matrix' : 'tree';
@@ -108,7 +111,10 @@ export function writeState(state: AppState): string {
     if (state.href) params.set('href', state.href);
     if (state.selected && !(state.mode === 'href' && state.selected === state.href)) params.set('sel', state.selected);
     if (state.pointer) params.set('ptr', state.pointer);
-    if (state.showCore) params.set('core', '1');
+    if (ALL_CORES.some((id) => !state.cores.includes(id))) {
+        if (state.cores.length === 0) params.set('core', '');
+        for (const id of ALL_CORES.filter((c) => state.cores.includes(c))) params.append('core', id);
+    }
     if (!state.groupFields) params.set('group', '0');
     if (!state.includeDeclared) params.set('declared', '0');
     if (state.view === 'matrix') params.set('view', 'matrix');

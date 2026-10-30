@@ -30,38 +30,38 @@ const isObject = (value: unknown): value is JsonObject => typeof value === 'obje
 const CONTAINER_KEYS = ['attributes', 'tags', 'geo_keys'];
 const STRUCTURE = [...CONTAINER_KEYS, 'zarr_conventions'];
 
-/** A node template as a {@link TypeTemplate}, so that the STAC tree views can show it; format fields only with `showCore`. */
-function asTemplate(template: NodeTemplate, formatSchema: string, showCore: boolean): TypeTemplate {
+/** A node template as a {@link TypeTemplate}, so that the STAC tree views can show it; format fields only when its core is shown. */
+function asTemplate(template: NodeTemplate, formatSchema: string, showFormat: boolean): TypeTemplate {
     return {
         type: 'Catalog', stacVersion: '', doc: template.doc, conflicts: [], notApplicable: template.notApplicable, valid: template.valid, errors: template.errors,
-        placements: template.placements.filter((p) => showCore || p.source !== formatSchema),
+        placements: template.placements.filter((p) => showFormat || p.source !== formatSchema),
     };
 }
 
 const formatSchemaOf = (id: string) => DATA_FORMATS.find((f) => f.id === id)!.schema;
 
-/** Cards of the example: one per node type of each format that a selected convention applies to. */
-export function templateEntries(result: EmbeddedProbeResult, showCore: boolean): NodeEntry[] {
+/** Cards of the example: one per node type of each format probed; `showFormat` tells which formats show their own fields. */
+export function templateEntries(result: EmbeddedProbeResult, showFormat: (formatId: string) => boolean): NodeEntry[] {
     return result.nodes.map((template) => {
         const schema = formatSchemaOf(template.format);
         const sources = result.sources.filter((s) => s.formats.includes(template.format));
         return {
             key: `node:${template.key}`, format: template.format, formatTitle: template.formatTitle, nodeType: template.nodeType,
-            title: `example ${template.nodeType}`, doc: template.doc, view: templateView(asTemplate(template, schema, showCore), true), sources,
+            title: `example ${template.nodeType}`, doc: template.doc, view: templateView(asTemplate(template, schema, showFormat(template.format)), true), sources,
             conventions: sources.filter((s) => s.kind !== 'format').map((s) => s.key), notApplicable: template.notApplicable,
             valid: template.valid, errors: template.errors,
         };
     });
 }
 
-/** The view of a real node within the fields its format and conventions allow at the same place (cf. `documentView`). */
-export function realNodeView(node: JsonObject, template: NodeTemplate | undefined, sources: EmbeddedSourceInfo[], formatSchema: string, showCore: boolean, edits?: FieldEdits): ObjectView {
-    // The format's fields play the part of STAC core: hidden unless core fields are shown. Containers and the declaration of
-    // Zarr conventions are structure, like `stac_extensions` in STAC.
+/** The view of a real node within the fields its format and conventions allow at the same place (cf. `documentView`); format fields only with `showFormat`. */
+export function realNodeView(node: JsonObject, template: NodeTemplate | undefined, sources: EmbeddedSourceInfo[], formatSchema: string, showFormat: boolean, edits?: FieldEdits): ObjectView {
+    // The format's fields play the part of STAC core: hidden unless the format's core is shown. Containers and the
+    // declaration of Zarr conventions are structure, like `stac_extensions` in STAC.
     const asCore = sources.map((s) => (s.key === formatSchema ? { ...s, key: CORE, fields: [...s.fields, ...STRUCTURE] } : s));
     const placements = (template?.placements ?? []).map((p) => (p.source === formatSchema ? { ...p, source: CORE } : p));
     const typeTemplate = template ? { ...asTemplate(template, formatSchema, true), placements } : undefined;
-    const view = documentView(node, typeTemplate, asCore, showCore, edits);
+    const view = documentView(node, typeTemplate, asCore, showFormat, edits);
     // Objects within a format field (netCDF `filters`, Zarr `codecs`, `chunk_grid`) are that field's value, not places of
     // fields: a key there (a filter's `id`) is not the convention field of the same name (ACDD `id`).
     const inContainer = (pointer: string) => CONTAINER_KEYS.includes(pointer.split('/')[1] ?? '');
@@ -196,6 +196,59 @@ export function dataFiles(doc: JsonObject | undefined, baseHref: string | undefi
         else files.set(id, { assets: [asset.key], href: asset.kind === 'zarr' ? zarrStore(asset.href) : asset.href, kind: asset.kind });
     }
     return [...files.values()];
+}
+
+/** Readable names of common media types; others are shown by their media type alone. */
+const MEDIA_TYPE_NAMES: Record<string, string> = {
+    'text/csv': 'CSV',
+    'text/plain': 'Text',
+    'text/html': 'HTML',
+    'application/json': 'JSON',
+    'application/geo+json': 'GeoJSON',
+    'application/vnd.apache.parquet': 'Parquet',
+    'application/x-parquet': 'Parquet',
+    'application/xml': 'XML',
+    'text/xml': 'XML',
+    'application/pdf': 'PDF',
+    'application/zip': 'ZIP',
+    'application/x-hdf5': 'HDF5',
+    'application/x-hdf': 'HDF',
+    'application/vnd.google-earth.kml+xml': 'KML',
+    'application/geopackage+sqlite3': 'GeoPackage',
+    'application/flatgeobuf': 'FlatGeobuf',
+    'image/png': 'PNG',
+    'image/jpeg': 'JPEG',
+    'image/jp2': 'JPEG 2000',
+    'image/webp': 'WebP',
+};
+
+/** A media type's readable name: `text/csv` → CSV, `image/tiff; application=geotiff` → TIFF. */
+export function mediaTypeName(type: string | undefined): string | undefined {
+    const essence = (type ?? '').toLowerCase().replace(/\s+/g, '').split(';')[0];
+    return MEDIA_TYPE_NAMES[essence];
+}
+
+/**
+ * The assets of a STAC document whose embedded metadata this app does not read (CSV tables, images, documents, …),
+ * grouped by their media type (`type`), in the order they first appear.
+ */
+export function otherAssets(doc: JsonObject | undefined, baseHref: string | undefined): { type?: string; name: string; assets: { key: string; href?: string }[] }[] {
+    const readable = new Set(readableAssets(doc, baseHref).map((a) => a.key));
+    const groups = new Map<string, { type?: string; name: string; assets: { key: string; href?: string }[] }>();
+    for (const [key, asset] of Object.entries(isObject(doc?.assets) ? doc.assets : {})) {
+        if (readable.has(key) || !isObject(asset)) continue;
+        const type = typeof asset.type === 'string' && asset.type.trim() ? asset.type.trim() : undefined;
+        let href: string | undefined;
+        try {
+            href = typeof asset.href === 'string' ? new URL(asset.href, baseHref).toString() : undefined;
+        } catch {
+            href = undefined;
+        }
+        const group = groups.get(type ?? '') ?? { type, name: mediaTypeName(type) ?? type ?? 'No media type', assets: [] };
+        group.assets.push({ key, href });
+        groups.set(type ?? '', group);
+    }
+    return [...groups.values()];
 }
 
 /** Metadata embedded in a data file (a Zarr store, a netCDF or TIFF file), read from the data and shown as node cards. */

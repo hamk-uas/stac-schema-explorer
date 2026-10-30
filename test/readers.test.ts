@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { writeArrayBuffer } from 'geotiff';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { dataFiles, readableAssets, readerKind, realNodeView, zarrMetadataUrls } from '../src/lib/embedded-docs';
+import { dataFiles, mediaTypeName, otherAssets, readableAssets, readerKind, realNodeView, zarrMetadataUrls } from '../src/lib/embedded-docs';
 import { validateNode } from '../src/lib/embedded-probe';
 import { readNetCDF, type H5Module } from '../src/lib/readers/netcdf';
 import { parseGDALMetadata, readTiff } from '../src/lib/readers/tiff';
@@ -220,5 +220,21 @@ describe('readable assets', () => {
             { assets: ['other'], href: 'https://h/t.zarr?sig=1', kind: 'zarr' },
             { assets: ['cog'], href: 'https://h/items/b04.tif', kind: 'tiff' },
         ]);
+    });
+
+    it('lists the other assets by media type, with readable names of common types', () => {
+        const doc = { assets: {
+            jan: { href: 'jan.csv', type: 'text/csv' },
+            store: { href: 's.zarr', type: 'application/vnd.zarr' },
+            feb: { href: 'feb.csv', type: 'text/csv' },
+            thumb: { href: 't.webm', type: 'video/webm' },
+            note: { href: 'readme' },
+        } };
+        expect(otherAssets(doc, 'https://h/items/item.json')).toEqual([
+            { type: 'text/csv', name: 'CSV', assets: [{ key: 'jan', href: 'https://h/items/jan.csv' }, { key: 'feb', href: 'https://h/items/feb.csv' }] },
+            { type: 'video/webm', name: 'video/webm', assets: [{ key: 'thumb', href: 'https://h/items/t.webm' }] },
+            { type: undefined, name: 'No media type', assets: [{ key: 'note', href: 'https://h/items/readme' }] },
+        ]);
+        expect(mediaTypeName('application/geo+json; charset=utf-8')).toBe('GeoJSON');
     });
 });

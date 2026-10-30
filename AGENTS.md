@@ -45,9 +45,12 @@ technical visual language; it need not adopt Observatory instance branding.
 - Preserve shareable URL state: selected schemas, STAC version, document/pointer,
   view, focus and embedding. Use [url-state.ts](src/lib/url-state.ts), not a
   second query grammar. Keep remote CORS/load failures visible.
-- Data conventions (`conv`) get the same treatment as extensions (`ext`), visibly
-  apart: their own picker grouped by kind, square markers, node cards marked
-  "embedded in the data" (`NodeCard`), and format fields hidden with STAC core.
+- Cores (`core`: STAC and the data formats, [cores.ts](src/lib/cores.ts)),
+  extensions (`ext`) and data conventions (`conv`) are chosen the same way: a
+  selected schema shows its fields; documents and nodes appear either way.
+  Cores share one slate color. Data conventions are visibly apart from
+  extensions: their own picker grouped by kind, square markers, and node cards
+  marked "embedded in the data" (`NodeCard`).
   Data files of a STAC document's assets are shown inside its `DocCard`, in
   slate dashed sections that must never look like its STAC objects; Zarr is
   read when the document loads, netCDF/TIFF only on request or for a share link.
