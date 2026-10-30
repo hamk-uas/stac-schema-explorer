@@ -770,7 +770,7 @@ onMounted(() => {
     <header v-if="!state.embed" class="top">
       <div class="brand">
         <h1><a class="home" :href="homeUrl" title="Start over: reset all settings and selections">STAC Schema Explorer</a></h1>
-        <p>Where can each field of STAC, its extensions and the metadata embedded in data (Zarr, netCDF, TIFF) go? Derived by probing the JSON Schemas themselves.</p>
+        <p>Where can each field of STAC, its extensions and the metadata embedded in data (Zarr, netCDF, TIFF) go?</p>
       </div>
       <nav class="modes" aria-label="View">
         <button type="button" :class="{ on: state.mode === 'example' }" @click="setMode('example')">Example catalog</button>
