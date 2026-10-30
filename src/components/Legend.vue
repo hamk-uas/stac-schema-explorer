@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import { LAYERS, STALE_MONTHS } from '../lib/layers';
+</script>
+
 <template>
   <ul class="legend">
     <li><span class="doc">▯ Collection</span> STAC document: a separate JSON file</li>
@@ -10,6 +14,15 @@
     <li><span class="chip unexpected">foo:bar</span> populated, but no selected or declared schema places it there (declared: in <code>stac_extensions</code>, <code>zarr_conventions</code> or <code>Conventions</code>)</li>
     <li><span class="chip added">cube:dimensions ×</span> <span class="chip possible removed">sci:doi +</span> added or removed by a rewrite (explored URLs: + adds, − removes, × undoes)</li>
   </ul>
+  <h3 class="layers-title">Layers</h3>
+  <p class="note">Field and schema information say in which layer something is defined, contained, read or written:</p>
+  <ul class="legend">
+    <li v-for="(layer, key) in LAYERS" :key="key"><span class="layer-symbol" aria-hidden="true">{{ layer.symbol }}</span> <strong>{{ layer.title }}</strong>: {{ layer.about }}</li>
+  </ul>
+  <p class="note">
+    Each says when we checked it and the latest release then; checks older than {{ STALE_MONTHS }} months are flagged as
+    possibly outdated, and the latest releases of Python packages are looked up on PyPI.
+  </p>
   <p class="note">
     Click a field to see its meaning, type and allowed values, a field group to list its fields, an object to highlight it
     in the JSON, an extension name to highlight its fields everywhere.
@@ -97,5 +110,16 @@
   font-size: 11px;
   color: #94a3b8;
   margin: 8px 0 0;
+}
+.layers-title {
+  margin: 12px 0 0;
+  font: 600 11px var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+}
+.layer-symbol {
+  display: inline-block;
+  width: 1.3em;
 }
 </style>

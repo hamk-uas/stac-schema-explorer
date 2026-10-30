@@ -42,15 +42,30 @@ export interface PrecedenceRule {
 export interface Software {
     id: string;
     title: string;
-    kind: 'library' | 'loader' | 'server';
+    layer: 'driver' | 'library' | 'package';
+    /** The library a driver is part of. */
+    partOf?: string;
     url: string;
+    /** PyPI package name, to look up its latest release. */
+    pypi?: string;
+    checked?: { date: string; release?: string; source?: string };
     description: string;
+    /** Software it is built on and whose interpretation it takes over. */
     extends?: string[];
+    /** Software it depends on without taking over its interpretation. */
+    uses?: string[];
     supports: SoftwareSupport[];
     precedence?: PrecedenceRule[];
 }
 
 export const SOFTWARE = softwareDocument.software as Software[];
+const byId = new Map(SOFTWARE.map((s) => [s.id, s]));
+
+/** The software a driver is part of, or the software itself. */
+const root = (software: Software) => (software.partOf ? byId.get(software.partOf) ?? software : software);
+/** When the claims were last checked, and the latest release then: a driver's are its library's. */
+export const checkedOf = (software: Software) => software.checked ?? root(software).checked;
+export const pypiOf = (software: Software) => software.pypi ?? root(software).pypi;
 
 /** The target a schema is in the software list: its convention or format id, or its STAC extension name. */
 export function schemaTarget(source: string): SoftwareTarget | undefined {
@@ -75,49 +90,67 @@ function targets(target: SoftwareTarget, of: SoftwareTarget, path?: readonly str
     return same && (!path || !target.fields || target.fields.some((f) => pathMatches(f, path)));
 }
 
-/** A program's support for a field or schema; `through` lists the programs built on it that use it the same way. */
+/**
+ * How a program takes part for a field or schema: its own claims, and the programs it takes them over from (the drivers
+ * of a library, the libraries a package extends), when it has no claims of its own or in addition to them.
+ */
 export interface SoftwareUse {
     software: Software;
     supports: SoftwareSupport[];
     through: Software[];
 }
 
-const byId = new Map(SOFTWARE.map((s) => [s.id, s]));
-
-/** The programs a program is built on, nearest first. */
-function ancestors(software: Software): Software[] {
-    const out: Software[] = [];
-    const queue = [...(software.extends ?? [])];
-    for (let id = queue.shift(); id; id = queue.shift()) {
-        const parent = byId.get(id);
-        if (!parent || out.includes(parent)) continue;
-        out.push(parent);
-        queue.push(...(parent.extends ?? []));
-    }
-    return out;
-}
+/** What a program takes interpretation over from: the software it extends, and a library's drivers. */
+const providers = (software: Software) => [
+    ...(software.extends ?? []).map((id) => byId.get(id)).filter((s): s is Software => !!s),
+    ...SOFTWARE.filter((s) => s.partOf === software.id),
+];
 
 /**
  * The software that reads or writes a field (`path`: its path in a node, or its name in STAC), or any field of a schema
- * (no `path`). For a field, entries naming it come before entries for the whole schema. Programs that only inherit the
- * support of what they are built on are listed under it.
+ * (no `path`). For a field, claims naming it come before claims for the whole schema. A program without claims of its
+ * own is listed with the programs it takes them over from.
  */
 export function softwareFor(source: string, path?: readonly string[]): SoftwareUse[] {
     const of = schemaTarget(source);
     if (!of) return [];
-    const direct = new Map<string, SoftwareUse>();
+    const own = new Map<string, SoftwareSupport[]>();
     for (const software of SOFTWARE) {
         const matching = software.supports.filter((s) => targets(s, of, path));
         const specific = path ? matching.filter((s) => s.fields) : matching;
         const supports = specific.length ? specific : matching;
-        if (supports.length) direct.set(software.id, { software, supports, through: [] });
+        if (supports.length) own.set(software.id, supports);
     }
+    const out: SoftwareUse[] = [];
     for (const software of SOFTWARE) {
-        if (direct.has(software.id)) continue;
-        const parent = ancestors(software).find((a) => direct.has(a.id));
-        if (parent) direct.get(parent.id)!.through.push(software);
+        // The nearest programs with claims of their own, along each line of what it is built on.
+        const through: Software[] = [];
+        const seen = new Set<string>([software.id]);
+        const queue = providers(software);
+        for (let next = queue.shift(); next; next = queue.shift()) {
+            if (seen.has(next.id)) continue;
+            seen.add(next.id);
+            if (own.has(next.id)) through.push(next);
+            else queue.push(...providers(next));
+        }
+        const supports = own.get(software.id) ?? [];
+        if (supports.length || through.length) out.push({ software, supports, through });
     }
-    return [...direct.values()];
+    return out;
+}
+
+/** The latest release of a package on PyPI, looked up once per page (PyPI allows cross-origin requests). */
+const releases = new Map<string, Promise<string | undefined>>();
+export function latestRelease(pypi: string): Promise<string | undefined> {
+    let release = releases.get(pypi);
+    if (!release) {
+        release = fetch(`https://pypi.org/pypi/${encodeURIComponent(pypi)}/json`)
+            .then((response) => (response.ok ? response.json() as Promise<{ info?: { version?: string } }> : undefined))
+            .then((json) => json?.info?.version)
+            .catch(() => undefined);
+        releases.set(pypi, release);
+    }
+    return release;
 }
 
 /** A precedence rule involving a field: the position of the step it is in, or that it is ignored. */

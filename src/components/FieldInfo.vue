@@ -2,9 +2,13 @@
 import { computed } from 'vue';
 
 import { colorOf, sourceLabel } from '../lib/colors';
+import { PREFIXES_WITHOUT_SCHEMA } from '../lib/extensions';
+import type { SchemaLayer } from '../lib/layers';
 import { inlineMarkdown } from '../lib/markdown';
 import type { FieldDoc, SourceInfo } from '../lib/model';
 import type { PrecedenceUse, SoftwareUse } from '../lib/software';
+import Checked from './Checked.vue';
+import LayerBadge from './LayerBadge.vue';
 import SoftwareInfo from './SoftwareInfo.vue';
 
 export interface FieldPlace {
@@ -34,10 +38,19 @@ const props = defineProps<{
     /** Software that reads or writes the field, and the sources each program prefers for what it says. */
     software?: SoftwareUse[];
     precedence?: PrecedenceUse[];
+    /** The layer of the schema that defines the field, its version and how current our information is. */
+    definer?: SchemaLayer;
+    /** The formats that contain an embedded field, and the member of the node it is in (none: the node's top level). */
+    container?: { formats: string[]; member?: string };
 }>();
 const emit = defineEmits<{ close: []; place: [place: FieldPlace] }>();
 
 const schemaLink = computed(() => props.doc?.definedAt.split('#')[0]);
+/** A field of a prefix that another specification defines without a STAC extension schema (openEO's `openeo:status`). */
+const withoutSchema = computed(() => {
+    const spec = props.source.startsWith('?') ? PREFIXES_WITHOUT_SCHEMA[props.source.slice(1)] : undefined;
+    return spec ? { ...spec, field: spec.fields[props.name] } : undefined;
+});
 const RELATION = { same: 'same value', converted: 'same value, converted', related: 'related' } as const;
 const vendoredLink = computed(() => {
     if (!props.vendored || !schemaLink.value) return undefined;
@@ -54,9 +67,26 @@ const vendoredLink = computed(() => {
       <button type="button" class="close" aria-label="Close field information" @click="emit('close')">×</button>
     </header>
     <p class="source">
+      <span class="role">defined by</span>
+      <LayerBadge v-if="definer" :layer="definer.layer" :label="definer.kind" />
       <span class="dot" />{{ sourceLabel(source, sources) }}
+      <span v-if="definer?.maturity" class="maturity" title="Maturity the convention states">{{ definer.maturity }}</span>
       <a v-if="schemaLink" :href="schemaLink" target="_blank" rel="noopener" title="Published JSON Schema">schema ↗</a>
       <a v-if="vendoredLink" :href="vendoredLink" target="_blank" rel="noopener" title="Copy with titles and descriptions, vendored by this app">documented copy ↗</a>
+      <Checked
+        v-if="definer?.checked"
+        :date="definer.checked.date"
+        :latest="definer.checked.latest"
+        :version="definer.version"
+        :source="definer.checked.source"
+        :note="definer.checked.note"
+      />
+    </p>
+    <p v-if="container" class="source">
+      <span class="role">contained in</span>
+      <LayerBadge layer="format" :label="container.formats.length === 1 ? 'Format' : 'Formats'" />
+      {{ container.formats.join(', ') }}
+      <span class="member">{{ container.member ? `in the node's ${container.member}` : 'at the top level of the node' }}</span>
     </p>
     <template v-if="doc">
       <p class="type"><span class="label">Type</span> <code>{{ doc.type }}</code></p>
@@ -72,6 +102,11 @@ const vendoredLink = computed(() => {
           </tr>
         </tbody>
       </table>
+    </template>
+    <template v-else-if="withoutSchema">
+      <!-- v-html is safe: inlineMarkdown escapes everything except the code spans and links it creates. -->
+      <p v-if="withoutSchema.field" class="description" v-html="inlineMarkdown(withoutSchema.field)" />
+      <p class="description"><strong>{{ withoutSchema.title }}.</strong> <span v-html="inlineMarkdown(withoutSchema.description)" />{{ ' ' }}<a :href="withoutSchema.url" target="_blank" rel="noopener">specification ↗</a></p>
     </template>
     <p v-else class="missing">No schema information found for this field.</p>
     <div v-if="places.length" class="places">
@@ -128,13 +163,33 @@ header {
   color: #64748b;
 }
 .source {
-  margin: 4px 0 8px;
+  margin: 4px 0 6px;
   display: flex;
   gap: 8px;
   align-items: center;
   font-size: 12px;
   color: #475569;
   flex-wrap: wrap;
+}
+.source + .source {
+  margin-top: -2px;
+}
+.role {
+  min-width: 74px;
+  font: 600 10px var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+.maturity {
+  font: 600 10px var(--sans);
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.member {
+  color: #64748b;
 }
 .source a {
   color: #4f46e5;

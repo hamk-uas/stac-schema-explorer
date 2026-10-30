@@ -1,0 +1,458 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/sar/v1.3.2/schema.json",
+  "title": "SAR Extension",
+  "description": "STAC SAR Extension for STAC Items and STAC Collections.",
+  "type": "object",
+  "required": [
+    "stac_extensions"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/sar/v1.3.2/schema.json"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items. Remove this object if this extension only applies to Collections.",
+      "type": "object",
+      "required": [
+        "type",
+        "properties",
+        "assets"
+      ],
+      "properties": {
+        "type": {
+          "const": "Feature"
+        },
+        "properties": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/fields"
+            },
+            {
+              "$ref": "#/definitions/sar_polarizations_unique_in_props"
+            }
+          ]
+        },
+        "assets": {
+          "$comment": "This validates the fields in Item Assets, but does not require them.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fields"
+          }
+        }
+      }
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Collection"
+        }
+      },
+      "anyOf": [
+        {
+          "$comment": "This is the schema for the top-level fields in a Collection. Remove this if this extension does not define top-level fields for Collections.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/fields"
+            },
+            {
+              "$ref": "#/definitions/sar_polarizations_unique_in_props"
+            }
+          ]
+        },
+        {
+          "$comment": "This validates the fields in Collection Assets, but does not require them.",
+          "required": [
+            "assets"
+          ],
+          "properties": {
+            "assets": {
+              "type": "object",
+              "not": {
+                "additionalProperties": {
+                  "not": {
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/require_any_field"
+                      },
+                      {
+                        "$ref": "#/definitions/fields"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "$comment": "This is the schema for the fields in Item Asset Definitions. It doesn't require any fields.",
+          "required": [
+            "item_assets"
+          ],
+          "properties": {
+            "item_assets": {
+              "type": "object",
+              "not": {
+                "additionalProperties": {
+                  "not": {
+                    "allOf": [
+                      {
+                        "$ref": "#/definitions/require_any_field"
+                      },
+                      {
+                        "$ref": "#/definitions/fields"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "$comment": "This is the schema for the fields in Summaries. By default, only checks the existence of the properties, but not the schema of the summaries.",
+          "required": [
+            "summaries"
+          ],
+          "properties": {
+            "summaries": {
+              "$ref": "#/definitions/require_any_field"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "require_any_field": {
+      "$comment": "Please list all fields here so that we can force the existence of one of them in other parts of the schemas.",
+      "anyOf": [
+        {
+          "required": [
+            "sar:instrument_mode"
+          ]
+        },
+        {
+          "required": [
+            "sar:frequency_band"
+          ]
+        },
+        {
+          "required": [
+            "sar:center_frequency"
+          ]
+        },
+        {
+          "required": [
+            "sar:bandwidth"
+          ]
+        },
+        {
+          "required": [
+            "sar:polarizations"
+          ]
+        },
+        {
+          "required": [
+            "sar:product_type"
+          ]
+        },
+        {
+          "required": [
+            "sar:resolution_range"
+          ]
+        },
+        {
+          "required": [
+            "sar:resolution_azimuth"
+          ]
+        },
+        {
+          "required": [
+            "sar:pixel_spacing_range"
+          ]
+        },
+        {
+          "required": [
+            "sar:pixel_spacing_azimuth"
+          ]
+        },
+        {
+          "required": [
+            "sar:looks_range"
+          ]
+        },
+        {
+          "required": [
+            "sar:looks_azimuth"
+          ]
+        },
+        {
+          "required": [
+            "sar:looks_equivalent_number"
+          ]
+        },
+        {
+          "required": [
+            "sar:observation_direction"
+          ]
+        },
+        {
+          "required": [
+            "sar:relative_burst"
+          ]
+        },
+        {
+          "required": [
+            "sar:beam_ids"
+          ]
+        }
+      ]
+    },
+    "fields": {
+      "$comment": "Add your new fields here. Don't require them here, do that above in the item schema.",
+      "type": "object",
+      "properties": {
+        "sar:instrument_mode": {
+          "title": "Instrument Mode",
+          "type": "string",
+          "examples": [
+            "WV"
+          ],
+          "minLength": 1,
+          "description": "**Deprecated** in favor of `instrument_modes` of the Instruments extension."
+        },
+        "sar:frequency_band": {
+          "title": "Frequency Band",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "P",
+              "title": "P",
+              "description": "Wavelength range 30 - 120 cm."
+            },
+            {
+              "const": "L",
+              "title": "L",
+              "description": "Wavelength range 15 - 30 cm."
+            },
+            {
+              "const": "S",
+              "title": "S",
+              "description": "Wavelength range 7.5 - 15 cm."
+            },
+            {
+              "const": "C",
+              "title": "C",
+              "description": "Wavelength range 3.8 - 7.5 cm."
+            },
+            {
+              "const": "X",
+              "title": "X",
+              "description": "Wavelength range 2.4 - 3.8 cm."
+            },
+            {
+              "const": "Ku",
+              "title": "Ku",
+              "description": "Wavelength range 1.7 - 2.4 cm."
+            },
+            {
+              "const": "K",
+              "title": "K",
+              "description": "Wavelength range 1.1 - 1.7 cm."
+            },
+            {
+              "const": "Ka",
+              "title": "Ka",
+              "description": "Wavelength range 0.75 - 1.1 cm."
+            }
+          ],
+          "description": "The common name for the frequency band, to make it easier to search for bands across instruments. The accepted names are listed with their wavelength ranges."
+        },
+        "sar:center_frequency": {
+          "title": "Center Frequency (GHz)",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "The center frequency of the radar signal transmitted by the instrument, in gigahertz (GHz)."
+        },
+        "sar:bandwidth": {
+          "title": "Range Bandwidth (GHz)",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "The range bandwidth of the SAR instrument, in gigahertz (GHz), representing the full bandwidth used in range compression and image formation."
+        },
+        "sar:polarizations": {
+          "$ref": "#/definitions/sar_polarizations"
+        },
+        "sar:product_type": {
+          "title": "Product type",
+          "type": "string",
+          "minLength": 1,
+          "examples": [
+            "SSC",
+            "MGD",
+            "SGC"
+          ],
+          "description": "**Deprecated** in favor of `product:type` of the Product extension: the product type, for example SSC, MGD or SGC."
+        },
+        "sar:resolution_range": {
+          "title": "Resolution range (m)",
+          "type": "number",
+          "minimum": 0,
+          "description": "The range resolution, which is the maximum ability to distinguish two adjacent targets perpendicular to the flight path, in meters (m)."
+        },
+        "sar:resolution_azimuth": {
+          "title": "Resolution azimuth (m)",
+          "type": "number",
+          "minimum": 0,
+          "description": "The azimuth resolution, which is the maximum ability to distinguish two adjacent targets parallel to the flight path, in meters (m)."
+        },
+        "sar:pixel_spacing_range": {
+          "title": "Pixel spacing range (m)",
+          "type": "number",
+          "minimum": 0,
+          "description": "The range pixel spacing, which is the distance between adjacent pixels perpendicular to the flight path, in meters (m). Strongly RECOMMENDED to be specified for products of type `GRD`."
+        },
+        "sar:pixel_spacing_azimuth": {
+          "title": "Pixel spacing azimuth (m)",
+          "type": "number",
+          "minimum": 0,
+          "description": "The azimuth pixel spacing, which is the distance between adjacent pixels parallel to the flight path, in meters (m). Strongly RECOMMENDED to be specified for products of type `GRD`."
+        },
+        "sar:looks_range": {
+          "title": "Looks range",
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of range looks, which is the number of groups of signal samples (looks) perpendicular to the flight path."
+        },
+        "sar:looks_azimuth": {
+          "title": "Looks azimuth",
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of azimuth looks, which is the number of groups of signal samples (looks) parallel to the flight path."
+        },
+        "sar:looks_equivalent_number": {
+          "title": "Equivalent number of looks (ENL)",
+          "type": "number",
+          "minimum": 0,
+          "description": "The equivalent number of looks (ENL)."
+        },
+        "sar:observation_direction": {
+          "title": "Antenna pointing direction",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "left",
+              "title": "Left"
+            },
+            {
+              "const": "right",
+              "title": "Right"
+            }
+          ],
+          "description": "Antenna pointing direction relative to the flight trajectory of the satellite, either `left` or `right`."
+        },
+        "sar:relative_burst": {
+          "title": "Relative burst number",
+          "type": "integer",
+          "minimum": 1,
+          "description": "Identification number that uniquely identifies a burst cycle within each repeat cycle."
+        },
+        "sar:beam_ids": {
+          "title": "Beam identifiers",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Composition of the swath of the SAR acquision referencing the beam identifiers."
+        }
+      },
+      "patternProperties": {
+        "^(?!sar:)": {
+          "$comment": "Do not allow unspecified fields prefixed with sar:"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sar_polarizations": {
+      "title": "Polarizations",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "HH",
+            "title": "HH"
+          },
+          {
+            "const": "VV",
+            "title": "VV"
+          },
+          {
+            "const": "HV",
+            "title": "HV"
+          },
+          {
+            "const": "VH",
+            "title": "VH"
+          },
+          {
+            "const": "LH",
+            "title": "LH"
+          },
+          {
+            "const": "LV",
+            "title": "LV"
+          },
+          {
+            "const": "RH",
+            "title": "RH"
+          },
+          {
+            "const": "RV",
+            "title": "RV"
+          },
+          {
+            "const": "CH",
+            "title": "CH"
+          },
+          {
+            "const": "CV",
+            "title": "CV"
+          }
+        ]
+      },
+      "description": "Any combination of polarizations."
+    },
+    "sar_polarizations_unique_in_props": {
+      "type": "object",
+      "properties": {
+        "sar:polarizations": {
+          "allOf": [
+            {
+              "$ref": "#/definitions/sar_polarizations"
+            },
+            {
+              "type": "array",
+              "uniqueItems": true
+            }
+          ],
+          "title": "Polarizations",
+          "description": "Any combination of polarizations."
+        }
+      }
+    }
+  }
+}

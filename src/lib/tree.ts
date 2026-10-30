@@ -282,6 +282,33 @@ function prefixedLabel(list: FieldView[], info: SourceInfo): string {
     return parts.join(', ');
 }
 
+/** An extension whose fields a document uses without declaring it in `stac_extensions`. */
+export interface Undeclared {
+    source: SourceKey;
+    fields: string[];
+}
+
+/**
+ * Extensions whose fields the document populates without declaring them (any version of the extension counts), so that
+ * validation, which checks declared extensions only, does not check those fields. Collection `summaries` and
+ * `item_assets` describe the fields of Items, which declare their own extensions, and are left out.
+ */
+export function undeclaredExtensions(view: ObjectView, declared: readonly string[], same: (a: string, b: string) => boolean): Undeclared[] {
+    const out = new Map<SourceKey, Set<string>>();
+    const describesItems = (pointer: string) => /^\/(summaries|item_assets)(\/|$)/.test(pointer);
+    const visit = (node: ObjectView) => {
+        if (node.pointers.every(describesItems)) return;
+        for (const field of node.fields) {
+            if (field.state === 'possible' || field.source === CORE || field.source.startsWith('?')) continue;
+            if (declared.some((url) => same(url, field.source))) continue;
+            out.set(field.source, (out.get(field.source) ?? new Set()).add(field.name));
+        }
+        node.children.forEach(visit);
+    };
+    visit(view);
+    return [...out].map(([source, fields]) => ({ source, fields: [...fields].sort() }));
+}
+
 /** Pointers of every field of a view, keyed `<object pointer>|<field>`, for highlighting in the JSON view. */
 export function fieldIndex(view: ObjectView): Map<string, FieldView> {
     const index = new Map<string, FieldView>();

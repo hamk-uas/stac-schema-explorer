@@ -53,6 +53,10 @@ export const VENDORED = [
     EXT('mgrs', '1.0.0'),
     EXT('ceos-ard', '0.2.0'),
     EXT('item-assets', '1.0.0'),
+    // Recommended by the openEO API (SAR) or used by openEO back-ends (Authentication, Alternate Assets).
+    EXT('sar', '1.3.2'),
+    EXT('authentication', '1.2.0'),
+    EXT('alternate-assets', '1.2.0'),
     {
         schemas: ['https://cs-si.github.io/eopf-stac-extension/v1.2.0/schema.json'],
         readmes: ['https://raw.githubusercontent.com/CS-SI/eopf-stac-extension/v1.2.0/README.md'],

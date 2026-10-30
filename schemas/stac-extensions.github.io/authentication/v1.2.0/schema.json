@@ -1,0 +1,533 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/authentication/v1.2.0/schema.json",
+  "title": "Authentication Extension",
+  "description": "STAC Authentication Extension for STAC Catalogs, STAC Collections, STAC Items, STAC Assets, and STAC Links.",
+  "type": "object",
+  "required": [
+    "stac_extensions"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/authentication/v1.2.0/schema.json"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "type": "object",
+      "required": [
+        "type",
+        "properties"
+      ],
+      "properties": {
+        "type": {
+          "const": "Feature"
+        },
+        "properties": {
+          "$ref": "#/definitions/schemes_field"
+        },
+        "assets": {
+          "$ref": "#/definitions/assets"
+        },
+        "links": {
+          "$ref": "#/definitions/links"
+        }
+      }
+    },
+    {
+      "$comment": "This is the schema for STAC Collections",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Collection"
+        },
+        "assets": {
+          "$ref": "#/definitions/assets"
+        },
+        "item_assets": {
+          "$ref": "#/definitions/assets"
+        },
+        "links": {
+          "$ref": "#/definitions/links"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/schemes_field"
+        }
+      ]
+    },
+    {
+      "$comment": "This is the schema for STAC Catalogs",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Catalog"
+        },
+        "links": {
+          "$ref": "#/definitions/links"
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/schemes_field"
+        }
+      ]
+    }
+  ],
+  "definitions": {
+    "schemes_field": {
+      "type": "object",
+      "required": [
+        "auth:schemes"
+      ],
+      "properties": {
+        "auth:schemes": {
+          "type": "object",
+          "patternProperties": {
+            "^.*$": {
+              "$ref": "#/definitions/auth_scheme"
+            }
+          },
+          "additionalProperties": false,
+          "title": "Authentication Schemes",
+          "description": "A property that contains all of the scheme definitions used by Assets and Links in the STAC Item or Collection."
+        }
+      },
+      "patternProperties": {
+        "^(?!auth:)": {}
+      },
+      "additionalProperties": false
+    },
+    "refs_field": {
+      "type": "object",
+      "properties": {
+        "auth:refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Authentication References",
+          "description": "A property that specifies which schemes in `auth:schemes` may be used to access an Asset or Link. `auth:refs` MAY also appear on an Authentication Scheme Object itself — nested inside `auth:schemes`, so within Catalogs, Collections and Item Properties — where it declares which schemes may supply this scheme's input — see below."
+        }
+      },
+      "patternProperties": {
+        "^(?!auth:)": {}
+      },
+      "additionalProperties": false,
+      "title": "Authentication References of an Asset or Link"
+    },
+    "assets": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/refs_field"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "alternate": {
+                "$ref": "#/definitions/refs_field",
+                "title": "Alternate Assets",
+                "description": "Alternate locations of the asset (Alternate Assets extension); each may name the schemes in `auth:schemes` that give access to it with `auth:refs`."
+              }
+            }
+          }
+        ]
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/refs_field"
+      }
+    },
+    "auth_scheme": {
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "title": "Scheme keyword",
+          "type": "string",
+          "examples": [
+            "http",
+            "s3",
+            "signedUrl",
+            "oauth2",
+            "apiKey",
+            "openIdConnect"
+          ],
+          "description": "The authentication scheme type used to access the data (`http` | `s3` | `signedUrl` | `oauth2` | `apiKey` | `openIdConnect` | a custom scheme type )."
+        },
+        "description": {
+          "title": "Authentication scheme description",
+          "type": "string",
+          "description": "Additional instructions for authentication. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "auth:refs": {
+          "title": "Keys of schemes in auth:schemes that may supply this scheme's input (any one of them is completed first; its result is this scheme's input, e.g. the subject_token of a tokenExchange flow)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Keys of other entries in `auth:schemes` that may supply this scheme's input: any one of the referenced schemes is completed first, and the token it yields is the input to this one. REQUIRED with at least one entry for an `oauth2` scheme declaring a `tokenExchange` flow (the token obtained through whichever referenced scheme was used is the RFC 8693 `subject_token`); MAY be used by other types, e.g. a `signedUrl` scheme naming the scheme(s) whose token authenticates requests to its `authorizationApi`. References MUST NOT form cycles."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "apiKey"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "name",
+              "in"
+            ],
+            "properties": {
+              "name": {
+                "title": "API Key header, query, or cookie parameter name",
+                "type": "string",
+                "examples": [
+                  "x-api-key"
+                ],
+                "description": "The name of the header, query, or cookie parameter to be used."
+              },
+              "in": {
+                "title": "Location of the API Key",
+                "type": "string",
+                "examples": [
+                  "query",
+                  "header",
+                  "cookie"
+                ],
+                "description": "The location of the API key (`query` | `header` | `cookie`)."
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "name": false,
+              "in": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "http"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "scheme"
+            ],
+            "properties": {
+              "scheme": {
+                "title": "Name of the http authentication scheme",
+                "type": "string",
+                "examples": [
+                  "basic",
+                  "bearer",
+                  "digest",
+                  "dpop",
+                  "hoba",
+                  "mutual",
+                  "negotiate",
+                  "oauth",
+                  "privatetoken",
+                  "scram-sha-1",
+                  "scram-sha-256",
+                  "vapid"
+                ],
+                "description": "The name of the HTTP Authorization scheme to be used in the Authorization header as defined in RFC7235. The values used SHOULD be registered in the IANA Authentication Scheme registry. (`basic` | `bearer` | `digest` | `dpop` | `hoba` | `mutual` | `negotiate` | `oauth` (1.0) | `privatetoken` | `scram-sha-1` | `scram-sha-256` | `vapid`)."
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "scheme": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "oauth2",
+                  "signedUrl"
+                ]
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "flows"
+            ],
+            "if": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "oauth2"
+                }
+              }
+            },
+            "then": {
+              "type": "object",
+              "title": "OAuth2 Flows",
+              "properties": {
+                "flows": {
+                  "additionalProperties": {
+                    "$ref": "#/definitions/oauth2_flow"
+                  },
+                  "allOf": [
+                    {
+                      "patternProperties": {
+                        "^(implicit|authorizationCode)$": {
+                          "required": [
+                            "authorizationUrl"
+                          ]
+                        },
+                        "^(password|clientCredentials|authorizationCode|tokenExchange)$": {
+                          "required": [
+                            "tokenUrl"
+                          ]
+                        }
+                      }
+                    }
+                  ],
+                  "title": "Flows",
+                  "description": "Scenarios an API client performs to get an access token from the authorization server. For `oauth2` the following keys are pre-defined for the corresponding OAuth flows: `authorizationCode` | `implicit` | `password` | `clientCredentials` | `tokenExchange`. The OAuth2 Flow Object applies for `oauth2`, the Signed URL Object applies to `signedUrl`."
+                }
+              }
+            },
+            "else": {
+              "type": "object",
+              "title": "Signed URL",
+              "properties": {
+                "flows": {
+                  "additionalProperties": {
+                    "$ref": "#/definitions/signed_url_flow"
+                  },
+                  "title": "Flows",
+                  "description": "Scenarios an API client performs to get an access token from the authorization server. For `oauth2` the following keys are pre-defined for the corresponding OAuth flows: `authorizationCode` | `implicit` | `password` | `clientCredentials` | `tokenExchange`. The OAuth2 Flow Object applies for `oauth2`, the Signed URL Object applies to `signedUrl`."
+                }
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "flows": false
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "openIdConnect"
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "openIdConnectUrl"
+            ],
+            "properties": {
+              "openIdConnectUrl": {
+                "title": "This URL returns a JSON listing of the OpenID/OAuth endpoints, supported scopes and claims, public keys used to sign the tokens, and other details",
+                "type": "string",
+                "description": "OpenID Connect URL to discover OpenID configuration values. This MUST be in the form of a URL."
+              }
+            }
+          },
+          "else": {
+            "type": "object",
+            "properties": {
+              "openIdConnectUrl": false
+            }
+          }
+        },
+        {
+          "$comment": "A tokenExchange flow consumes another scheme's token: the scheme must reference at least one scheme; the token obtained through whichever one the client uses is the RFC 8693 subject_token.",
+          "if": {
+            "type": "object",
+            "required": [
+              "flows"
+            ],
+            "properties": {
+              "type": {
+                "const": "oauth2"
+              },
+              "flows": {
+                "type": "object",
+                "required": [
+                  "tokenExchange"
+                ]
+              }
+            }
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "auth:refs"
+            ],
+            "properties": {
+              "auth:refs": {
+                "type": "array",
+                "minItems": 1,
+                "title": "Authentication References",
+                "description": "Keys of other entries in `auth:schemes` that may supply this scheme's input: any one of the referenced schemes is completed first, and the token it yields is the input to this one. REQUIRED with at least one entry for an `oauth2` scheme declaring a `tokenExchange` flow (the token obtained through whichever referenced scheme was used is the RFC 8693 `subject_token`); MAY be used by other types, e.g. a `signedUrl` scheme naming the scheme(s) whose token authenticates requests to its `authorizationApi`. References MUST NOT form cycles."
+              }
+            }
+          }
+        }
+      ]
+    },
+    "oauth2_flow": {
+      "type": "object",
+      "required": [
+        "scopes"
+      ],
+      "properties": {
+        "authorizationUrl": {
+          "title": "The authorization URL to be used",
+          "type": "string",
+          "format": "uri",
+          "description": "For parent keys: `\"implicit\"`, `\"authorizationCode\"`. The authorization URL to be used for this flow. This MUST be in the form of a URL."
+        },
+        "tokenUrl": {
+          "title": "The token URL to be used",
+          "type": "string",
+          "format": "uri",
+          "description": "For parent keys: `\"password\"`, `\"clientCredentials\"`, `\"authorizationCode\"`, `\"tokenExchange\"`. The token URL to be used for this flow. This MUST be in the form of a URL."
+        },
+        "subjectTokenType": {
+          "title": "RFC 8693 subject_token_type URN of the token presented at the tokenUrl (tokenExchange flow)",
+          "type": "string",
+          "format": "uri",
+          "examples": [
+            "urn:ietf:params:oauth:token-type:id_token",
+            "urn:ietf:params:oauth:token-type:access_token"
+          ],
+          "description": "For parent key `\"tokenExchange\"`: the RFC 8693 `subject_token_type` URN of the token presented at the `tokenUrl` (e.g. `urn:ietf:params:oauth:token-type:id_token`). When absent, it follows from the `type` of the scheme in the scheme's `auth:refs` through which the token was obtained."
+        },
+        "refreshUrl": {
+          "title": "The URL to be used for obtaining refresh tokens",
+          "type": "string",
+          "format": "uri",
+          "description": "The URL to be used for obtaining refresh tokens. This MUST be in the form of a URL."
+        },
+        "scopes": {
+          "title": "The available scopes for the authentication scheme",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "The available scopes for the authentication scheme. A map between the scope name and a short description for it. The map MAY be empty."
+        }
+      }
+    },
+    "signed_url_flow": {
+      "type": "object",
+      "required": [
+        "method",
+        "authorizationApi"
+      ],
+      "properties": {
+        "authorizationApi": {
+          "title": "The signed URL API endpoint to be used",
+          "type": "string",
+          "format": "uri",
+          "description": "The signed URL API endpoint to be used for this flow. If not inferred from the client environment, this must be defined in the authentication flow."
+        },
+        "method": {
+          "title": "HTTP request method",
+          "type": "string",
+          "examples": [
+            "POST",
+            "GET"
+          ],
+          "description": "The method to be used for requests."
+        },
+        "responseField": {
+          "title": "Key name for the signed URL field in an authorizationApi response",
+          "type": "string",
+          "description": "Key name for the signed URL field in an `authorizationApi` response."
+        },
+        "parameters": {
+          "title": "Parameter definitions for requests to the authorizationApi",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "in",
+              "required"
+            ],
+            "properties": {
+              "in": {
+                "title": "Location of the parameter",
+                "type": "string",
+                "examples": [
+                  "query",
+                  "header",
+                  "body"
+                ],
+                "description": "The location of the parameter (`query` | `header` | `body`)."
+              },
+              "required": {
+                "title": "Setting for optional or required parameter",
+                "type": "boolean",
+                "description": "Setting for optional or required parameter."
+              },
+              "description": {
+                "title": "Plain language description of the parameter",
+                "type": "string",
+                "description": "Plain language description of the parameter."
+              },
+              "schema": {
+                "$ref": "http://json-schema.org/draft-07/schema",
+                "title": "Schema",
+                "description": "Schema object following the JSON Schema draft-07."
+              }
+            }
+          },
+          "description": "Parameter definition for requests to the `authorizationApi`."
+        }
+      }
+    }
+  }
+}

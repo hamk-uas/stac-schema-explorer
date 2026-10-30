@@ -1,61 +1,355 @@
 {
-  "$comment": "Software that reads or writes the fields of STAC and of metadata embedded in data, and which source it trusts when several say the same thing. A target is a registry convention (`convention`), a registry format (`format`) or a STAC extension by its stac-extensions.github.io name, or `core` for STAC core (`stac`); `fields` are paths into a node (as in the crosswalk: `[\"attributes\", \"grid_mapping\"]`, `*` matching any key) or STAC field names, all fields when absent; `formats` restricts embedded targets to some formats. `read`: `interpret` (the value changes how the data are used: georeferencing, masking, unpacking, dimension names, overviews) or `pass-through` (kept as opaque metadata); `write`: `write` (the software writes the field from its own data model) or `pass-through` (it writes metadata the user gives). `extends`: software built on other software, which interprets what they interpret. `precedence` lists, per topic, the sources used in order of preference, those ignored, and what happens when none is present. Every claim cites its source (documentation or source code); claims that could not be verified are left out.",
+  "$comment": "Software that reads or writes the fields of STAC and of metadata embedded in data, and which source it trusts when several say the same thing. Each program is in one layer: `driver` (reads and writes one format, inside a library: `partOf`), `library` (the data model and API programs use) or `package` (a package or application built on libraries). `extends`: software built on other software, which interprets what they (and their drivers) interpret; `uses`: software it depends on without taking over its interpretation. `checked`: when the claims were last checked and the latest release then; drivers share their library's. `pypi`: the package name, to look up newer releases. A claim's target is a registry convention (`convention`), a registry format (`format`) or a STAC extension by its stac-extensions.github.io name, or `core` for STAC core (`stac`); `fields` are paths into a node (as in the crosswalk: `[\"attributes\", \"grid_mapping\"]`, `*` matching any key) or STAC field names, all fields when absent; `formats` restricts embedded targets to some formats; `since` is the first version a claim holds for. `read`: `interpret` (the value changes how the data are used: georeferencing, masking, unpacking, dimension names, overviews) or `pass-through` (kept as opaque metadata); `write`: `write` (the software writes the field from its own data model) or `pass-through` (it writes metadata the user gives). `precedence` lists, per topic, the sources used in order of preference, those ignored, and what happens when none is present. Every claim cites its source (documentation or source code); claims that could not be verified are left out.",
   "software": [
     {
       "id": "gdal",
       "title": "GDAL",
-      "kind": "library",
+      "layer": "library",
       "url": "https://gdal.org",
-      "description": "The raster and vector library underneath most geospatial software, with drivers for GeoTIFF, netCDF and Zarr, and for STAC item collections (STACIT) and tiled assets (STACTA).",
+      "pypi": "GDAL",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "3.13.3",
+        "source": "https://gdal.org/en/stable/"
+      },
+      "description": "The raster and vector library underneath most geospatial software. What it reads and writes depends on the driver of each format: its claims are those of its drivers.",
+      "supports": []
+    },
+    {
+      "id": "gdal-gtiff",
+      "title": "GDAL GTiff driver",
+      "layer": "driver",
+      "partOf": "gdal",
+      "url": "https://gdal.org/en/stable/drivers/raster/gtiff.html",
+      "description": "Reads and writes TIFF, GeoTIFF and BigTIFF files.",
       "supports": [
-        { "format": "tiff", "read": "interpret", "write": "write", "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html" },
-        { "convention": "geotiff", "read": "interpret", "write": "write", "note": "Georeferencing (CRS, tie points, pixel scale or transformation matrix) and AREA_OR_POINT.", "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html#georeferencing" },
-        { "convention": "gdal", "fields": [["tags", "GDAL_NODATA"]], "read": "interpret", "write": "write", "note": "One nodata value for all bands of a GeoTIFF.", "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html#nodata-value" },
-        { "convention": "gdal", "fields": [["gdal_metadata"]], "read": "interpret", "write": "write", "note": "Band descriptions, units, scale and offset, statistics and other metadata items of a GeoTIFF.", "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html#metadata" },
-        { "convention": "gdal", "fields": [["attributes", "spatial_ref"], ["attributes", "GeoTransform"]], "formats": ["netcdf"], "read": "interpret", "write": "write", "note": "CRS and geotransform of a netCDF grid mapping variable, beside the CF attributes. Since 3.11 a GeoTransform differing from the coordinate variables is reported; since 3.12.3 the coordinate variables are preferred.", "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html" },
-        { "convention": "gdal", "fields": [["attributes", "_CRS"]], "formats": ["zarr-v2", "zarr-v3"], "read": "interpret", "write": "write", "note": "GDAL's own Zarr georeferencing; written by default before 3.13.", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "format": "netcdf", "read": "interpret", "write": "write", "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html" },
-        { "convention": "cf", "fields": [["attributes", "grid_mapping"], ["attributes", "grid_mapping_name"], ["attributes", "crs_wkt"], ["attributes", "scale_factor"], ["attributes", "add_offset"], ["attributes", "_FillValue"], ["attributes", "missing_value"]], "formats": ["netcdf"], "read": "interpret", "write": "write", "note": "CRS from the grid mapping, scale and offset of bands, fill and missing values as nodata.", "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html" },
-        { "convention": "cf", "fields": [["attributes", "grid_mapping"], ["attributes", "grid_mapping_name"], ["attributes", "crs_wkt"]], "formats": ["zarr-v2", "zarr-v3"], "read": "interpret", "since": "3.9", "note": "CF georeferencing in Zarr.", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "convention": "cf", "read": "pass-through", "formats": ["netcdf"], "note": "Other attributes are metadata items (<variable>#<attribute>).", "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html" },
-        { "convention": "acdd", "read": "pass-through", "formats": ["netcdf"], "note": "Global attributes are metadata items (NC_GLOBAL#<attribute>).", "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html" },
-        { "format": "zarr-v2", "read": "interpret", "write": "write", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "format": "zarr-v3", "read": "interpret", "write": "write", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "convention": "xarray", "fields": [["attributes", "_ARRAY_DIMENSIONS"]], "read": "interpret", "note": "Dimension names of Zarr v2 arrays.", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "convention": "proj", "read": "interpret", "write": "write", "since": "3.13", "note": "Written with the creation option GEOREFERENCING_CONVENTION=SPATIAL_PROJ.", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "convention": "spatial", "read": "interpret", "write": "write", "since": "3.13", "note": "Written with the creation option GEOREFERENCING_CONVENTION=SPATIAL_PROJ.", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "convention": "multiscales", "read": "interpret", "write": "write", "since": "3.13", "formats": ["zarr-v3"], "note": "Read as overviews; written by building overviews.", "source": "https://gdal.org/en/stable/drivers/raster/zarr.html" },
-        { "stac": "projection", "read": "interpret", "since": "3.4", "note": "STACIT driver: the virtual mosaic of a STAC API item collection is built from the items' projection information.", "source": "https://gdal.org/en/stable/drivers/raster/stacit.html" },
-        { "stac": "raster", "read": "interpret", "since": "3.8.2", "note": "STACTA driver: band metadata of tiled assets.", "source": "https://gdal.org/en/stable/drivers/raster/stacta.html" },
-        { "stac": "eo", "read": "interpret", "note": "STACTA driver: band metadata of tiled assets.", "source": "https://gdal.org/en/stable/drivers/raster/stacta.html" }
+        {
+          "format": "tiff",
+          "read": "interpret",
+          "write": "write",
+          "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html"
+        },
+        {
+          "convention": "geotiff",
+          "read": "interpret",
+          "write": "write",
+          "note": "Georeferencing (CRS, tie points, pixel scale or transformation matrix) and AREA_OR_POINT.",
+          "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html#georeferencing"
+        },
+        {
+          "convention": "gdal",
+          "fields": [
+            [
+              "tags",
+              "GDAL_NODATA"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "One nodata value for all bands of a GeoTIFF.",
+          "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html#nodata-value"
+        },
+        {
+          "convention": "gdal",
+          "fields": [
+            [
+              "gdal_metadata"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "Band descriptions, units, scale and offset, statistics and other metadata items of a GeoTIFF.",
+          "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html#metadata"
+        }
       ],
       "precedence": [
         {
           "topic": "Georeferencing of a GeoTIFF",
           "order": [
-            { "label": "a PAM .aux.xml file beside it" },
-            { "label": "its GeoTIFF keys", "convention": "geotiff" },
-            { "label": "a MapInfo .tab file" },
-            { "label": "a world file" },
-            { "label": "an ESRI .xml file" }
+            {
+              "label": "a PAM .aux.xml file beside it"
+            },
+            {
+              "label": "its GeoTIFF keys",
+              "convention": "geotiff"
+            },
+            {
+              "label": "a MapInfo .tab file"
+            },
+            {
+              "label": "a world file"
+            },
+            {
+              "label": "an ESRI .xml file"
+            }
           ],
           "note": "The default order; GDAL_GEOREF_SOURCES changes it.",
           "source": "https://gdal.org/en/stable/drivers/raster/gtiff.html#georeferencing"
-        },
+        }
+      ]
+    },
+    {
+      "id": "gdal-netcdf",
+      "title": "GDAL netCDF driver",
+      "layer": "driver",
+      "partOf": "gdal",
+      "url": "https://gdal.org/en/stable/drivers/raster/netcdf.html",
+      "description": "Reads and writes netCDF files through the netCDF-C library, with CF georeferencing.",
+      "supports": [
         {
-          "topic": "CRS of a netCDF variable",
-          "order": [
-            { "label": "crs_wkt of its grid mapping variable", "convention": "cf", "fields": [["attributes", "crs_wkt"]] },
-            { "label": "spatial_ref of its grid mapping variable", "convention": "gdal", "fields": [["attributes", "spatial_ref"]] },
-            { "label": "the CF grid mapping parameters", "convention": "cf", "fields": [["attributes", "grid_mapping_name"]] },
-            { "label": "longitude and latitude when the ASSUME_LONGLAT open option is set" }
+          "convention": "gdal",
+          "fields": [
+            [
+              "attributes",
+              "spatial_ref"
+            ],
+            [
+              "attributes",
+              "GeoTransform"
+            ]
           ],
+          "formats": [
+            "netcdf"
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "CRS and geotransform of a netCDF grid mapping variable, beside the CF attributes. Since 3.11 a GeoTransform differing from the coordinate variables is reported; since 3.12.3 the coordinate variables are preferred.",
           "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html"
         },
         {
+          "format": "netcdf",
+          "read": "interpret",
+          "write": "write",
+          "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html"
+        },
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "grid_mapping"
+            ],
+            [
+              "attributes",
+              "grid_mapping_name"
+            ],
+            [
+              "attributes",
+              "crs_wkt"
+            ],
+            [
+              "attributes",
+              "scale_factor"
+            ],
+            [
+              "attributes",
+              "add_offset"
+            ],
+            [
+              "attributes",
+              "_FillValue"
+            ],
+            [
+              "attributes",
+              "missing_value"
+            ]
+          ],
+          "formats": [
+            "netcdf"
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "CRS from the grid mapping, scale and offset of bands, fill and missing values as nodata.",
+          "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html"
+        },
+        {
+          "convention": "cf",
+          "read": "pass-through",
+          "formats": [
+            "netcdf"
+          ],
+          "note": "Other attributes are metadata items (<variable>#<attribute>).",
+          "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html"
+        },
+        {
+          "convention": "acdd",
+          "read": "pass-through",
+          "formats": [
+            "netcdf"
+          ],
+          "note": "Global attributes are metadata items (NC_GLOBAL#<attribute>).",
+          "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html"
+        }
+      ],
+      "precedence": [
+        {
+          "topic": "CRS of a netCDF variable",
+          "order": [
+            {
+              "label": "crs_wkt of its grid mapping variable",
+              "convention": "cf",
+              "fields": [
+                [
+                  "attributes",
+                  "crs_wkt"
+                ]
+              ]
+            },
+            {
+              "label": "spatial_ref of its grid mapping variable",
+              "convention": "gdal",
+              "fields": [
+                [
+                  "attributes",
+                  "spatial_ref"
+                ]
+              ]
+            },
+            {
+              "label": "the CF grid mapping parameters",
+              "convention": "cf",
+              "fields": [
+                [
+                  "attributes",
+                  "grid_mapping_name"
+                ]
+              ]
+            },
+            {
+              "label": "longitude and latitude when the ASSUME_LONGLAT open option is set"
+            }
+          ],
+          "source": "https://gdal.org/en/stable/drivers/raster/netcdf.html"
+        }
+      ]
+    },
+    {
+      "id": "gdal-zarr",
+      "title": "GDAL Zarr driver",
+      "layer": "driver",
+      "partOf": "gdal",
+      "url": "https://gdal.org/en/stable/drivers/raster/zarr.html",
+      "description": "Reads and writes Zarr v2 and v3 stores.",
+      "supports": [
+        {
+          "convention": "gdal",
+          "fields": [
+            [
+              "attributes",
+              "_CRS"
+            ]
+          ],
+          "formats": [
+            "zarr-v2",
+            "zarr-v3"
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "GDAL's own Zarr georeferencing; written by default before 3.13.",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        },
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "grid_mapping"
+            ],
+            [
+              "attributes",
+              "grid_mapping_name"
+            ],
+            [
+              "attributes",
+              "crs_wkt"
+            ]
+          ],
+          "formats": [
+            "zarr-v2",
+            "zarr-v3"
+          ],
+          "read": "interpret",
+          "since": "3.9",
+          "note": "CF georeferencing in Zarr.",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        },
+        {
+          "format": "zarr-v2",
+          "read": "interpret",
+          "write": "write",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        },
+        {
+          "format": "zarr-v3",
+          "read": "interpret",
+          "write": "write",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        },
+        {
+          "convention": "xarray",
+          "fields": [
+            [
+              "attributes",
+              "_ARRAY_DIMENSIONS"
+            ]
+          ],
+          "read": "interpret",
+          "note": "Dimension names of Zarr v2 arrays.",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        },
+        {
+          "convention": "proj",
+          "read": "interpret",
+          "write": "write",
+          "since": "3.13",
+          "note": "Written with the creation option GEOREFERENCING_CONVENTION=SPATIAL_PROJ.",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        },
+        {
+          "convention": "spatial",
+          "read": "interpret",
+          "write": "write",
+          "since": "3.13",
+          "note": "Written with the creation option GEOREFERENCING_CONVENTION=SPATIAL_PROJ.",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        },
+        {
+          "convention": "multiscales",
+          "read": "interpret",
+          "write": "write",
+          "since": "3.13",
+          "formats": [
+            "zarr-v3"
+          ],
+          "note": "Read as overviews; written by building overviews.",
+          "source": "https://gdal.org/en/stable/drivers/raster/zarr.html"
+        }
+      ]
+    },
+    {
+      "id": "gdal-stacit",
+      "title": "GDAL STACIT driver",
+      "layer": "driver",
+      "partOf": "gdal",
+      "url": "https://gdal.org/en/stable/drivers/raster/stacit.html",
+      "description": "Opens a STAC API item collection (a search) as a virtual mosaic of its items.",
+      "supports": [
+        {
+          "stac": "projection",
+          "read": "interpret",
+          "since": "3.4",
+          "note": "STACIT driver: the virtual mosaic of a STAC API item collection is built from the items' projection information.",
+          "source": "https://gdal.org/en/stable/drivers/raster/stacit.html"
+        }
+      ],
+      "precedence": [
+        {
           "topic": "Mosaic of a STAC item collection (STACIT)",
           "order": [
-            { "label": "the projection information of each Item", "stac": "projection" }
+            {
+              "label": "the projection information of each Item",
+              "stac": "projection"
+            }
           ],
           "missing": "Items without projection information cannot be mosaicked. Nodata is taken from the file of one item, assumed to represent the others.",
           "source": "https://gdal.org/en/stable/drivers/raster/stacit.html"
@@ -63,62 +357,379 @@
       ]
     },
     {
+      "id": "gdal-stacta",
+      "title": "GDAL STACTA driver",
+      "layer": "driver",
+      "partOf": "gdal",
+      "url": "https://gdal.org/en/stable/drivers/raster/stacta.html",
+      "description": "Opens STAC tiled assets as one raster.",
+      "supports": [
+        {
+          "stac": "raster",
+          "read": "interpret",
+          "since": "3.8.2",
+          "note": "STACTA driver: band metadata of tiled assets.",
+          "source": "https://gdal.org/en/stable/drivers/raster/stacta.html"
+        },
+        {
+          "stac": "eo",
+          "read": "interpret",
+          "note": "STACTA driver: band metadata of tiled assets.",
+          "source": "https://gdal.org/en/stable/drivers/raster/stacta.html"
+        }
+      ]
+    },
+    {
       "id": "rasterio",
       "title": "rasterio",
-      "kind": "library",
+      "layer": "library",
       "url": "https://rasterio.readthedocs.io",
-      "description": "Python API for raster data on top of GDAL: it opens files with GDAL's drivers and exposes their georeferencing, nodata, scales, offsets and tags.",
-      "extends": ["gdal"],
+      "pypi": "rasterio",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "1.5.2",
+        "source": "https://rasterio.readthedocs.io/en/stable/intro.html"
+      },
+      "description": "Python API for raster data on top of GDAL, expressing GDAL's data model: it opens files with GDAL's drivers and exposes their georeferencing, nodata, scales, offsets and tags.",
+      "extends": [
+        "gdal"
+      ],
       "supports": []
     },
     {
       "id": "xarray",
       "title": "xarray",
-      "kind": "library",
+      "layer": "library",
       "url": "https://xarray.dev",
+      "pypi": "xarray",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "2026.9.0",
+        "source": "https://docs.xarray.dev/en/stable/"
+      },
       "description": "N-dimensional labelled arrays for Python, reading and writing netCDF (through netCDF4, h5netcdf or scipy) and Zarr (through zarr-python), and decoding CF conventions.",
       "supports": [
-        { "convention": "cf", "fields": [["attributes", "_FillValue"], ["attributes", "missing_value"], ["attributes", "scale_factor"], ["attributes", "add_offset"]], "read": "interpret", "write": "write", "note": "Masked and unpacked when decoding (mask_and_scale), encoded again when writing.", "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html" },
-        { "convention": "cf", "fields": [["attributes", "units"], ["attributes", "calendar"]], "read": "interpret", "write": "write", "note": "Times decoded to datetimes (decode_times) and encoded again when writing.", "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html" },
-        { "convention": "cf", "fields": [["attributes", "coordinates"]], "read": "interpret", "write": "write", "note": "Variables named here become coordinates (decode_coords).", "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html" },
-        { "convention": "cf", "fields": [["attributes", "grid_mapping"], ["attributes", "bounds"]], "read": "interpret", "note": "The variables named here become coordinates with decode_coords=\"all\".", "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html" },
-        { "convention": "cf", "read": "pass-through", "write": "pass-through", "note": "Other attributes are kept in attrs.", "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html" },
-        { "convention": "acdd", "read": "pass-through", "write": "pass-through", "note": "Kept in attrs.", "source": "https://docs.xarray.dev/en/stable/user-guide/data-structures.html" },
-        { "convention": "xarray", "fields": [["attributes", "_ARRAY_DIMENSIONS"]], "read": "interpret", "write": "write", "note": "Dimension names of Zarr v2 arrays.", "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html" },
-        { "format": "zarr-v3", "fields": [["dimension_names"]], "read": "interpret", "write": "write", "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html" },
-        { "format": "zarr-v2", "read": "interpret", "write": "write", "note": "Through zarr-python.", "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html" },
-        { "format": "zarr-v3", "read": "interpret", "write": "write", "note": "Through zarr-python.", "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html" }
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "_FillValue"
+            ],
+            [
+              "attributes",
+              "missing_value"
+            ],
+            [
+              "attributes",
+              "scale_factor"
+            ],
+            [
+              "attributes",
+              "add_offset"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "Masked and unpacked when decoding (mask_and_scale), encoded again when writing.",
+          "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html"
+        },
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "units"
+            ],
+            [
+              "attributes",
+              "calendar"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "Times decoded to datetimes (decode_times) and encoded again when writing.",
+          "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html"
+        },
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "coordinates"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "Variables named here become coordinates (decode_coords).",
+          "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html"
+        },
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "grid_mapping"
+            ],
+            [
+              "attributes",
+              "bounds"
+            ]
+          ],
+          "read": "interpret",
+          "note": "The variables named here become coordinates with decode_coords=\"all\".",
+          "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html"
+        },
+        {
+          "convention": "cf",
+          "read": "pass-through",
+          "write": "pass-through",
+          "note": "Other attributes are kept in attrs.",
+          "source": "https://docs.xarray.dev/en/stable/generated/xarray.decode_cf.html"
+        },
+        {
+          "convention": "acdd",
+          "read": "pass-through",
+          "write": "pass-through",
+          "note": "Kept in attrs.",
+          "source": "https://docs.xarray.dev/en/stable/user-guide/data-structures.html"
+        },
+        {
+          "convention": "xarray",
+          "fields": [
+            [
+              "attributes",
+              "_ARRAY_DIMENSIONS"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "Dimension names of Zarr v2 arrays.",
+          "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html"
+        },
+        {
+          "format": "zarr-v3",
+          "fields": [
+            [
+              "dimension_names"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html"
+        },
+        {
+          "format": "zarr-v2",
+          "read": "interpret",
+          "write": "write",
+          "note": "Through zarr-python.",
+          "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html"
+        },
+        {
+          "format": "zarr-v3",
+          "read": "interpret",
+          "write": "write",
+          "note": "Through zarr-python.",
+          "source": "https://docs.xarray.dev/en/stable/internals/zarr-encoding-spec.html"
+        }
+      ]
+    },
+    {
+      "id": "netcdf4-python",
+      "title": "netCDF4-python",
+      "layer": "library",
+      "url": "https://unidata.github.io/netcdf4-python/",
+      "pypi": "netCDF4",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "1.7.5.1.post1",
+        "source": "https://unidata.github.io/netcdf4-python/"
+      },
+      "description": "Python interface to the netCDF-C library.",
+      "supports": [
+        {
+          "format": "netcdf",
+          "read": "interpret",
+          "write": "write",
+          "source": "https://unidata.github.io/netcdf4-python/"
+        },
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "_FillValue"
+            ],
+            [
+              "attributes",
+              "missing_value"
+            ],
+            [
+              "attributes",
+              "scale_factor"
+            ],
+            [
+              "attributes",
+              "add_offset"
+            ]
+          ],
+          "read": "interpret",
+          "note": "Masked arrays and unpacking by default (set_auto_maskandscale).",
+          "source": "https://unidata.github.io/netcdf4-python/"
+        },
+        {
+          "convention": "cf",
+          "read": "pass-through",
+          "write": "pass-through",
+          "source": "https://unidata.github.io/netcdf4-python/"
+        },
+        {
+          "convention": "acdd",
+          "read": "pass-through",
+          "write": "pass-through",
+          "source": "https://unidata.github.io/netcdf4-python/"
+        }
       ]
     },
     {
       "id": "rioxarray",
       "title": "rioxarray",
-      "kind": "library",
+      "layer": "package",
       "url": "https://corteva.github.io/rioxarray",
+      "pypi": "rioxarray",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "0.24.0",
+        "source": "https://github.com/corteva/rioxarray/blob/master/docs/history.rst"
+      },
       "description": "Geospatial extension of xarray: opens rasters with rasterio (GDAL) and reads and writes the georeferencing of xarray datasets itself, from CF, GDAL and Zarr convention attributes.",
-      "extends": ["xarray", "rasterio"],
+      "extends": [
+        "xarray",
+        "rasterio"
+      ],
       "supports": [
-        { "convention": "cf", "fields": [["attributes", "grid_mapping"], ["attributes", "grid_mapping_name"], ["attributes", "crs_wkt"]], "read": "interpret", "write": "write", "note": "CRS from the grid mapping coordinate (rio.crs, rio.write_crs); CF parameters through pyproj.CRS.from_cf.", "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/cf.py" },
-        { "convention": "gdal", "fields": [["attributes", "spatial_ref"], ["attributes", "GeoTransform"]], "read": "interpret", "write": "write", "note": "CRS and transform on the grid mapping coordinate (rio.write_crs, rio.write_transform).", "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/cf.py" },
-        { "convention": "proj", "fields": [["attributes", "proj:code"], ["attributes", "proj:wkt2"], ["attributes", "proj:projjson"]], "read": "interpret", "write": "write", "since": "0.22 (reading), 0.23 (writing)", "source": "https://github.com/corteva/rioxarray/blob/master/docs/history.rst" },
-        { "convention": "spatial", "fields": [["attributes", "spatial:transform"]], "read": "interpret", "write": "write", "since": "0.22 (reading), 0.23 (writing)", "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/zarr.py" }
+        {
+          "convention": "cf",
+          "fields": [
+            [
+              "attributes",
+              "grid_mapping"
+            ],
+            [
+              "attributes",
+              "grid_mapping_name"
+            ],
+            [
+              "attributes",
+              "crs_wkt"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "CRS from the grid mapping coordinate (rio.crs, rio.write_crs); CF parameters through pyproj.CRS.from_cf.",
+          "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/cf.py"
+        },
+        {
+          "convention": "gdal",
+          "fields": [
+            [
+              "attributes",
+              "spatial_ref"
+            ],
+            [
+              "attributes",
+              "GeoTransform"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "note": "CRS and transform on the grid mapping coordinate (rio.write_crs, rio.write_transform).",
+          "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/cf.py"
+        },
+        {
+          "convention": "proj",
+          "fields": [
+            [
+              "attributes",
+              "proj:code"
+            ],
+            [
+              "attributes",
+              "proj:wkt2"
+            ],
+            [
+              "attributes",
+              "proj:projjson"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "since": "0.22 (reading), 0.23 (writing)",
+          "source": "https://github.com/corteva/rioxarray/blob/master/docs/history.rst"
+        },
+        {
+          "convention": "spatial",
+          "fields": [
+            [
+              "attributes",
+              "spatial:transform"
+            ]
+          ],
+          "read": "interpret",
+          "write": "write",
+          "since": "0.22 (reading), 0.23 (writing)",
+          "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/zarr.py"
+        }
       ],
       "precedence": [
         {
           "topic": "CRS and transform of a dataset",
           "order": [
-            { "label": "the convention set with set_options(convention=…)" },
-            { "label": "the other convention: CF grid mapping or Zarr proj:/spatial:" },
-            { "label": "legacy crs and transform attributes" }
+            {
+              "label": "the convention set with set_options(convention=…)"
+            },
+            {
+              "label": "the other convention: CF grid mapping or Zarr proj:/spatial:"
+            },
+            {
+              "label": "legacy crs and transform attributes"
+            }
           ],
           "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/_core.py"
         },
         {
           "topic": "CRS from Zarr proj: attributes",
           "order": [
-            { "label": "proj:wkt2", "convention": "proj", "fields": [["attributes", "proj:wkt2"]] },
-            { "label": "proj:code", "convention": "proj", "fields": [["attributes", "proj:code"]] },
-            { "label": "proj:projjson", "convention": "proj", "fields": [["attributes", "proj:projjson"]] }
+            {
+              "label": "proj:wkt2",
+              "convention": "proj",
+              "fields": [
+                [
+                  "attributes",
+                  "proj:wkt2"
+                ]
+              ]
+            },
+            {
+              "label": "proj:code",
+              "convention": "proj",
+              "fields": [
+                [
+                  "attributes",
+                  "proj:code"
+                ]
+              ]
+            },
+            {
+              "label": "proj:projjson",
+              "convention": "proj",
+              "fields": [
+                [
+                  "attributes",
+                  "proj:projjson"
+                ]
+              ]
+            }
           ],
           "note": "Only when zarr_conventions declares the convention, recognised by its name (proj:, spatial:) rather than its UUID.",
           "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/zarr.py"
@@ -126,37 +737,81 @@
       ]
     },
     {
-      "id": "netcdf4-python",
-      "title": "netCDF4-python",
-      "kind": "library",
-      "url": "https://unidata.github.io/netcdf4-python/",
-      "description": "Python interface to the netCDF-C library.",
-      "supports": [
-        { "format": "netcdf", "read": "interpret", "write": "write", "source": "https://unidata.github.io/netcdf4-python/" },
-        { "convention": "cf", "fields": [["attributes", "_FillValue"], ["attributes", "missing_value"], ["attributes", "scale_factor"], ["attributes", "add_offset"]], "read": "interpret", "note": "Masked arrays and unpacking by default (set_auto_maskandscale).", "source": "https://unidata.github.io/netcdf4-python/" },
-        { "convention": "cf", "read": "pass-through", "write": "pass-through", "source": "https://unidata.github.io/netcdf4-python/" },
-        { "convention": "acdd", "read": "pass-through", "write": "pass-through", "source": "https://unidata.github.io/netcdf4-python/" }
-      ]
-    },
-    {
       "id": "stackstac",
       "title": "stackstac",
-      "kind": "loader",
+      "layer": "package",
       "url": "https://stackstac.readthedocs.io",
+      "pypi": "stackstac",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "0.5.1",
+        "source": "https://github.com/gjoseph92/stackstac/tree/main/stackstac"
+      },
       "description": "Turns STAC items into a lazy xarray DataArray, placing every asset on a common grid computed from STAC metadata and reading pixels with rasterio.",
       "supports": [
-        { "stac": "projection", "fields": [["proj:epsg"], ["proj:bbox"], ["proj:shape"], ["proj:transform"]], "read": "interpret", "note": "Projection extension v1 fields; proj:code is not read.", "source": "https://github.com/gjoseph92/stackstac/blob/main/stackstac/prepare.py" },
-        { "stac": "raster", "fields": [["raster:bands"]], "read": "interpret", "note": "Scale and offset of the first band (raster extension v1), applied with rescale=True.", "source": "https://github.com/gjoseph92/stackstac/blob/main/stackstac/prepare.py" }
+        {
+          "stac": "projection",
+          "fields": [
+            [
+              "proj:epsg"
+            ],
+            [
+              "proj:bbox"
+            ],
+            [
+              "proj:shape"
+            ],
+            [
+              "proj:transform"
+            ]
+          ],
+          "read": "interpret",
+          "note": "Projection extension v1 fields; proj:code is not read.",
+          "source": "https://github.com/gjoseph92/stackstac/blob/main/stackstac/prepare.py"
+        },
+        {
+          "stac": "raster",
+          "fields": [
+            [
+              "raster:bands"
+            ]
+          ],
+          "read": "interpret",
+          "note": "Scale and offset of the first band (raster extension v1), applied with rescale=True.",
+          "source": "https://github.com/gjoseph92/stackstac/blob/main/stackstac/prepare.py"
+        }
       ],
       "precedence": [
         {
           "topic": "CRS, bounds and grid",
           "order": [
-            { "label": "proj:epsg, proj:bbox, proj:shape and proj:transform of the asset", "stac": "projection", "fields": [["proj:epsg"], ["proj:bbox"], ["proj:shape"], ["proj:transform"]] },
-            { "label": "the same fields of the Item" }
+            {
+              "label": "proj:epsg, proj:bbox, proj:shape and proj:transform of the asset",
+              "stac": "projection",
+              "fields": [
+                [
+                  "proj:epsg"
+                ],
+                [
+                  "proj:bbox"
+                ],
+                [
+                  "proj:shape"
+                ],
+                [
+                  "proj:transform"
+                ]
+              ]
+            },
+            {
+              "label": "the same fields of the Item"
+            }
           ],
           "ignores": [
-            { "label": "the GeoTIFF keys of the file", "convention": "geotiff" }
+            {
+              "label": "the GeoTIFF keys of the file",
+              "convention": "geotiff"
+            }
           ],
           "missing": "Without an EPSG code in STAC there is no CRS for the asset: an error unless the output CRS is given with epsg=.",
           "source": "https://github.com/gjoseph92/stackstac/blob/main/stackstac/prepare.py"
@@ -164,10 +819,26 @@
         {
           "topic": "Scale and offset",
           "order": [
-            { "label": "scale and offset of the first raster:bands entry of the asset", "stac": "raster", "fields": [["raster:bands"]] }
+            {
+              "label": "scale and offset of the first raster:bands entry of the asset",
+              "stac": "raster",
+              "fields": [
+                [
+                  "raster:bands"
+                ]
+              ]
+            }
           ],
           "ignores": [
-            { "label": "the scale and offset in the file's GDAL metadata", "convention": "gdal", "fields": [["gdal_metadata"]] }
+            {
+              "label": "the scale and offset in the file's GDAL metadata",
+              "convention": "gdal",
+              "fields": [
+                [
+                  "gdal_metadata"
+                ]
+              ]
+            }
           ],
           "missing": "Scale 1 and offset 0: values are not rescaled.",
           "source": "https://github.com/gjoseph92/stackstac/blob/main/stackstac/prepare.py"
@@ -175,32 +846,107 @@
         {
           "topic": "Nodata",
           "order": [
-            { "label": "the nodata value of the file, through a masked rasterio read", "convention": "gdal", "fields": [["tags", "GDAL_NODATA"]] }
+            {
+              "label": "the nodata value of the file, through a masked rasterio read",
+              "convention": "gdal",
+              "fields": [
+                [
+                  "tags",
+                  "GDAL_NODATA"
+                ]
+              ]
+            }
           ],
           "missing": "Masked pixels, and pixels of windows that cannot be read, are filled with the fill_value argument (NaN by default).",
           "source": "https://github.com/gjoseph92/stackstac/blob/main/stackstac/rio_reader.py"
         }
+      ],
+      "uses": [
+        "rasterio"
       ]
     },
     {
       "id": "odc-stac",
       "title": "odc-stac",
-      "kind": "loader",
+      "layer": "package",
       "url": "https://odc-stac.readthedocs.io",
+      "pypi": "odc-stac",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "0.5.3",
+        "source": "https://github.com/opendatacube/odc-stac/tree/develop/odc/stac"
+      },
       "description": "Loads STAC items into xarray (stac_load), on a grid computed from the projection extension, with band metadata from STAC.",
       "supports": [
-        { "stac": "projection", "fields": [["proj:code"], ["proj:epsg"], ["proj:wkt2"], ["proj:projjson"], ["proj:shape"], ["proj:transform"]], "read": "interpret", "note": "Through pystac's projection extension: shape, transform and a CRS of the asset.", "source": "https://github.com/opendatacube/odc-stac/blob/develop/odc/stac/_mdtools.py" },
-        { "stac": "core", "fields": [["nodata"], ["data_type"], ["unit"]], "read": "interpret", "note": "Of the asset's bands (STAC 1.1).", "source": "https://github.com/opendatacube/odc-stac/blob/develop/odc/stac/_mdtools.py" },
-        { "stac": "raster", "fields": [["raster:bands"]], "read": "interpret", "note": "nodata, data_type and unit of raster extension v1 bands.", "source": "https://github.com/opendatacube/odc-stac/blob/develop/odc/stac/_mdtools.py" }
+        {
+          "stac": "projection",
+          "fields": [
+            [
+              "proj:code"
+            ],
+            [
+              "proj:epsg"
+            ],
+            [
+              "proj:wkt2"
+            ],
+            [
+              "proj:projjson"
+            ],
+            [
+              "proj:shape"
+            ],
+            [
+              "proj:transform"
+            ]
+          ],
+          "read": "interpret",
+          "note": "Through pystac's projection extension: shape, transform and a CRS of the asset.",
+          "source": "https://github.com/opendatacube/odc-stac/blob/develop/odc/stac/_mdtools.py"
+        },
+        {
+          "stac": "core",
+          "fields": [
+            [
+              "nodata"
+            ],
+            [
+              "data_type"
+            ],
+            [
+              "unit"
+            ]
+          ],
+          "read": "interpret",
+          "note": "Of the asset's bands (STAC 1.1).",
+          "source": "https://github.com/opendatacube/odc-stac/blob/develop/odc/stac/_mdtools.py"
+        },
+        {
+          "stac": "raster",
+          "fields": [
+            [
+              "raster:bands"
+            ]
+          ],
+          "read": "interpret",
+          "note": "nodata, data_type and unit of raster extension v1 bands.",
+          "source": "https://github.com/opendatacube/odc-stac/blob/develop/odc/stac/_mdtools.py"
+        }
       ],
       "precedence": [
         {
           "topic": "Grid (CRS, transform, shape)",
           "order": [
-            { "label": "proj:shape, proj:transform and a CRS (proj:code, proj:epsg, proj:wkt2 or proj:projjson) of the asset", "stac": "projection" }
+            {
+              "label": "proj:shape, proj:transform and a CRS (proj:code, proj:epsg, proj:wkt2 or proj:projjson) of the asset",
+              "stac": "projection"
+            }
           ],
           "ignores": [
-            { "label": "the GeoTIFF keys of the file", "convention": "geotiff" }
+            {
+              "label": "the GeoTIFF keys of the file",
+              "convention": "geotiff"
+            }
           ],
           "missing": "An error: the asset must have the projection extension's shape, transform and CRS.",
           "source": "https://github.com/opendatacube/odc-stac/blob/develop/odc/stac/_mdtools.py"
@@ -208,12 +954,45 @@
         {
           "topic": "Nodata, data type and unit",
           "order": [
-            { "label": "nodata, data_type and unit of the asset's bands (STAC 1.1)", "stac": "core", "fields": [["nodata"], ["data_type"], ["unit"]] },
-            { "label": "the same in raster:bands (raster extension v1)", "stac": "raster", "fields": [["raster:bands"]] },
-            { "label": "defaults given with stac_cfg=" }
+            {
+              "label": "nodata, data_type and unit of the asset's bands (STAC 1.1)",
+              "stac": "core",
+              "fields": [
+                [
+                  "nodata"
+                ],
+                [
+                  "data_type"
+                ],
+                [
+                  "unit"
+                ]
+              ]
+            },
+            {
+              "label": "the same in raster:bands (raster extension v1)",
+              "stac": "raster",
+              "fields": [
+                [
+                  "raster:bands"
+                ]
+              ]
+            },
+            {
+              "label": "defaults given with stac_cfg="
+            }
           ],
           "ignores": [
-            { "label": "the nodata value of the file", "convention": "gdal", "fields": [["tags", "GDAL_NODATA"]] }
+            {
+              "label": "the nodata value of the file",
+              "convention": "gdal",
+              "fields": [
+                [
+                  "tags",
+                  "GDAL_NODATA"
+                ]
+              ]
+            }
           ],
           "missing": "Without nodata in STAC, nodata pixels are not masked unless nodata= is given (odc-stac issue #162).",
           "source": "https://github.com/opendatacube/odc-stac/issues/162"
@@ -223,35 +1002,89 @@
     {
       "id": "rio-tiler",
       "title": "rio-tiler / TiTiler",
-      "kind": "server",
+      "layer": "package",
       "url": "https://cogeotiff.github.io/rio-tiler/",
+      "pypi": "rio-tiler",
+      "checked": {
+        "date": "2026-10-30",
+        "release": "9.4.12",
+        "source": "https://github.com/cogeotiff/rio-tiler/tree/main/rio_tiler"
+      },
       "description": "Reads map tiles and previews from rasters with rasterio; its STAC reader (used by TiTiler) combines the assets of an Item.",
-      "extends": ["rasterio"],
+      "extends": [
+        "rasterio"
+      ],
       "supports": [
-        { "stac": "projection", "fields": [["proj:code"], ["proj:epsg"], ["proj:wkt2"], ["proj:projjson"], ["proj:shape"], ["proj:transform"]], "read": "interpret", "note": "STAC reader: the Item's extent, CRS and zoom range.", "source": "https://github.com/cogeotiff/rio-tiler/blob/main/rio_tiler/io/stac.py" }
+        {
+          "stac": "projection",
+          "fields": [
+            [
+              "proj:code"
+            ],
+            [
+              "proj:epsg"
+            ],
+            [
+              "proj:wkt2"
+            ],
+            [
+              "proj:projjson"
+            ],
+            [
+              "proj:shape"
+            ],
+            [
+              "proj:transform"
+            ]
+          ],
+          "read": "interpret",
+          "note": "STAC reader: the Item's extent, CRS and zoom range.",
+          "source": "https://github.com/cogeotiff/rio-tiler/blob/main/rio_tiler/io/stac.py"
+        }
       ],
       "precedence": [
         {
           "topic": "Extent, CRS and zoom range of an Item",
           "order": [
-            { "label": "proj: of the assets, when they share one CRS", "stac": "projection" },
-            { "label": "proj: of the Item" },
-            { "label": "the Item's bbox, in WGS 84" }
+            {
+              "label": "proj: of the assets, when they share one CRS",
+              "stac": "projection"
+            },
+            {
+              "label": "proj: of the Item"
+            },
+            {
+              "label": "the Item's bbox, in WGS 84"
+            }
           ],
           "source": "https://github.com/cogeotiff/rio-tiler/blob/main/rio_tiler/io/stac.py"
         },
         {
           "topic": "Georeferencing of an asset's pixels",
           "order": [
-            { "label": "the asset's file, read with rasterio (GDAL)", "convention": "geotiff" }
+            {
+              "label": "the asset's file, read with rasterio (GDAL)",
+              "convention": "geotiff"
+            }
           ],
           "source": "https://github.com/cogeotiff/rio-tiler/blob/main/rio_tiler/io/stac.py"
         },
         {
           "topic": "Nodata of an asset",
           "order": [
-            { "label": "a nodata value given with the request" },
-            { "label": "the nodata value of the asset's file", "convention": "gdal", "fields": [["tags", "GDAL_NODATA"]] }
+            {
+              "label": "a nodata value given with the request"
+            },
+            {
+              "label": "the nodata value of the asset's file",
+              "convention": "gdal",
+              "fields": [
+                [
+                  "tags",
+                  "GDAL_NODATA"
+                ]
+              ]
+            }
           ],
           "source": "https://github.com/cogeotiff/rio-tiler/blob/main/README.md"
         }

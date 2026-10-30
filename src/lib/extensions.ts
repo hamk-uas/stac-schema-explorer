@@ -51,6 +51,9 @@ export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     se('grid', 'Grid', ['1.1.0']),
     se('mgrs', 'MGRS', ['1.0.0']),
     se('ceos-ard', 'CEOS-ARD', ['0.2.0']),
+    se('sar', 'SAR', ['1.3.2']),
+    se('authentication', 'Authentication', ['1.2.0']),
+    se('alternate-assets', 'Alternate Assets', ['1.2.0']),
     {
         name: 'eopf',
         title: 'EOPF',
@@ -72,6 +75,30 @@ const STAC_EXTENSIONS_URL = /^https:\/\/stac-extensions\.github\.io\/([a-z0-9-]+
 export function normalizeSchemaUrl(url: string): string {
     return url.trim().replace(/#$/, '');
 }
+
+/** A schema URL without its version (`…/datacube/v2.2.0/schema.json` → `…/datacube/schema.json`): which extension, of any version. */
+export function extensionWithoutVersion(url: string): string {
+    return normalizeSchemaUrl(url).replace(/\/v?\d+\.\d+(\.\d+)?[^/]*\//, '/');
+}
+
+/**
+ * Prefixes that specifications other than STAC extensions use in STAC documents, with no STAC extension schema to
+ * validate them: shown instead of "unknown" for fields of these prefixes.
+ */
+export const PREFIXES_WITHOUT_SCHEMA: Record<string, { title: string; description: string; url: string; fields: Record<string, string> }> = {
+    openeo: {
+        title: 'openEO API',
+        description: 'Defined by the openEO API for its own responses, not by a STAC extension, so no STAC schema validates it. '
+            + 'openEO serves STAC documents (Collections at `GET /collections`, batch job results) and implements part of the separate STAC API '
+            + 'specification; its own fields belong to the openEO API.',
+        url: 'https://api.openeo.org/1.2.0/#tag/Data-Processing/operation/list-results',
+        fields: {
+            'openeo:status': 'The status of the batch job whose results the STAC document lists (`GET /jobs/{job_id}/results`): '
+                + '`running`, `canceled`, `finished` (the default) or `error`. REQUIRED when partial results are requested, '
+                + 'strongly RECOMMENDED when the job stopped because of an error.',
+        },
+    },
+};
 
 /** `https://stac-extensions.github.io/cf/v1.0.0/schema.json` ↔ `cf@1.0.0`; other URLs stay as they are. */
 export function toShortId(url: string): string {

@@ -149,6 +149,15 @@ describe('registry', () => {
             expect(getPointer(schema, '/$defs/conventionMetadata/properties/uuid/const')).toBe(convention.declaration?.zarrConventions?.uuid);
         }
     });
+
+    it('records when every format and convention was checked, and stated maturities', () => {
+        const all = [...registry.formats, ...registry.conventions] as { id: string; checked?: { date: string; source?: string }; maturity?: string }[];
+        for (const entry of all) {
+            expect(entry.checked?.date, entry.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+            expect(entry.checked?.source, entry.id).toMatch(/^https:\/\//);
+            if (entry.maturity) expect(['Proposal', 'Pilot', 'Candidate', 'Stable', 'Deprecated'], entry.id).toContain(entry.maturity);
+        }
+    });
 });
 
 describe('STAC crosswalk', () => {
@@ -189,7 +198,8 @@ describe('STAC crosswalk', () => {
 
 interface Target { convention?: string; format?: string; stac?: string; fields?: string[][]; formats?: string[] }
 interface SoftwareEntry {
-    id: string; title: string; kind: string; url: string; description: string; extends?: string[];
+    id: string; title: string; layer: string; url: string; description: string; partOf?: string; extends?: string[]; uses?: string[];
+    pypi?: string; checked?: { date: string; release?: string; source?: string };
     supports: (Target & { read?: string; write?: string; source: string })[];
     precedence?: { topic: string; order: (Target & { label: string })[]; ignores?: (Target & { label: string })[]; source: string }[];
 }
@@ -216,7 +226,24 @@ describe('software list', () => {
 
     it('has unique identifiers and builds only on listed software', () => {
         expect(new Set(ids).size).toBe(ids.length);
-        for (const s of software) for (const parent of s.extends ?? []) expect(ids, `${s.id} extends ${parent}`).toContain(parent);
+        for (const s of software) {
+            for (const other of [...(s.extends ?? []), ...(s.uses ?? []), ...(s.partOf ? [s.partOf] : [])]) expect(ids, `${s.id} → ${other}`).toContain(other);
+        }
+    });
+
+    it('places every program in a layer, drivers in a library, and dates what it says', () => {
+        const date = /^\d{4}-\d{2}-\d{2}$/;
+        for (const s of software) {
+            expect(['driver', 'library', 'package'], s.id).toContain(s.layer);
+            expect(Boolean(s.partOf), s.id).toBe(s.layer === 'driver');
+            if (s.partOf) expect(software.find((p) => p.id === s.partOf)?.layer, s.id).toBe('library');
+            // Drivers share their library's check and package.
+            if (s.layer === 'driver') expect(s.checked ?? s.pypi, s.id).toBeUndefined();
+            else {
+                expect(s.checked?.date, s.id).toMatch(date);
+                expect(s.checked?.release, s.id).toBeTruthy();
+            }
+        }
     });
 
     it('cites a source for every claim', () => {

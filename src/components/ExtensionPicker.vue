@@ -86,7 +86,7 @@ function add() {
       <button type="button" class="link" @click="emit('update:modelValue', [...DEFAULT_EXTENSIONS])">defaults</button>
       <button type="button" class="link" @click="emit('update:modelValue', [])">clear</button>
     </div>
-    <p class="hint">Extensions discussed in the Observatory project.</p>
+    <p class="hint">Extensions discussed in the Observatory project, and those the openEO API recommends or its back-ends use.</p>
     <div class="quick">
       <template v-for="ext in KNOWN_EXTENSIONS" :key="ext.name">
         <button

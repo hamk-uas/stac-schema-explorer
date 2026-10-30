@@ -18,15 +18,16 @@ import { TYPE_LABEL, type DocEntry } from './lib/docs';
 import { dataFiles, nodeConventions, READER_LABEL, readerKind, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type DataView, type NodeEntry, type ReaderKind } from './lib/embedded-docs';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-probe';
 import { Engine } from './lib/engine';
-import { describeUrl, normalizeSchemaUrl } from './lib/extensions';
+import { describeUrl, extensionWithoutVersion, normalizeSchemaUrl } from './lib/extensions';
 import { conceptPath, stacMatrixGroups, type MatrixGroup } from './lib/matrix';
 import { CORE, STAC_TYPES, STAC_VERSIONS, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
 import { getAt, joinPointer, objectLocations } from './lib/pointer';
 import { readEmbeddedFile } from './lib/reader';
 import { addedSchemas, applyRewrites, declareConventionsAttribute, declareStacExtensions, declareZarrConventions, fieldEdits, templateValue, toggleRewrite, type Rewrite } from './lib/rewrites';
 import { precedenceFor, softwareFor } from './lib/software';
+import { LAYERS, schemaLayer } from './lib/layers';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
-import { documentView, fieldIndex, templateView, type FieldView } from './lib/tree';
+import { documentView, fieldIndex, templateView, undeclaredExtensions, type FieldView } from './lib/tree';
 import { readState, writeState, type AppState } from './lib/url-state';
 import { isVendored } from './lib/vendored';
 
@@ -260,6 +261,7 @@ async function analyze(entry: DocEntry) {
     entry.template = markRaw(template);
     entry.sources = markRaw(probed.sources);
     entry.view = markRaw(documentView(doc, template, probed.sources, state.showCore, fieldEdits(rewrites)));
+    entry.undeclared = undeclaredExtensions(entry.view, declaredOf(doc), (a, b) => extensionWithoutVersion(a) === extensionWithoutVersion(b));
     if (entry.valid === undefined) {
         const errors = await engine.validate(doc, version, declaredOf(doc).map(normalizeSchemaUrl));
         if (analyses.get(entry) !== run) return;
@@ -647,9 +649,13 @@ const fieldPanel = computed(() => {
     // A field's path in a node (`attributes/grid_mapping`), or its name in STAC, as the software list names it.
     const container = embedded && 'containers' in embedded ? embedded.containers[name] : undefined;
     const path = container ? [container, name] : [name];
+    const info = pool.find((s) => s.key === source);
+    const formatsOf = embedded && 'formats' in embedded ? embedded.formats : [];
     return {
         source, name, doc, places, counterparts, counterpartsTitle, sources: pool, vendored: source === 'core' ? true : isVendored(source),
         software: softwareFor(source, path), precedence: precedenceFor(source, path),
+        definer: schemaLayer(source, info?.version),
+        container: formatsOf.length ? { formats: formatsOf.map((id) => DATA_FORMATS.find((f) => f.id === id)?.title ?? id), member: container } : undefined,
     };
 });
 
@@ -751,6 +757,7 @@ const EXAMPLE_URLS = [
     { label: 'Sentinel-2 L2A COG (Earth Search)', href: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/36/Q/WD/2020/7/S2A_36QWD_20200701_0_L2A/B04.tif' },
     { label: 'EOPF Sentinel-2 L1C (API)', href: 'https://stac.core.eopf.eodc.eu/collections/sentinel-2-l1c' },
     { label: 'Earth Search Sentinel-2 L2A (API)', href: 'https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a' },
+    { label: 'openEO CDSE Sentinel-2 L2A collection', href: 'https://openeo.dataspace.copernicus.eu/openeo/1.2/collections/SENTINEL2_L2A' },
 ];
 
 onMounted(() => {
@@ -782,11 +789,11 @@ onMounted(() => {
         <p v-if="state.mode === 'href'" class="hint">Each document is compared with the core schemas of its own <code>stac_version</code>.</p>
       </section>
       <section>
-        <h2>Extensions</h2>
+        <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Extensions</h2>
         <ExtensionPicker v-model="state.extensions" :sources="sources" @focus="focusFromPicker" />
       </section>
       <section>
-        <h2>Data conventions</h2>
+        <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Data conventions</h2>
         <p class="hint">Conventions of metadata embedded in data files (Zarr, netCDF, TIFF): the counterparts of STAC extensions.</p>
         <ConventionPicker v-model="state.conventions" :sources="embeddedSources" @focus="focusFromPicker" />
       </section>
@@ -1016,6 +1023,8 @@ onMounted(() => {
         :counterparts-title="fieldPanel.counterpartsTitle"
         :software="fieldPanel.software"
         :precedence="fieldPanel.precedence"
+        :definer="fieldPanel.definer"
+        :container="fieldPanel.container"
         @close="state.field = ''"
         @place="showPlace"
       />

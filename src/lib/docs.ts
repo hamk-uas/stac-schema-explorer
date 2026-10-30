@@ -1,6 +1,6 @@
 import type { JsonObject, SourceInfo, StacType, TypeTemplate } from './model';
 import type { DataView } from './embedded-docs';
-import type { ObjectView } from './tree';
+import type { ObjectView, Undeclared } from './tree';
 
 /** A STAC document (separate JSON file) in the catalog tree. */
 export interface DocEntry {
@@ -36,6 +36,8 @@ export interface DocEntry {
     compact?: boolean;
     /** The data files of its assets whose embedded metadata can be read. */
     data?: DataView[];
+    /** Extensions whose fields a real document uses without declaring them. */
+    undeclared?: Undeclared[];
 }
 
 export const TYPE_LABEL: Record<StacType, string> = { Catalog: 'Catalog', Collection: 'Collection', Feature: 'Item' };

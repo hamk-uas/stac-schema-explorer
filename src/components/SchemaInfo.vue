@@ -4,12 +4,15 @@ import { computed } from 'vue';
 import { colorOf, sourceLabel } from '../lib/colors';
 import { CONVENTION_KINDS, conventionOfSchema, DATA_FORMATS, formatOfSchema } from '../lib/conventions';
 import type { EmbeddedSourceInfo } from '../lib/embedded-probe';
-import { repoUrl } from '../lib/extensions';
+import { PREFIXES_WITHOUT_SCHEMA, repoUrl } from '../lib/extensions';
+import { schemaLayer } from '../lib/layers';
 import { inlineMarkdown } from '../lib/markdown';
 import { CORE, type SourceInfo } from '../lib/model';
 import { softwareFor } from '../lib/software';
 import { isVendored } from '../lib/vendored';
+import Checked from './Checked.vue';
 import type { FieldPlace } from './FieldInfo.vue';
+import LayerBadge from './LayerBadge.vue';
 import SoftwareInfo from './SoftwareInfo.vue';
 
 /** Information on a schema whose fields are grouped together: STAC core, an extension, a data format or a convention. */
@@ -30,6 +33,8 @@ const format = computed(() => formatOfSchema(props.source));
 const known = computed(() => conventionOfSchema(props.source));
 const embedded = computed(() => !!format.value || !!known.value || (!!props.info && 'kind' in props.info));
 const unknown = computed(() => props.source.startsWith('?'));
+/** A prefix that another specification defines without a STAC extension schema (openEO's `openeo:`). */
+const withoutSchema = computed(() => (unknown.value ? PREFIXES_WITHOUT_SCHEMA[props.source.slice(1)] : undefined));
 
 const kind = computed(() => {
     if (props.source === CORE) return 'STAC core';
@@ -38,6 +43,12 @@ const kind = computed(() => {
     const conventionKind = known.value?.convention.kind ?? (props.info && 'kind' in props.info ? props.info.kind : undefined);
     if (conventionKind) return CONVENTION_KINDS.find((k) => k.kind === conventionKind)?.title.replace(/s$/, '') ?? 'Data convention';
     return 'STAC extension';
+});
+/** The layer the schema belongs to, its version and maturity, and how current our information about it is. */
+const layer = computed(() => {
+    const found = schemaLayer(props.source, props.info?.version);
+    if (found) return found;
+    return unknown.value ? undefined : { layer: (format.value ? 'format' : 'convention') as 'format' | 'convention', kind: kind.value };
 });
 
 const description = computed(() => {
@@ -87,22 +98,38 @@ const fieldTitle = (name: string) => {
     <header>
       <span class="marker" :class="{ square: embedded }" aria-hidden="true" />
       <span class="title">{{ sourceLabel(source, info ? [info, ...sources] : sources) }}</span>
-      <span class="kind">{{ kind }}</span>
+      <LayerBadge v-if="layer" :layer="layer.layer" :label="kind" />
+      <span v-else class="kind">{{ kind }}</span>
+      <span v-if="layer && 'maturity' in layer && layer.maturity" class="maturity" title="Maturity the convention states">{{ layer.maturity }}</span>
       <button type="button" class="close" aria-label="Close schema information" @click="emit('close')">×</button>
     </header>
+    <p v-if="layer && 'checked' in layer && layer.checked" class="currency">
+      <Checked
+        :date="layer.checked.date"
+        :latest="layer.checked.latest"
+        :version="'version' in layer ? layer.version : undefined"
+        :source="layer.checked.source"
+      />
+      <span v-if="layer.checked.note" class="note">{{ layer.checked.note }}</span>
+    </p>
     <p v-if="links.length || info?.prefixes.length" class="links">
       <code v-for="p in info?.prefixes ?? []" :key="p" class="prefix">{{ p }}:</code>
       <a v-for="link in links" :key="link.label" :href="link.href" target="_blank" rel="noopener" :title="link.title">{{ link.label }}</a>
     </p>
     <!-- v-html is safe: inlineMarkdown escapes everything except the code spans and links it creates. -->
     <p v-if="description" class="description" v-html="inlineMarkdown(description)" />
+    <template v-else-if="withoutSchema">
+      <!-- v-html is safe: inlineMarkdown escapes everything except the code spans and links it creates. -->
+      <p class="description"><strong>{{ withoutSchema.title }}.</strong> <span v-html="inlineMarkdown(withoutSchema.description)" /></p>
+      <p class="links"><a :href="withoutSchema.url" target="_blank" rel="noopener">specification ↗</a></p>
+    </template>
     <p v-else-if="unknown && source !== '?'" class="missing">
       The document uses fields with the prefix <code>{{ source.slice(1) }}:</code>, but no selected or declared extension defines them.
     </p>
     <p v-else-if="unknown" class="missing">Fields that no selected or declared schema defines.</p>
     <p v-else class="missing">The schema has no description of itself.</p>
     <p v-if="info?.error" class="error">{{ info.error }}</p>
-    <p v-if="formats.length" class="row"><span class="label">Formats</span> {{ formats.join(', ') }}</p>
+    <p v-if="formats.length" class="row"><LayerBadge layer="format" :label="formats.length === 1 ? 'Format' : 'Formats'" /> {{ formats.join(', ') }}</p>
     <div v-if="places.length" class="places">
       <span class="label">Fields allowed in</span>
       <ul>
@@ -174,6 +201,24 @@ header {
   background: #f1f5f9;
   border-radius: 4px;
   padding: 1px 5px;
+}
+.maturity {
+  font: 600 10px var(--sans);
+  color: #92400e;
+  background: #fef3c7;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.currency {
+  margin: 2px 0 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+.currency .note {
+  font-size: 11px;
+  color: #64748b;
 }
 .close {
   margin-left: auto;

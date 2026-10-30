@@ -28,7 +28,15 @@ asking the schemas themselves.
   a data file (see *Explore embedded metadata* below). Each object shows its populated fields highlighted within all
   fields the schemas would allow at the same place: dotted chips are allowed but absent, red chips are present but not
   placed there by any selected or declared schema (with “Include extensions the documents declare”, the default).
-  Documents are validated against STAC core and the extensions they declare.
+  Documents are validated against STAC core and the extensions they declare. A document that uses an extension's fields
+  without declaring the extension (in any version) in `stac_extensions` is marked “undeclared”, since validation does not
+  check those fields; Collection `summaries` and `item_assets` are not counted, as they describe the fields of Items.
+- **openEO**: an [openEO API](https://api.openeo.org/1.2.0/#tag/EO-Data-Discovery/STAC) back-end serves its data as
+  STAC Collections (`GET /collections/{collection_id}`), which can be explored like any STAC URL; openEO APIs allow
+  cross-origin requests. The extensions the openEO API requires or recommends (Datacube, Version, EO, Processing,
+  Raster, SAR, Satellite, Scientific) and those its back-ends use (Authentication, Alternate Assets) are in the
+  quick-select list. Fields openEO defines for its own responses, such as `openeo:status` of batch job results, have
+  no STAC extension schema and are explained as openEO API fields.
 - **Rewrites**: in an explored STAC document or data node, + on an absent field adds it with the example value of the
   template, − on a present field removes it (struck through, + restores it), × undoes an addition. Adding a field of
   an undeclared extension or convention also declares it (`stac_extensions`, a `zarr_conventions` entry, or a token
@@ -62,7 +70,7 @@ asking the schemas themselves.
   contract.
 
 Extensions are chosen from quick-select buttons (the extensions discussed in the
-[Observatory](https://github.com/hamk-uas/observatory) project) or added as any JSON Schema URL or `name@version`
+[Observatory](https://github.com/hamk-uas/observatory) project, and those the openEO API recommends or its back-ends use) or added as any JSON Schema URL or `name@version`
 (short for `https://stac-extensions.github.io/<name>/v<version>/schema.json`).
 
 All state is kept in the URL, so any view can be shared by copying the address.
@@ -155,6 +163,10 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 - If no valid example value can be generated for a field, the field is listed under the extension in the sidebar and
   may be missing from the results.
 - Exploring a URL needs the server to allow cross-origin requests (CORS), as do custom schema URLs.
+- The explorer checks STAC **documents** against the STAC specification and extension schemas. It does not check
+  conformance to **STAC API** (a separate specification with its own versions: endpoints, conformance classes,
+  search) or to APIs that implement parts of it, such as openEO, whose API version (1.2.0) is neither its STAC API
+  version nor the `stac_version` of its documents. Item lists are followed by `items` links where present.
 - In STAC 1.0.0 the example Collection has `item_assets` even without the Item Assets extension, which 1.0.0 core does
   not validate.
 - The placement matrix of embedded metadata shows the example nodes of the selected conventions; real Zarr, netCDF and
@@ -231,14 +243,25 @@ They have no upstream copy; the build publishes them at their `$id`,
 - [crosswalk.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/crosswalk.json): where embedded fields
   correspond to STAC fields (`proj:code` in both, ACDD `title` and STAC `title`, GeoTIFF `ProjectedCRSGeoKey` and
   `proj:code`, …): the same value, the same value after a named conversion, or related information in different forms.
-- [software.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/software.json): which software (GDAL,
-  rasterio, xarray, rioxarray, netCDF4-python, stackstac, odc-stac, rio-tiler/TiTiler) interprets, passes through or
-  writes which fields of conventions, formats and STAC extensions, since which version, and, per topic (CRS and grid,
-  nodata, scale and offset), which source it prefers when STAC and the data, or two conventions, say the same thing:
-  stackstac and odc-stac place assets by STAC `proj:` and ignore the files' GeoTIFF keys, rio-tiler reads pixels by the
-  files' own. Conventions say who defines fields; software says who uses them, so software overlaps where conventions
-  do not, and software built on other software (`extends`: rasterio on GDAL) is listed with it. Every claim cites
-  documentation or source code; what could not be verified is left out. Field and schema information show it.
+- [software.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/software.json): which software interprets,
+  passes through or writes which fields of conventions, formats and STAC extensions, since which version, and, per
+  topic (CRS and grid, nodata, scale and offset), which source it prefers when STAC and the data, or two conventions,
+  say the same thing: stackstac and odc-stac place assets by STAC `proj:` and ignore the files' GeoTIFF keys, rio-tiler
+  reads pixels by the files' own. Conventions say who defines fields; software says who uses them, so software
+  overlaps where conventions do not. Each program is in a layer: 🔌 a driver of one format inside a library (GDAL's
+  GTiff, netCDF, Zarr, STACIT and STACTA drivers), 🧰 a library (GDAL, rasterio, xarray, netCDF4-python) or 🖥️ a
+  package or application (rioxarray, stackstac, odc-stac, rio-tiler/TiTiler); a library takes its drivers' claims over,
+  and software built on other software (`extends`: rasterio on GDAL) theirs. Every claim cites documentation or source
+  code, and every program records when it was checked and its latest release then; what could not be verified is left
+  out. Field and schema information show it.
+
+The explorer places everything in **layers**: 📜 standards (STAC itself), 🤝 conventions and extensions that define
+fields, 💾 formats that contain them, and the 🔌 drivers, 🧰 libraries and 🖥️ packages and apps that read and write
+them. Field information says which convention defines a field and which formats contain it, then lists the software by
+layer. To tell whether this information is current, the registry records for every format and convention when it was
+checked, its latest release then and the maturity a convention states (proj, spatial and multiscales are *Pilot*), and
+the software list does the same for every program. Checks older than three months are flagged as possibly outdated,
+and the latest releases of the Python packages are looked up on PyPI when shown, to flag newer releases.
 
 The CF attribute descriptions are those of the CF Conventions 1.13 Appendices A and F (public domain, CC0 1.0); the
 others summarise their specifications in our own words and link to them. The tests

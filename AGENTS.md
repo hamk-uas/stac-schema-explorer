@@ -118,6 +118,13 @@ in their description and are published at their `$id` by `vite.config.ts`.
   Every capability or precedence claim needs a cited source (docs or source code)
   and the version it depends on; leave out what cannot be verified, and recheck
   claims when the software changes.
+- Show where things sit with the shared layers of [layers.ts](src/lib/layers.ts)
+  (📜 standard, 🤝 convention/extension, 💾 format, 🔌 driver, 🧰 library,
+  🖥️ package/app) through `LayerBadge`, always with a text label. Each software
+  entry is in one layer (drivers `partOf` their library). When re-verifying a
+  program or specification, update its `checked` date and latest release in
+  `software.json` or `registry.json`; the UI flags checks older than three months
+  and looks up newer PyPI releases at runtime.
 - Do not copy text whose licence does not allow it: CF text is CC0; ACDD, OGC
   and GDAL texts are summarised in our own words with links.
 - `test/authored.test.ts` checks documentation, registry/crosswalk/software targets and
@@ -205,11 +212,12 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
 - [ ] Embedded metadata: the netCDF/TIFF readers duplicate the Observatory's
   (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`); until one
   shared package exists, change both together.
-- [ ] Software and standards, after the first `software.json` slice: a software
-  picker that marks which fields a program interprets, writes or ignores; standards
+- [ ] Software and standards, after the layers and versions slice: a software
+  picker that marks which fields a program interprets, writes or ignores; 📜 standards
   as presets of conventions with requirement levels (GeoZarr, still a draft over the
   zarr-conventions; COG; CF-compliant netCDF); more software (QGIS, R terra/stars,
-  xpystac, geotiff.js) once their behaviour is verified. Add the geo-embeddings Zarr
+  xpystac, geotiff.js, zarr-python) once their behaviour is verified; currency of
+  vendored STAC extension versions. Add the geo-embeddings Zarr
   convention (`geoemb:`, used by TESSERA) when it has a released schema (its declared
   `refs/tags/v1` schema URL did not resolve when last checked).
 

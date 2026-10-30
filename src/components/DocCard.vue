@@ -70,6 +70,12 @@ const validityTitle = computed(() => {
         ? `Valid against STAC core${declared ? ` and ${declared} declared extension schema(s)` : ''}`
         : `Validation errors:\n${(props.entry.errors ?? []).join('\n')}`;
 });
+const undeclaredTitle = computed(() => [
+    'Fields of extensions that stac_extensions does not declare in any version. Validation checks declared extensions only, so these fields are not validated:',
+    ...(props.entry.undeclared ?? []).map((u) => `• ${sourceLabel(u.source, docSources.value)}: ${u.fields.join(', ')}`),
+    '',
+    'Collection summaries and item_assets are not counted: they describe the fields of Items.',
+].join('\n'));
 </script>
 
 <template>
@@ -99,6 +105,9 @@ const validityTitle = computed(() => {
       <span v-if="entry.rewrites" class="rewritten" :title="`${entry.rewrites} rewrite(s) applied to this document: it is shown and validated as rewritten`">
         ✎ {{ entry.rewrites }} rewrite{{ entry.rewrites === 1 ? '' : 's' }}
         <button type="button" :aria-label="`Undo the rewrites of ${entry.title}`" @click.stop="emit('reset', entry.key)">undo</button>
+      </span>
+      <span v-if="entry.undeclared?.length" class="undeclared" :title="undeclaredTitle">
+        ⚠ undeclared: {{ entry.undeclared.map((u) => sourceLabel(u.source, docSources)).join(', ') }}
       </span>
       <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the JSON in a new tab" @click.stop>↗</a>
     </header>
@@ -296,6 +305,15 @@ header {
 }
 .validity.bad {
   color: #b91c1c;
+}
+.undeclared {
+  font: 600 11px var(--sans);
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  padding: 0 6px;
+  white-space: nowrap;
 }
 .open {
   font-size: 13px;
