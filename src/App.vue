@@ -396,6 +396,17 @@ watch(() => state.showCore, () => {
     if (detached.value) refresh(detached.value);
 });
 
+/** Rebuilds the node cards of a data file that has been read (they depend on the display, selections and rewrites). */
+function rebuildData(view: DataView) {
+    if (view.status !== 'ready') return;
+    buildNodes(view).catch((error: unknown) => {
+        view.status = 'error';
+        view.error = error instanceof Error ? error.message : String(error);
+    });
+}
+// Format fields are shown with STAC core, and selected conventions are compared with every node.
+watch(() => [state.showCore, state.conventions.join('\n')], () => dataViews().forEach(rebuildData));
+
 // ---- Rewrites --------------------------------------------------------------------------------------------------
 
 /** Re-analyzes the documents and nodes whose rewrites changed. */
@@ -411,13 +422,7 @@ watch(() => state.rewrites, (now, before) => {
     };
     walk(hrefRoot.value, refresh);
     if (detached.value) refresh(detached.value);
-    for (const view of dataViews()) {
-        if (view.status !== 'ready' || !view.nodes.some((n) => changed.has(n.key))) continue;
-        buildNodes(view).catch((error: unknown) => {
-            view.status = 'error';
-            view.error = error instanceof Error ? error.message : String(error);
-        });
-    }
+    for (const view of dataViews()) if (view.nodes.some((n) => changed.has(n.key))) rebuildData(view);
 });
 
 /** Adds or removes a field of a real document or node in some of its objects, or undoes its rewrite. */
