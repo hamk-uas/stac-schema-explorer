@@ -28,3 +28,11 @@ export const fixtureFetch: FetchJson = async (url) => {
 export function fixtureStore(): SchemaStore {
     return new SchemaStore(fixtureFetch);
 }
+
+/** The extensions the engine tests probe together (the app starts with none). */
+export const EXTENSIONS: readonly string[] = [
+    'https://stac-extensions.github.io/datacube/v2.3.0/schema.json',
+    'https://stac-extensions.github.io/cf/v1.0.0/schema.json',
+    'https://stac-extensions.github.io/themes/v1.0.0/schema.json',
+    'https://hamk-uas.github.io/stac-semantics/v0.1.0/schema.json',
+];

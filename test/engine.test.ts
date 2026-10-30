@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_EXTENSIONS, fromShortId, repoUrl, toShortId } from '../src/lib/extensions';
+import { fromShortId, repoUrl, toShortId } from '../src/lib/extensions';
 import { buildMatrix, stacMatrixGroups } from '../src/lib/matrix';
 import { CORE, type ProbeResult, type StacType } from '../src/lib/model';
 import { probe } from '../src/lib/probe';
@@ -8,7 +8,7 @@ import { stringFromRegex } from '../src/lib/sampler';
 import { formatErrors } from '../src/lib/schemas';
 import { documentView, groupFields, shapeOf, templateView, type ObjectView } from '../src/lib/tree';
 import { readState, writeState } from '../src/lib/url-state';
-import { fixtureStore } from './helpers';
+import { EXTENSIONS, fixtureStore } from './helpers';
 
 const DATACUBE = 'https://stac-extensions.github.io/datacube/v2.3.0/schema.json';
 const CF = 'https://stac-extensions.github.io/cf/v1.0.0/schema.json';
@@ -17,7 +17,7 @@ const SEMANTICS = 'https://hamk-uas.github.io/stac-semantics/v0.1.0/schema.json'
 
 let cached: Promise<ProbeResult> | undefined;
 function defaultProbe(): Promise<ProbeResult> {
-    cached ??= probe(fixtureStore(), '1.1.0', DEFAULT_EXTENSIONS);
+    cached ??= probe(fixtureStore(), '1.1.0', EXTENSIONS);
     return cached;
 }
 
@@ -59,10 +59,14 @@ describe('url state', () => {
         expect(readState(search)).toEqual(state);
     });
 
-    it('keeps an empty extension list', () => {
+    it('starts with no extensions or conventions and keeps chosen ones', () => {
         const state = readState('');
-        state.extensions = [];
-        expect(readState(writeState(state)).extensions).toEqual([]);
+        expect(state.extensions).toEqual([]);
+        expect(state.conventions).toEqual([]);
+        expect(writeState(state)).not.toMatch(/ext=|conv=/);
+        state.conventions = ['https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json'];
+        expect(writeState(state)).toContain('conv=proj@v0.1');
+        expect(readState(writeState(state)).conventions).toEqual(state.conventions);
     });
 });
 

@@ -1,5 +1,5 @@
-import { DEFAULT_CONVENTIONS, fromConventionShortId, toConventionShortId } from './conventions';
-import { DEFAULT_EXTENSIONS, fromShortId, toShortId } from './extensions';
+import { fromConventionShortId, toConventionShortId } from './conventions';
+import { fromShortId, toShortId } from './extensions';
 import { STAC_VERSIONS } from './model';
 import type { Rewrite } from './rewrites';
 
@@ -52,8 +52,8 @@ export function defaultState(): AppState {
     return {
         mode: 'example',
         stacVersion: STAC_VERSIONS[0],
-        extensions: [...DEFAULT_EXTENSIONS],
-        conventions: [...DEFAULT_CONVENTIONS],
+        extensions: [],
+        conventions: [],
         href: '',
         selected: 'collection',
         pointer: '',
@@ -77,9 +77,7 @@ export function readState(search: string): AppState {
     const version = params.get('v');
     if (version && (STAC_VERSIONS as readonly string[]).includes(version)) state.stacVersion = version;
     if (params.has('ext')) state.extensions = params.getAll('ext').flatMap((v) => v.split(' ')).filter(Boolean).map(fromShortId);
-    if (params.has('noext')) state.extensions = [];
     if (params.has('conv')) state.conventions = params.getAll('conv').flatMap((v) => v.split(' ')).filter(Boolean).map(fromConventionShortId);
-    if (params.has('noconv')) state.conventions = [];
     state.selected = params.get('sel') ?? (state.mode === 'href' ? state.href : state.selected);
     state.pointer = params.get('ptr') ?? '';
     state.showCore = params.get('core') === '1';
@@ -105,10 +103,8 @@ export function writeState(state: AppState): string {
     const params = new URLSearchParams();
     params.set('mode', state.mode);
     if (state.stacVersion !== STAC_VERSIONS[0]) params.set('v', state.stacVersion);
-    if (state.extensions.length === 0) params.set('noext', '1');
     for (const url of state.extensions) params.append('ext', toShortId(url));
-    if (state.conventions.length === 0) params.set('noconv', '1');
-    else if (state.conventions.join('\n') !== DEFAULT_CONVENTIONS.join('\n')) for (const url of state.conventions) params.append('conv', toConventionShortId(url));
+    for (const url of state.conventions) params.append('conv', toConventionShortId(url));
     if (state.href) params.set('href', state.href);
     if (state.selected && !(state.mode === 'href' && state.selected === state.href)) params.set('sel', state.selected);
     if (state.pointer) params.set('ptr', state.pointer);

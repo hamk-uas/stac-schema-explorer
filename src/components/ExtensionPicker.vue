@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf } from '../lib/colors';
-import { DEFAULT_EXTENSIONS, describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, repoUrl, toShortId } from '../lib/extensions';
+import { describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, repoUrl, toShortId } from '../lib/extensions';
 import type { SourceInfo } from '../lib/model';
 
 const props = defineProps<{ modelValue: string[]; sources: SourceInfo[] }>();
@@ -83,7 +83,6 @@ function add() {
 
     <div class="quick-head">
       <h3>Quick select</h3>
-      <button type="button" class="link" @click="emit('update:modelValue', [...DEFAULT_EXTENSIONS])">defaults</button>
       <button type="button" class="link" @click="emit('update:modelValue', [])">clear</button>
     </div>
     <p class="hint">Extensions discussed in the Observatory project, and those the openEO API recommends or its back-ends use.</p>

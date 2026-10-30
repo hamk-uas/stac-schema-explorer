@@ -1,12 +1,12 @@
 // Prints where each field of the given schemas is placed, without the browser:
 //   pnpm explore -- <schema url or name@version> …   (STAC version from the V environment variable, default 1.1.0)
 //   DUMP=Feature pnpm explore   also prints the example document of that type.
-import { DEFAULT_EXTENSIONS, fromShortId } from '../src/lib/extensions';
+import { fromShortId } from '../src/lib/extensions';
 import { probe } from '../src/lib/probe';
-import { fixtureStore } from './helpers';
+import { EXTENSIONS, fixtureStore } from './helpers';
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('-')).map(fromShortId);
-const urls = args.length ? args : DEFAULT_EXTENSIONS;
+const urls = args.length ? args : EXTENSIONS;
 const started = performance.now();
 const result = await probe(fixtureStore(), process.env.V || '1.1.0', urls);
 console.log('time', Math.round(performance.now() - started), 'ms');

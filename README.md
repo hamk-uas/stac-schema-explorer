@@ -79,8 +79,8 @@ All state is kept in the URL, so any view can be shared by copying the address.
 | --- | --- |
 | `mode` | `example` or `href` |
 | `v` | STAC version of the example (`1.1.0` default, `1.0.0`) |
-| `ext` | an extension, repeatable: `name@version` or a schema URL; `noext=1` for none |
-| `conv` | a data convention, repeatable: `name@version` (`proj@v0.1`, `cf@1.13`) or a schema URL; `noconv=1` for none; absent for the defaults |
+| `ext` | an extension, repeatable: `name@version` or a schema URL; none when absent |
+| `conv` | a data convention, repeatable: `name@version` (`proj@v0.1`, `cf@1.13`) or a schema URL; none when absent |
 | `href` | STAC document, or data file to explore: a Zarr store or metadata document, a netCDF or TIFF file |
 | `sel`, `ptr` | selected document (`catalog`, `subcatalog`, `collection`, `item`, a URL, or `node:…` for a node of embedded metadata) and object (JSON Pointer) |
 | `view` | `matrix` for the placement matrix |
@@ -100,8 +100,8 @@ https://hamk-uas.github.io/stac-schema-explorer/?embed=1&mode=href&href=<URL-enc
 ```
 
 The explorer then loads the document and its children, compares them with the extensions they declare (add `ext`
-parameters to compare with more) and keeps its state in its own URL. Use `noext=1` to start without the default
-extensions. The document's server must allow cross-origin requests.
+parameters to compare with more) and keeps its state in its own URL. The document's server must allow cross-origin
+requests.
 
 ## How it works
 

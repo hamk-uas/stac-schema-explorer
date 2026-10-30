@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf } from '../lib/colors';
-import { CONVENTION_KINDS, conventionOfSchema, DEFAULT_CONVENTIONS, fromConventionShortId, KNOWN_CONVENTIONS, toConventionShortId } from '../lib/conventions';
+import { CONVENTION_KINDS, conventionOfSchema, fromConventionShortId, KNOWN_CONVENTIONS, toConventionShortId } from '../lib/conventions';
 import type { EmbeddedSourceInfo } from '../lib/embedded-probe';
 import { normalizeSchemaUrl, repoUrl } from '../lib/extensions';
 
@@ -73,7 +73,6 @@ function add() {
 
     <div class="quick-head">
       <h3>Quick select</h3>
-      <button type="button" class="link" @click="emit('update:modelValue', [...DEFAULT_CONVENTIONS])">defaults</button>
       <button type="button" class="link" @click="emit('update:modelValue', [])">clear</button>
     </div>
     <template v-for="group in CONVENTION_KINDS" :key="group.kind">

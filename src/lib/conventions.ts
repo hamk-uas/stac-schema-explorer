@@ -53,9 +53,6 @@ export const CONVENTION_KINDS: { kind: ConventionKind; title: string; hint: stri
     { kind: 'de-facto', title: 'Tool conventions', hint: 'Written by software and recognised from their keys; not declared.' },
 ];
 
-export const DEFAULT_CONVENTIONS: readonly string[] = ['proj', 'spatial', 'multiscales', 'cf', 'acdd']
-    .map((id) => KNOWN_CONVENTIONS.find((c) => c.id === id)!.versions[0].schema);
-
 /** Format schemas by URL. */
 export function formatOfSchema(url: string): DataFormat | undefined {
     return DATA_FORMATS.find((format) => format.schema === normalizeSchemaUrl(url));

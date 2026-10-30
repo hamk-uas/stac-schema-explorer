@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_CONVENTIONS, embeddedCounterparts, fromConventionShortId, KNOWN_CONVENTIONS, stacCounterparts, toConventionShortId } from '../src/lib/conventions';
+import { embeddedCounterparts, fromConventionShortId, KNOWN_CONVENTIONS, stacCounterparts, toConventionShortId } from '../src/lib/conventions';
 import { probeEmbedded, validateNode } from '../src/lib/embedded-probe';
 import { buildMatrix } from '../src/lib/matrix';
 import { fixtureStore } from './helpers';
@@ -14,7 +14,6 @@ describe('conventions', () => {
         expect(fromConventionShortId('proj@v0.1')).toBe(ZC('proj'));
         expect(fromConventionShortId('cf@1.13')).toBe(`${B}cf/v1.13/schema.json`);
         expect(toConventionShortId('https://example.org/x/schema.json')).toBe('https://example.org/x/schema.json');
-        expect(DEFAULT_CONVENTIONS).toContain(ZC('spatial'));
         expect(KNOWN_CONVENTIONS.map((c) => c.kind)).toContain('zarr-convention');
     });
 

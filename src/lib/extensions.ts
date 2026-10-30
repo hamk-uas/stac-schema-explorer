@@ -63,13 +63,6 @@ export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     se('item-assets', 'Item Assets', ['1.0.0'], 'core in STAC 1.1.0'),
 ];
 
-export const DEFAULT_EXTENSIONS: readonly string[] = [
-    'https://stac-extensions.github.io/datacube/v2.3.0/schema.json',
-    'https://stac-extensions.github.io/cf/v1.0.0/schema.json',
-    'https://stac-extensions.github.io/themes/v1.0.0/schema.json',
-    'https://hamk-uas.github.io/stac-semantics/v0.1.0/schema.json',
-];
-
 const STAC_EXTENSIONS_URL = /^https:\/\/stac-extensions\.github\.io\/([a-z0-9-]+)\/v([0-9][^/]*)\/schema\.json$/;
 
 export function normalizeSchemaUrl(url: string): string {
