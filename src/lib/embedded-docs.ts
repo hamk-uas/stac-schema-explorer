@@ -1,7 +1,7 @@
 import { DATA_FORMATS, KNOWN_CONVENTIONS } from './conventions';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo, NodeTemplate } from './embedded-probe';
 import { CORE, type Json, type JsonObject, type TypeTemplate } from './model';
-import { documentView, templateView, type FieldEdits, type ObjectView } from './tree';
+import { documentView, templateView, type FieldEdits, type FieldView, type ObjectView } from './tree';
 
 /** A node of embedded metadata shown as a card: a node template of the example, or a node read from a data asset. */
 export interface NodeEntry {
@@ -65,7 +65,15 @@ export function realNodeView(node: JsonObject, template: NodeTemplate | undefine
     // Objects within a format field (netCDF `filters`, Zarr `codecs`, `chunk_grid`) are that field's value, not places of
     // fields: a key there (a filter's `id`) is not the convention field of the same name (ACDD `id`).
     const inContainer = (pointer: string) => CONTAINER_KEYS.includes(pointer.split('/')[1] ?? '');
-    return { ...view, children: view.children.filter((child) => child.pointers.every(inContainer)) };
+    // Back from the part of STAC core: format fields are the format's (named and coloured by it), and present structure
+    // is in place even where no template places it.
+    const asFormat = (field: FieldView): FieldView => {
+        if (field.source !== CORE) return field;
+        const state = field.state === 'unexpected' && STRUCTURE.includes(field.name) ? 'populated' : field.state;
+        return { ...field, source: formatSchema, state };
+    };
+    const relabel = (object: ObjectView): ObjectView => ({ ...object, fields: object.fields.map(asFormat), children: object.children.map(relabel) });
+    return relabel({ ...view, children: view.children.filter((child) => child.pointers.every(inContainer)) });
 }
 
 /** A Zarr metadata document of a store or one of its nodes. */

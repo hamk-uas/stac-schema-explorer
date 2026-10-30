@@ -116,6 +116,13 @@ describe('netCDF reader', () => {
             kind: 'attribute-convention' as const, containers: { id: 'attributes' }, formats: ['netcdf'] };
         const view = realNodeView(flux.node, undefined, [acdd], NETCDF, true);
         expect(view.children.flatMap((child) => child.pointers).filter((pointer) => pointer.startsWith('/filters'))).toEqual([]);
+        // Format fields, structure included, are the format's and in place when shown, not STAC core fields out of place.
+        const netcdf = { key: NETCDF, url: NETCDF, title: 'netCDF', prefixes: [], fields: ['data_type', 'shape'], unsampled: [], docs: {},
+            kind: 'format' as const, containers: {}, formats: ['netcdf'] };
+        const shown = realNodeView(flux.node, undefined, [netcdf, acdd], NETCDF, true);
+        expect(shown.fields.find((f) => f.name === 'attributes')).toMatchObject({ source: NETCDF, state: 'populated' });
+        const all = (o: typeof shown): typeof shown.fields => [...o.fields, ...o.children.flatMap(all)];
+        expect(all(shown).filter((f) => f.source === 'core')).toEqual([]);
     });
 
     it('reads a classic file with its record dimension, also when it is downloaded', async () => {
