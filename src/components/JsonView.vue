@@ -39,9 +39,20 @@ function download() {
 watch(() => [props.pointers, props.doc], async () => {
     await nextTick();
     const first = props.pointers.find((p) => p !== '');
-    const target = first !== undefined ? container.value?.querySelector(`[data-pointer="${CSS.escape(first)}"]`) : undefined;
-    if (target) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    else if (container.value) container.value.scrollTop = 0;
+    const box = container.value;
+    if (!box) return;
+    const target = first !== undefined ? box.querySelector(`[data-pointer="${CSS.escape(first)}"]`) : undefined;
+    if (!target) {
+        box.scrollTop = 0;
+        return;
+    }
+    // Centred when it fits; a value taller than the pane (a large object) is shown from its key instead of its middle.
+    const rect = target.getBoundingClientRect();
+    const offset = rect.top - box.getBoundingClientRect().top + box.scrollTop;
+    const margin = 12;
+    const top = rect.height > box.clientHeight - 2 * margin ? offset - margin : offset - (box.clientHeight - rect.height) / 2;
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    box.scrollTo({ top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth' });
 }, { immediate: true });
 </script>
 

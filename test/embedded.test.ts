@@ -1,8 +1,13 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { embeddedCounterparts, fromConventionShortId, KNOWN_CONVENTIONS, stacCounterparts, toConventionShortId } from '../src/lib/conventions';
+import { realNodeView } from '../src/lib/embedded-docs';
 import { probeEmbedded, validateNode } from '../src/lib/embedded-probe';
 import { buildMatrix } from '../src/lib/matrix';
+import type { JsonObject } from '../src/lib/model';
+import { fieldIndex } from '../src/lib/tree';
 import { fixtureStore } from './helpers';
 
 const ZC = (name: string) => `https://raw.githubusercontent.com/zarr-conventions/${name}/refs/tags/v0.1/schema.json`;
@@ -81,6 +86,30 @@ describe('embedded placement probing', () => {
         expect(matrix.cells.get(`${ZC('spatial')}|spatial:shape|node:zarr-v3:group attributes › multiscales › layout[]`)).toBeDefined();
         expect(matrix.cells.get(`${ZC('multiscales')}|multiscales|node:zarr-v3:group attributes`)?.kind).toBe('validated');
         expect(matrix.rows.some((r) => r.source === `${B}zarr/v3/schema.json`)).toBe(false);
+    });
+
+    it('places the fields within the objects of a convention without prefixes, and shows them in real nodes', async () => {
+        const store = fixtureStore();
+        const both = await probeEmbedded(store, [ZC('multiscales'), ZC('spatial'), ZC('proj')]);
+        const group = both.nodes.find((n) => n.key === 'zarr-v3:group')!;
+        expect(group.errors).toEqual([]);
+        const own = (location: string) => group.placements.filter((p) => p.source === ZC('multiscales') && p.location === location).map((p) => p.field).sort();
+        expect(own('/attributes/multiscales')).toEqual(['layout', 'resampling_method']);
+        const layout = [...new Set(group.placements.filter((p) => p.source === ZC('multiscales') && p.location.startsWith('/attributes/multiscales/layout/')
+            && p.location.split('/').length === 5).map((p) => p.field))].sort();
+        expect(layout).toEqual(['asset', 'derived_from', 'resampling_method', 'transform']);
+        expect(group.placements.find((p) => p.field === 'asset')?.kind).toBe('validated');
+        // Spatial's additions inside the layout are kept next to the fields of multiscales.
+        expect(group.placements.some((p) => p.source === ZC('spatial') && p.field === 'spatial:shape' && p.location.startsWith('/attributes/multiscales/layout/'))).toBe(true);
+        // The keys of a prefixed field's value (PROJJSON of proj:projjson) are not fields of the convention.
+        expect(both.sources.find((s) => s.key === ZC('proj'))!.fields.sort()).toEqual(['proj:code', 'proj:projjson', 'proj:wkt2']);
+
+        const root = JSON.parse(readFileSync(new URL('./fixtures/embedded/blue-marble.zarr.json', import.meta.url), 'utf8')) as JsonObject;
+        const { consolidated_metadata: _, ...node } = root;
+        const view = realNodeView(node, group, both.sources.filter((s) => s.formats.includes('zarr-v3')), `${B}zarr/v3/schema.json`, true);
+        const fields = [...fieldIndex(view).entries()].filter(([key]) => key.startsWith('/attributes/multiscales/'));
+        expect(fields.length).toBeGreaterThan(0);
+        expect(fields.filter(([, f]) => f.state === 'unexpected').map(([key]) => key)).toEqual([]);
     });
 
     it('validates a real node against its format and declared conventions', async () => {

@@ -823,7 +823,7 @@ onMounted(() => {
       </details>
       <details class="panel" :open="panels.extensions" @toggle="setPanel('extensions', $event)">
         <summary>
-          <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Extensions</h2>
+          <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> STAC extensions</h2>
           <span class="count" :title="`${state.extensions.length} extensions selected`">{{ state.extensions.length }}</span>
         </summary>
         <div class="panel-body">

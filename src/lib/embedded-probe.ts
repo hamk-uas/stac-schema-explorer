@@ -120,8 +120,9 @@ interface NodeField {
     name: string;
     container?: string;
     /**
-     * For a field a convention adds inside an object of another convention, the keys from the container down to that
-     * object, `*` for any array item or map entry: `['multiscales', 'layout', '*']` for `spatial:shape` of spatial.
+     * For a field inside an object of a container entry, the keys from the container down to that object, `*` for any
+     * array item or map entry: `['multiscales', 'layout', '*']` for `spatial:shape` of spatial (added inside an object of
+     * another convention) and for `asset` of multiscales (inside its own field).
      */
     path?: string[];
     refs: FieldSchemaRef[];
@@ -132,9 +133,11 @@ const prefixOfKey = (key: string) => /^([a-z0-9_]+):/i.exec(key)?.[1];
 /**
  * Fields a node schema defines: its top-level keys and the entries of its containers. As for STAC extensions, a schema
  * whose container entries have prefixes (`proj:`, `spatial:`) owns only those; its other entries (`multiscales` in the
- * spatial schema) are objects of other conventions, searched for the fields it adds inside them.
+ * spatial schema) are objects of other conventions, searched for the fields it adds inside them. With `ownValues`, a
+ * schema without prefixes also owns the keys of objects within its own entries (`layout` and its items' `asset` in
+ * multiscales); the unprefixed keys within a prefixed field's value (PROJJSON of `proj:projjson`) are that value, not fields.
  */
-function nodeFields(store: SchemaStore, url: string): NodeField[] {
+function nodeFields(store: SchemaStore, url: string, ownValues = false): NodeField[] {
     const top = properties(store, url, '');
     const out: NodeField[] = [];
     const nested: NodeField[] = [];
@@ -147,6 +150,7 @@ function nodeFields(store: SchemaStore, url: string): NodeField[] {
         for (const ref of refs) properties(store, ref.schemaUrl, ref.pointer, children);
         const prefixes = new Set([...children.keys()].map(prefixOfKey).filter((p): p is string => !!p));
         const own = (key: string) => prefixes.size === 0 || prefixes.has(prefixOfKey(key) ?? '');
+        const descend = ownValues && prefixes.size === 0;
         const seen = new Set<string>();
         const visit = (ref: FieldSchemaRef, path: string[]) => {
             const key = `${ref.schemaUrl}#${ref.pointer}`;
@@ -157,13 +161,15 @@ function nodeFields(store: SchemaStore, url: string): NodeField[] {
                     const existing = nested.find((f) => f.name === child && f.path!.join('/') === path.join('/'));
                     if (existing) existing.refs.push(...childRefs);
                     else nested.push({ name: child, container: name, path, refs: [...childRefs] });
-                } else childRefs.forEach((r) => visit(r, [...path, child]));
+                }
+                if (!own(child) || descend) childRefs.forEach((r) => visit(r, [...path, child]));
             }
             for (const item of itemsOf(store, ref.schemaUrl, ref.pointer)) visit(item, [...path, '*']);
         };
         for (const [child, childRefs] of children) {
             if (own(child)) out.push({ name: child, container: name, refs: childRefs });
-            else childRefs.forEach((r) => visit(r, [child]));
+            // The declaration of Zarr conventions is structure, not a value of the convention's fields.
+            if (!own(child) || (descend && child !== 'zarr_conventions')) childRefs.forEach((r) => visit(r, [child]));
         }
     }
     return [...out, ...nested];
@@ -230,7 +236,7 @@ export async function probeEmbedded(store: SchemaStore, conventionUrls: readonly
         const known = conventionOfSchema(url);
         try {
             await store.validator(url);
-            const fields = nodeFields(store, url);
+            const fields = nodeFields(store, url, true);
             conventions.push({ url, formats: known?.convention.formats ?? DATA_FORMATS.map((f) => f.id) });
             sources.push(describe(store, url, fields, known?.convention.kind ?? 'zarr-convention', known?.convention.formats ?? DATA_FORMATS.map((f) => f.id),
                 known ? known.convention.title : url, known?.version.replace(/^v/, '')));
@@ -311,7 +317,7 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
     for (const { url } of conventions) {
         const validate = await store.validator(url);
         const source = sources.find((s) => s.key === url)!;
-        const fields = nodeFields(store, url).filter((field) => !field.path && source.fields.includes(field.name) && source.containers[field.name] === field.container
+        const fields = nodeFields(store, url, true).filter((field) => !field.path && source.fields.includes(field.name) && source.containers[field.name] === field.container
             // A container of another format (`attributes` of Zarr and netCDF, `tags` of TIFF) is not where this format keeps fields.
             && (!field.container || ownContainers.has(field.container) || !allContainers.has(field.container)));
         let node = clone(base);
@@ -351,22 +357,37 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
         }
         applied.push(validate);
     }
-    // Fields a convention adds inside the objects of another (spatial's `spatial:shape` in the `layout` of multiscales)
-    // are placed only where a selected convention supplies such an object, never on their own.
+    // Fields within the objects of a container entry: a convention's own (`asset` in the `layout` of multiscales) and those it
+    // adds inside the objects of another (spatial's `spatial:shape` there), placed only where a selected convention supplies
+    // such an object, never on their own. Rounds place fields that need company (`derived_from` requires `transform`).
     const allValidators = [formatValidate, ...applied];
     const failures = (candidate: JsonObject) => allValidators.reduce((count, v) => count + (v(candidate) ? 0 : v.errors?.length ?? 1), 0);
+    const inner: { url: string; validate: ValidateFunction; fields: NodeField[] }[] = [];
     for (const { url } of conventions) {
         if (notApplicable.includes(url)) continue;
-        const validate = await store.validator(url);
         const source = sources.find((s) => s.key === url)!;
-        for (const field of nodeFields(store, url).filter((f) => f.path && f.container && ownContainers.has(f.container) && source.fields.includes(f.name))) {
-            for (const location of expand(combined, joinPointer('', field.container!), field.path!)) {
-                const before = failures(combined);
-                const value = sample(field).find((candidate) => failures(setAt(combined, location, field.name, candidate)) <= before);
-                if (value === undefined) continue;
-                combined = setAt(combined, location, field.name, value);
-                const validated = invalidCandidates(value).some((invalid) => !validate(setAt(combined, location, field.name, invalid)));
-                placements.push({ source: url, field: field.name, location, kind: validated ? 'validated' : 'presence' });
+        const fields = nodeFields(store, url, true).filter((f) => f.path && f.container && ownContainers.has(f.container) && source.fields.includes(f.name));
+        if (fields.length) inner.push({ url, validate: await store.validator(url), fields });
+    }
+    const placed = new Set<string>();
+    for (let round = 0, changed = true; changed && round < 4; round++) {
+        changed = false;
+        for (const { url, validate, fields } of inner) {
+            for (const field of fields) {
+                for (const location of expand(combined, joinPointer('', field.container!), field.path!)) {
+                    const key = `${url}|${location}|${field.name}`;
+                    if (placed.has(key)) continue;
+                    const before = failures(combined);
+                    const present = (getAt(combined, location) as JsonObject)[field.name];
+                    const candidates = present !== undefined ? [present, ...sample(field)] : sample(field);
+                    const value = candidates.find((candidate) => failures(setAt(combined, location, field.name, candidate)) <= before);
+                    if (value === undefined) continue;
+                    combined = setAt(combined, location, field.name, value);
+                    const validated = invalidCandidates(value).some((invalid) => !validate(setAt(combined, location, field.name, invalid)));
+                    placements.push({ source: url, field: field.name, location, kind: validated ? 'validated' : 'presence' });
+                    placed.add(key);
+                    changed = true;
+                }
             }
         }
     }

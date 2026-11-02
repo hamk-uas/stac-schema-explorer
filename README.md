@@ -161,7 +161,10 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
    example, defines a `multiscales` key only to add `spatial:shape` and `spatial:transform` to the `layout` items of the
    multiscales convention. Such fields are placed in a last pass, only inside the objects a selected convention
    supplies (`attributes › multiscales › layout[]` when multiscales is selected too), never on their own: selecting
-   spatial alone does not place `multiscales`.
+   spatial alone does not place `multiscales`. The same pass places a convention's own fields within the objects of its
+   entries when its entries have no prefix (`layout` of multiscales, `asset` and `transform` of its items), repeated so
+   that fields needing company (`derived_from` requires `transform`) are placed too. Within a prefixed entry's value
+   (PROJJSON of `proj:projjson`), keys are that value, not fields.
 
 ### Limitations
 

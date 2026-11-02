@@ -33,11 +33,13 @@ const open = computed(() => (isArray.value ? '[' : '{'));
 const close = computed(() => (isArray.value ? ']' : '}'));
 const primitive = computed(() => JSON.stringify(props.value));
 const primitiveClass = computed(() => (props.value === null ? 'null' : typeof props.value));
+/** Indentation is text rather than CSS padding so that copied selections stay valid JSON. */
+const indent = computed(() => '  '.repeat(props.depth));
 </script>
 
 <template>
   <div class="node" :class="{ hl: highlighted.has(pointer) }" :data-pointer="pointer">
-    <span v-if="name !== undefined && typeof name === 'string'" class="key" :class="field ? [`field`, `state-${field.state}`] : []" :style="keyStyle">"{{ name }}"</span><span v-if="typeof name === 'string'" class="punct">: </span>
+    <span v-if="depth > 0" class="indent">{{ indent }}</span><span v-if="name !== undefined && typeof name === 'string'" class="key" :class="field ? [`field`, `state-${field.state}`] : []" :style="keyStyle">"{{ name }}"</span><span v-if="typeof name === 'string'" class="punct">: </span>
     <template v-if="isArray || isObject">
       <span class="punct toggle" @click="collapsed = !collapsed">{{ open }}</span>
       <template v-if="collapsed || entries.length === 0">
@@ -58,7 +60,7 @@ const primitiveClass = computed(() => (props.value === null ? 'null' : typeof pr
             :last="i === entries.length - 1"
           />
         </div>
-        <span class="punct">{{ close }}</span><span v-if="!last" class="punct">,</span>
+        <span v-if="depth > 0" class="indent">{{ indent }}</span><span class="punct">{{ close }}</span><span v-if="!last" class="punct">,</span>
       </template>
     </template>
     <template v-else>
@@ -73,9 +75,8 @@ const primitiveClass = computed(() => (props.value === null ? 'null' : typeof pr
   white-space: pre-wrap;
   word-break: break-word;
 }
-.children {
-  padding-left: 16px;
-  border-left: 1px dotted var(--slate-200);
+.indent {
+  white-space: pre;
 }
 .hl {
   background: var(--indigo-50);
