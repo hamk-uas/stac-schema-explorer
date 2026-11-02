@@ -145,10 +145,17 @@ the whole suite as unconditionally offline. Refresh specific caches intentionall
 Keep the interface compact, technical and inspection-oriented. Extend the existing
 components rather than introducing another design library.
 
-- **Palette:** light slate page (`#f8fafc`), white/pale panels, dark slate text
-  (`#0f172a`), subtle slate borders and indigo actions (`#4f46e5`/`#6366f1`).
-  Use teal/green for valid states, amber for caution and red for errors. Reuse
-  established meanings; a new color should not introduce an ambiguous new state.
+- **Palette:** light slate page, white/pale panels, dark slate text, subtle
+  slate borders and indigo actions. Use teal/green for valid states, amber for
+  caution and red for errors. Reuse established meanings; a new color should
+  not introduce an ambiguous new state.
+- **Color tokens and dark mode:** UI colors are CSS custom properties in
+  [style.css](src/style.css) (`--white`, `--ink`, `--slate-*`, `--indigo-*`,
+  status families, `--shadow`), named after their light-mode value. A
+  `prefers-color-scheme: dark` block mirrors each family (`--slate-50` becomes
+  near-black, `--white` a dark panel) so components keep using the same names.
+  Use these tokens in component styles, not hex literals, and check both
+  schemes. Identity mid-tones (`colorOf`, document accents) work in both.
 - **Identity colors:** document accents distinguish Catalog (indigo), Collection
   (teal) and Item/Feature (amber). Extension identity comes from `colorOf` in
   [colors.ts](src/lib/colors.ts) and the shared `--c` convention; do not invent
@@ -157,8 +164,11 @@ components rather than introducing another design library.
   Mono/Menlo/Consolas stack for JSON, field names, pointers and values. Keep
   compact hierarchy (currently mostly 11-14px) but do not further shrink text
   to solve overflow. Preserve zoomability, wrapping and scan-friendly alignment.
-- **Layout:** toolbar, extension sidebar, flexible main view and JSON/details
-  pane. Desktop panes scroll independently; `Splitter.vue` handles resize the
+- **Layout:** toolbar, sidebar, flexible main view and JSON/details
+  pane. The sidebar is a stack of collapsible `<details class="panel">`
+  sub-panels (Cores, Extensions, Data conventions, Display, Legend), each with a
+  header strip and a count badge; their open state is kept in `localStorage`,
+  not share URLs. Desktop panes scroll independently; `Splitter.vue` handles resize the
   sidebar and JSON pane (pointer or keyboard, persisted per full/embedded mode
   in `localStorage`, not share URLs). The existing <=1100px layout stacks
   sections, hides the splitters and constrains the JSON pane. Embedded mode
@@ -173,11 +183,11 @@ components rather than introducing another design library.
   named icon-only actions and non-color validity/presence cues. Explain loading,
   missing schemas and errors in text. Do not make hover or a clickable container
   the only way to perform an action.
-- **Localization/theme scope:** the standalone app currently has English UI and
-  a light theme; Observatory's schema translations do not localize this app.
-  Do not claim multilingual/dark support without implementing and checking it.
-  If introducing either, centralize strings/tokens rather than duplicating
-  conditional colors/translations throughout components.
+- **Localization/theme scope:** the standalone app has an English UI and
+  follows the user's light/dark preference (no manual toggle);
+  Observatory's schema translations do not localize this app. Do not claim
+  multilingual support without implementing and checking it; if introducing
+  it, centralize strings rather than duplicating conditional translations.
 - **Motion:** keep inspection interactions calm; any new animation/programmatic
   scrolling needs a reduced-motion alternative without hiding state feedback.
 
@@ -196,9 +206,10 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
 
 ## TODO: observed discrepancies and decisions
 
-- [ ] Centralize semantic UI tokens: literal slate/indigo/status colors and
-  spacing are repeated in `App.vue`, components and [src/style.css](src/style.css).
-  Preserve the standalone tool's identity, not an assumed Observatory rebrand.
+- [ ] Semantic UI tokens: colors are centralized as palette tokens
+  (`--slate-200`, …) but not yet as semantic roles (`--border`, `--valid`, …),
+  and spacing is still literal. Preserve the standalone tool's identity, not an
+  assumed Observatory rebrand.
 - [ ] Establish consistent explicit focus-visible styling; current components
   mostly rely on browser defaults. Audit icon-only accessible names in
   `ExtensionPicker.vue` and related controls rather than relying only on `title`.
@@ -207,7 +218,8 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
 - [ ] Check contrast and non-color distinctions for extension/validity/presence
   states in `Legend.vue`, `FieldChips.vue` and `colors.ts`.
 - [ ] Decide the localization/theme contract before claiming seamless
-  multilingual Observatory embedding. The current app is English/light only.
+  multilingual Observatory embedding. The current app is English only and
+  follows the system color scheme; an embedding host cannot yet choose it.
 - [ ] Reconcile README embedding plans with the existing `embed=1` implementation;
   distinguish app support from downstream integration still to be done.
 - [ ] Establish an explicit software license; attribution of Apache-licensed

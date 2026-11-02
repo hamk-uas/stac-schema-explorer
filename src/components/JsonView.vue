@@ -77,15 +77,15 @@ watch(() => [props.pointers, props.doc], async () => {
   flex-direction: column;
   min-height: 0;
   height: 100%;
-  background: #fcfcfd;
+  background: var(--surface-sunken);
 }
 .bar {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
+  border-bottom: 1px solid var(--slate-200);
+  background: var(--white);
   font-size: 12px;
 }
 .title {
@@ -99,8 +99,8 @@ watch(() => [props.pointers, props.doc], async () => {
 }
 .bar button {
   font-size: 12px;
-  border: 1px solid #cbd5e1;
-  background: white;
+  border: 1px solid var(--slate-300);
+  background: var(--white);
   border-radius: 5px;
   padding: 2px 8px;
   cursor: pointer;
@@ -112,6 +112,6 @@ watch(() => [props.pointers, props.doc], async () => {
   min-height: 0;
 }
 .empty {
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 </style>

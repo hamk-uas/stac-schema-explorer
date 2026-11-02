@@ -102,7 +102,7 @@ const usesOf = (software: Software) => (software.uses ?? []).join(', ');
   font: 600 11px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .layer-group {
   margin-top: 6px;
@@ -119,11 +119,11 @@ ul {
 }
 li {
   font-size: 12px;
-  color: #334155;
+  color: var(--slate-700);
 }
 .name {
   font-weight: 600;
-  color: #4f46e5;
+  color: var(--indigo-600);
   margin-right: 6px;
 }
 .support {
@@ -139,25 +139,25 @@ li {
   letter-spacing: 0.04em;
   border-radius: 4px;
   padding: 0 5px;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--slate-600);
+  background: var(--slate-100);
 }
 .level.interpret {
-  color: #0f766e;
-  background: #ccfbf1;
+  color: var(--teal-700);
+  background: var(--teal-100);
 }
 .level.writes {
-  color: #3730a3;
-  background: #e0e7ff;
+  color: var(--indigo-800);
+  background: var(--indigo-100);
 }
 .since {
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .note,
 .through,
 .detail {
-  color: #475569;
+  color: var(--slate-600);
 }
 .through {
   display: block;
@@ -166,7 +166,7 @@ li {
 }
 .source {
   font-size: 11px;
-  color: #4f46e5;
+  color: var(--indigo-600);
 }
 ol {
   margin: 2px 0 2px 18px;
@@ -177,10 +177,10 @@ ol li.here {
 }
 .mark {
   font-weight: 400;
-  color: #0f766e;
+  color: var(--teal-700);
 }
 .ignored {
-  color: #b45309;
+  color: var(--amber-700);
   font-weight: 600;
 }
 .detail {

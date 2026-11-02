@@ -18,7 +18,9 @@ asking the schemas themselves.
   1.0.0) and the data formats Zarr v3, Zarr v2, netCDF and TIFF (COG is a layout profile of TIFF, adding no fields).
   **Extensions** add fields to STAC, **data conventions** to data files. A selected schema shows its fields, and its
   name highlights them and describes the schema; all cores are selected at the start, no extensions or conventions.
-  STAC objects and data nodes are shown whether or not their core is selected.
+  STAC objects and data nodes are shown whether or not their core is selected. The sidebar's panels (Cores,
+  Extensions, Data conventions, Display, Legend) can be collapsed, and the app follows the system's light or dark
+  colour scheme.
 - **Example catalog**: a conceptual catalog tree (Catalog → sub-catalog, Collection → Item) showing the *extreme case*:
   every field of the selected schemas placed everywhere the schemas allow it. Separate JSON documents are cards,
   objects inside a document are indented rows (`{}` objects, `[{}]` objects in arrays), Item `properties` are a green

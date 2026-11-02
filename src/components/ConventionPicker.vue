@@ -116,13 +116,13 @@ function add() {
   border-radius: 6px;
 }
 .selected li:hover {
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 .selected li.failed .name {
-  color: #b91c1c;
+  color: var(--red-700);
 }
 .none {
-  color: #64748b;
+  color: var(--slate-500);
   font-size: 12px;
 }
 .square {
@@ -137,33 +137,33 @@ function add() {
   border: 0;
   background: none;
   font: 500 13px var(--sans);
-  color: #1e293b;
+  color: var(--slate-800);
   cursor: pointer;
   padding: 0;
   min-width: 0;
 }
 .ver {
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
   margin-left: 3px;
 }
 .kind,
 .unofficial {
   font-size: 10px;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--slate-600);
+  background: var(--slate-100);
   border-radius: 3px;
   padding: 0 4px;
   margin-left: 4px;
 }
 .unofficial {
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--amber-800);
+  background: var(--amber-100);
 }
 .icon {
   border: 0;
   background: none;
-  color: #64748b;
+  color: var(--slate-500);
   cursor: pointer;
   font-size: 14px;
   text-decoration: none;
@@ -176,7 +176,7 @@ function add() {
   flex-basis: 100%;
   font-size: 11px;
   padding-left: 16px;
-  color: #b91c1c;
+  color: var(--red-700);
 }
 .add {
   display: flex;
@@ -187,14 +187,14 @@ function add() {
   min-width: 0;
   font-size: 12px;
   padding: 4px 6px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--slate-300);
   border-radius: 5px;
 }
 .add button {
   font-size: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--slate-300);
   border-radius: 5px;
-  background: white;
+  background: var(--white);
   cursor: pointer;
 }
 .quick-head {
@@ -208,18 +208,18 @@ function add() {
   font: 600 12px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: var(--slate-600);
   flex: 1;
 }
 .kind-title {
   margin: 8px 0 4px;
   font: 600 11px var(--sans);
-  color: #64748b;
+  color: var(--slate-500);
 }
 .link {
   border: 0;
   background: none;
-  color: #4f46e5;
+  color: var(--indigo-600);
   cursor: pointer;
   font-size: 12px;
   padding: 0;
@@ -230,19 +230,19 @@ function add() {
   gap: 4px;
 }
 .q {
-  --c: #94a3b8;
+  --c: var(--slate-400);
   font: 500 12px var(--sans);
   padding: 3px 8px;
   border-radius: 4px;
-  border: 1px solid #cbd5e1;
-  background: white;
-  color: #334155;
+  border: 1px solid var(--slate-300);
+  background: var(--white);
+  color: var(--slate-700);
   cursor: pointer;
 }
 .q.on {
   border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, white);
-  color: color-mix(in srgb, var(--c) 75%, black);
+  background: color-mix(in srgb, var(--c) 14%, var(--white));
+  color: color-mix(in srgb, var(--c) 75%, var(--ink));
 }
 .q .ver {
   font-size: 10px;

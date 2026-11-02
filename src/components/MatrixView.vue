@@ -110,15 +110,15 @@ function fieldTitle(source: string, field: string): string {
 <style scoped>
 .intro {
   font-size: 12px;
-  color: #475569;
+  color: var(--slate-600);
   margin: 0 0 10px;
   line-height: 1.7;
 }
 .scroll {
   overflow: auto;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--slate-200);
   border-radius: 8px;
-  background: white;
+  background: var(--white);
   max-height: calc(100vh - 230px);
 }
 table {
@@ -128,7 +128,7 @@ table {
 }
 thead th {
   position: sticky;
-  background: white;
+  background: var(--white);
   z-index: 1;
 }
 thead tr:first-child th {
@@ -142,37 +142,37 @@ thead tr:nth-child(2) th {
   z-index: 2;
   text-align: left;
   padding: 4px 8px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--slate-200);
 }
 th.type {
   font: 700 12px var(--sans);
   padding: 4px;
-  border-bottom: 1px solid #e2e8f0;
-  border-left: 2px solid #e2e8f0;
+  border-bottom: 1px solid var(--slate-200);
+  border-left: 2px solid var(--slate-200);
 }
 th.type-Catalog {
-  color: #4f46e5;
+  color: var(--indigo-600);
 }
 th.type-Collection {
-  color: #0f766e;
+  color: var(--teal-700);
 }
 th.type-Feature {
-  color: #b45309;
+  color: var(--amber-700);
 }
 th.type-node {
-  color: #475569;
+  color: var(--slate-600);
 }
 .empty {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 th.col {
   height: 130px;
   vertical-align: bottom;
   padding: 4px 2px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--slate-200);
   font: 500 11px var(--sans);
-  color: #475569;
+  color: var(--slate-600);
 }
 th.col span {
   writing-mode: vertical-rl;
@@ -183,8 +183,8 @@ th.col span {
   text-align: left;
   font: 600 12px var(--sans);
   padding: 6px 8px 2px;
-  color: color-mix(in srgb, var(--c) 80%, black);
-  border-top: 1px solid #e2e8f0;
+  color: color-mix(in srgb, var(--c) 80%, var(--ink));
+  border-top: 1px solid var(--slate-200);
   position: sticky;
   left: 0;
 }
@@ -202,7 +202,7 @@ th.col span {
 th.field {
   position: sticky;
   left: 0;
-  background: white;
+  background: var(--white);
   text-align: left;
   padding: 2px 8px 2px 16px;
   white-space: nowrap;
@@ -213,7 +213,7 @@ th.field button {
   padding: 0;
   cursor: pointer;
   font: 500 12px var(--mono);
-  color: color-mix(in srgb, var(--c) 80%, black);
+  color: color-mix(in srgb, var(--c) 80%, var(--ink));
 }
 th.field button:hover {
   text-decoration: underline;
@@ -221,11 +221,11 @@ th.field button:hover {
 td {
   text-align: center;
   padding: 2px 4px;
-  border-left: 1px solid #f1f5f9;
+  border-left: 1px solid var(--slate-100);
 }
 tr:hover td,
 tr:hover th.field {
-  background: #f8fafc;
+  background: var(--slate-50);
 }
 tr.dimmed {
   opacity: 0.25;
@@ -235,17 +235,17 @@ tr.dimmed {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  border: 2px solid var(--c, #475569);
-  background: var(--c, #475569);
+  border: 2px solid var(--c, var(--slate-600));
+  background: var(--c, var(--slate-600));
   padding: 0;
   cursor: pointer;
   vertical-align: middle;
 }
 .mark.presence {
-  background: white;
+  background: var(--white);
   border-style: dashed;
 }
 .mark.partial {
-  background: linear-gradient(90deg, var(--c, #475569) 50%, white 50%);
+  background: linear-gradient(90deg, var(--c, var(--slate-600)) 50%, var(--white) 50%);
 }
 </style>

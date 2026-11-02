@@ -105,10 +105,10 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   border-radius: 6px;
 }
 .selected li:hover {
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 .none {
-  color: #64748b;
+  color: var(--slate-500);
   font-size: 12px;
 }
 .marker {
@@ -126,20 +126,20 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   border: 0;
   background: none;
   font: 500 13px var(--sans);
-  color: #1e293b;
+  color: var(--slate-800);
   cursor: pointer;
   padding: 0;
   min-width: 0;
 }
 .ver {
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
   margin-left: 3px;
 }
 .kind {
   font-size: 10px;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--slate-600);
+  background: var(--slate-100);
   border-radius: 3px;
   padding: 0 4px;
   margin-left: 4px;
@@ -147,7 +147,7 @@ function links(core: Core): { label: string; href: string; title: string }[] {
 .icon {
   border: 0;
   background: none;
-  color: #64748b;
+  color: var(--slate-500);
   cursor: pointer;
   font-size: 14px;
   text-decoration: none;
@@ -159,7 +159,7 @@ function links(core: Core): { label: string; href: string; title: string }[] {
 .hint {
   margin: 0 0 6px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .quick-head {
   display: flex;
@@ -172,13 +172,13 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   font: 600 12px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: var(--slate-600);
   flex: 1;
 }
 .link {
   border: 0;
   background: none;
-  color: #4f46e5;
+  color: var(--indigo-600);
   cursor: pointer;
   font-size: 12px;
   padding: 0;
@@ -190,13 +190,13 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   margin-top: 4px;
 }
 .q {
-  --c: #94a3b8;
+  --c: var(--slate-400);
   font: 500 12px var(--sans);
   padding: 3px 8px;
   border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  background: white;
-  color: #334155;
+  border: 1px solid var(--slate-300);
+  background: var(--white);
+  color: var(--slate-700);
   cursor: pointer;
 }
 .q.square {
@@ -204,8 +204,8 @@ function links(core: Core): { label: string; href: string; title: string }[] {
 }
 .q.on {
   border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, white);
-  color: color-mix(in srgb, var(--c) 75%, black);
+  background: color-mix(in srgb, var(--c) 14%, var(--white));
+  color: color-mix(in srgb, var(--c) 75%, var(--ink));
 }
 .q .ver {
   font-size: 10px;

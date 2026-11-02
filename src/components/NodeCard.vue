@@ -100,12 +100,12 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
 
 <style scoped>
 .node {
-  --accent: #475569;
+  --accent: var(--slate-600);
   margin: 8px 0;
-  border: 1px dashed #94a3b8;
+  border: 1px dashed var(--slate-400);
   border-left: 4px solid var(--accent);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--slate-50);
 }
 .node.selected {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
@@ -115,7 +115,7 @@ header {
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--slate-200);
 }
 .select {
   display: flex;
@@ -137,41 +137,41 @@ header {
 }
 .format {
   font: 700 13px var(--sans);
-  color: #0f172a;
+  color: var(--slate-900);
 }
 .type {
   font: 600 11px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #475569;
+  color: var(--slate-600);
 }
 .tag {
   font: 500 10px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #334155;
-  background: #e2e8f0;
+  color: var(--slate-700);
+  background: var(--slate-200);
   border-radius: 4px;
   padding: 1px 5px;
 }
 .title {
   font: 500 13px var(--mono);
-  color: #334155;
+  color: var(--slate-700);
   overflow-wrap: anywhere;
 }
 .validity {
   font-size: 12px;
-  color: #64748b;
+  color: var(--slate-500);
   white-space: nowrap;
 }
 .validity.ok {
-  color: #0f766e;
+  color: var(--teal-700);
 }
 .validity.bad {
-  color: #b91c1c;
+  color: var(--red-700);
 }
 .open {
-  color: #64748b;
+  color: var(--slate-500);
   text-decoration: none;
 }
 .body {
@@ -187,16 +187,16 @@ header {
   cursor: pointer;
 }
 .root-fields.selected {
-  background: #e0e7ff;
-  outline: 1px solid #a5b4fc;
+  background: var(--indigo-100);
+  outline: 1px solid var(--indigo-300);
 }
 .glyph {
   font: 600 11px var(--mono);
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 .na {
   margin-top: 6px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 </style>

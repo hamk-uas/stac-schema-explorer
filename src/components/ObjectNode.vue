@@ -82,35 +82,35 @@ function isSelected(): boolean {
   cursor: pointer;
 }
 .row:hover {
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 .row.selected {
-  background: #e0e7ff;
-  outline: 1px solid #a5b4fc;
+  background: var(--indigo-100);
+  outline: 1px solid var(--indigo-300);
 }
 .glyph {
   font: 600 11px var(--mono);
-  color: #94a3b8;
+  color: var(--slate-400);
   min-width: 26px;
   text-align: center;
 }
 .label {
   font: 500 13px var(--mono);
-  color: #334155;
+  color: var(--slate-700);
 }
 .children {
   margin-left: 14px;
   padding-left: 10px;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--slate-200);
 }
 .kind-properties {
   margin: 4px 0;
   border-radius: 8px;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
 }
 .kind-properties > .children {
-  border-left-color: #bbf7d0;
+  border-left-color: var(--green-200);
 }
 .kind-summaries > .row .label {
   font-style: italic;
@@ -119,13 +119,13 @@ function isSelected(): boolean {
   font: 500 10px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--slate-500);
+  background: var(--slate-100);
   border-radius: 4px;
   padding: 1px 5px;
 }
 .tag.geojson {
-  color: #15803d;
-  background: #dcfce7;
+  color: var(--green-700);
+  background: var(--green-100);
 }
 </style>

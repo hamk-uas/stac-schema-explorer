@@ -248,19 +248,19 @@ const undeclaredTitle = computed(() => [
 
 <style scoped>
 .doc {
-  --accent: #6366f1;
+  --accent: var(--indigo-500);
   margin: 8px 0;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--slate-200);
   border-left: 4px solid var(--accent);
   border-radius: 10px;
-  background: white;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  background: var(--white);
+  box-shadow: 0 1px 2px var(--shadow);
 }
 .doc.type-Collection {
-  --accent: #0d9488;
+  --accent: var(--teal-600);
 }
 .doc.type-Feature {
-  --accent: #d97706;
+  --accent: var(--amber-600);
 }
 .doc.selected {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
@@ -271,7 +271,7 @@ header {
   gap: 8px;
   padding: 7px 10px;
   cursor: pointer;
-  background: color-mix(in srgb, var(--accent) 7%, white);
+  background: color-mix(in srgb, var(--accent) 7%, var(--white));
   border-radius: 6px 10px 0 0;
   flex-wrap: wrap;
 }
@@ -280,7 +280,7 @@ header {
   width: 18px;
   border: 0;
   background: none;
-  color: #475569;
+  color: var(--slate-600);
   font-size: 13px;
   cursor: pointer;
   padding: 0;
@@ -291,22 +291,22 @@ header {
 }
 .type {
   font: 700 14px var(--sans);
-  color: color-mix(in srgb, var(--accent) 75%, black);
+  color: color-mix(in srgb, var(--accent) 75%, var(--ink));
 }
 .sub,
 .role {
   font: 500 11px var(--sans);
-  color: #64748b;
+  color: var(--slate-500);
 }
 .role {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border: 1px solid var(--slate-200);
   border-radius: 4px;
   padding: 0 5px;
 }
 .title {
   font: 13px var(--sans);
-  color: #334155;
+  color: var(--slate-700);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -314,10 +314,10 @@ header {
 }
 .status {
   font-size: 12px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .status.error {
-  color: #b91c1c;
+  color: var(--red-700);
   max-width: 420px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -326,19 +326,19 @@ header {
 .validity {
   margin-left: auto;
   font: 600 11px var(--sans);
-  color: #64748b;
+  color: var(--slate-500);
 }
 .validity.ok {
-  color: #15803d;
+  color: var(--green-700);
 }
 .validity.bad {
-  color: #b91c1c;
+  color: var(--red-700);
 }
 .undeclared {
   font: 600 11px var(--sans);
-  color: #92400e;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
+  color: var(--amber-800);
+  background: var(--amber-50);
+  border: 1px solid var(--amber-300);
   border-radius: 4px;
   padding: 0 6px;
   white-space: nowrap;
@@ -346,7 +346,7 @@ header {
 .open {
   font-size: 13px;
   text-decoration: none;
-  color: #475569;
+  color: var(--slate-600);
 }
 .body {
   padding: 6px 10px 8px 12px;
@@ -361,24 +361,24 @@ header {
   flex-wrap: wrap;
 }
 .root-fields:hover {
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 .root-fields.selected {
-  background: #e0e7ff;
+  background: var(--indigo-100);
 }
 .glyph {
   font: 600 10px var(--sans);
-  color: #94a3b8;
+  color: var(--slate-400);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 /* Data files of assets: slate and dashed like the node cards they hold, never like the STAC objects above them. */
 .data {
   margin: 0 10px 8px 12px;
-  border: 1px dashed #94a3b8;
-  border-left: 4px solid #475569;
+  border: 1px dashed var(--slate-400);
+  border-left: 4px solid var(--slate-600);
   border-radius: 8px;
-  background: #f1f5f9;
+  background: var(--slate-100);
 }
 .data-head {
   display: flex;
@@ -395,36 +395,36 @@ header {
   background: none;
   padding: 0;
   cursor: pointer;
-  color: #334155;
+  color: var(--slate-700);
   font: 500 12px var(--sans);
   flex-wrap: wrap;
   text-align: left;
 }
 .data-twisty {
   width: 14px;
-  color: #475569;
+  color: var(--slate-600);
 }
 .data-icon {
   display: inline-flex;
-  color: #475569;
+  color: var(--slate-600);
 }
 .data-kind {
   font: 700 12px var(--sans);
-  color: #1e293b;
+  color: var(--slate-800);
 }
 .data-tag {
   font: 600 10px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #475569;
-  background: #e2e8f0;
+  color: var(--slate-600);
+  background: var(--slate-200);
   border-radius: 4px;
   padding: 1px 5px;
 }
 .data-assets code {
   margin-left: 4px;
-  background: white;
-  border: 1px solid #cbd5e1;
+  background: var(--white);
+  border: 1px solid var(--slate-300);
   border-radius: 3px;
   padding: 0 3px;
 }
@@ -437,35 +437,35 @@ header {
 .data-nodes .note {
   margin: 2px 0;
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .data .hint {
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .data-file {
-  border: 1px dashed #94a3b8;
+  border: 1px dashed var(--slate-400);
   border-radius: 6px;
-  background: white;
-  color: #334155;
+  background: var(--white);
+  color: var(--slate-700);
   font: 500 11px var(--sans);
   padding: 0 6px;
   cursor: pointer;
 }
 .data-file:hover {
-  border-color: #475569;
+  border-color: var(--slate-600);
 }
 .media-type {
   font-size: 11px;
-  background: white;
-  border: 1px solid #cbd5e1;
+  background: var(--white);
+  border: 1px solid var(--slate-300);
   border-radius: 3px;
   padding: 0 4px;
 }
 .more-assets {
   border: 0;
   background: none;
-  color: #4f46e5;
+  color: var(--indigo-600);
   font: 500 11px var(--sans);
   cursor: pointer;
   padding: 0;
@@ -473,7 +473,7 @@ header {
 .na {
   margin-top: 4px;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 .child-docs {
   margin: 0 8px 8px 22px;
@@ -481,11 +481,11 @@ header {
 .more {
   margin: 4px 0;
   font-size: 12px;
-  border: 1px dashed #cbd5e1;
-  background: white;
+  border: 1px dashed var(--slate-300);
+  background: var(--white);
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
-  color: #475569;
+  color: var(--slate-600);
 }
 </style>

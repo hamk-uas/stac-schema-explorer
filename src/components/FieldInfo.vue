@@ -134,8 +134,8 @@ const vendoredLink = computed(() => {
 <style scoped>
 .field-info {
   padding: 10px 14px 12px;
-  border-bottom: 1px solid #e2e8f0;
-  background: color-mix(in srgb, var(--c) 5%, white);
+  border-bottom: 1px solid var(--slate-200);
+  background: color-mix(in srgb, var(--c) 5%, var(--white));
   border-left: 4px solid var(--c);
   max-height: 45vh;
   overflow: auto;
@@ -148,11 +148,11 @@ header {
 }
 .name {
   font: 700 14px var(--mono);
-  color: color-mix(in srgb, var(--c) 80%, black);
+  color: color-mix(in srgb, var(--c) 80%, var(--ink));
 }
 .title {
   font: 600 14px var(--sans);
-  color: #1e293b;
+  color: var(--slate-800);
 }
 .close {
   margin-left: auto;
@@ -160,7 +160,7 @@ header {
   background: none;
   font-size: 18px;
   cursor: pointer;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .source {
   margin: 4px 0 6px;
@@ -168,7 +168,7 @@ header {
   gap: 8px;
   align-items: center;
   font-size: 12px;
-  color: #475569;
+  color: var(--slate-600);
   flex-wrap: wrap;
 }
 .source + .source {
@@ -179,20 +179,20 @@ header {
   font: 600 10px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 .maturity {
   font: 600 10px var(--sans);
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--amber-800);
+  background: var(--amber-100);
   border-radius: 4px;
   padding: 0 5px;
 }
 .member {
-  color: #64748b;
+  color: var(--slate-500);
 }
 .source a {
-  color: #4f46e5;
+  color: var(--indigo-600);
 }
 .dot {
   width: 9px;
@@ -206,7 +206,7 @@ header {
   font: 600 11px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: var(--slate-500);
   margin-right: 6px;
 }
 .type {
@@ -218,10 +218,10 @@ header {
 .description {
   margin: 0 0 8px;
   line-height: 1.5;
-  color: #1e293b;
+  color: var(--slate-800);
 }
 .missing {
-  color: #b45309;
+  color: var(--amber-700);
   font-size: 12px;
 }
 .values {
@@ -233,13 +233,13 @@ header {
 .values th {
   text-align: left;
   font: 600 11px var(--sans);
-  color: #64748b;
-  border-bottom: 1px solid #e2e8f0;
+  color: var(--slate-500);
+  border-bottom: 1px solid var(--slate-200);
   padding: 2px 6px 2px 0;
 }
 .values td {
   padding: 3px 6px 3px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--slate-100);
   vertical-align: top;
 }
 .places ul {
@@ -254,10 +254,10 @@ header {
   font: 500 11px var(--sans);
   border: 1.5px solid var(--c);
   border-radius: 999px;
-  background: white;
+  background: var(--white);
   padding: 1px 8px;
   cursor: pointer;
-  color: #334155;
+  color: var(--slate-700);
 }
 .places button.presence {
   border-style: dashed;
@@ -285,21 +285,21 @@ header {
   letter-spacing: 0.04em;
   border-radius: 4px;
   padding: 0 5px;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--slate-600);
+  background: var(--slate-100);
 }
 .relation.same,
 .relation.converted {
-  color: #0f766e;
-  background: #ccfbf1;
+  color: var(--teal-700);
+  background: var(--teal-100);
 }
 .note {
   flex-basis: 100%;
-  color: #475569;
+  color: var(--slate-600);
 }
 :deep(code) {
   font-family: var(--mono);
-  background: #f1f5f9;
+  background: var(--slate-100);
   border-radius: 3px;
   padding: 0 3px;
 }

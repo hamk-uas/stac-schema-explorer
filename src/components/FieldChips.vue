@@ -171,8 +171,8 @@ function dimmed(source: string): boolean {
   padding: 2px 7px;
   border-radius: 999px;
   border: 1.5px solid var(--c);
-  color: color-mix(in srgb, var(--c) 80%, black);
-  background: color-mix(in srgb, var(--c) 12%, white);
+  color: color-mix(in srgb, var(--c) 80%, var(--ink));
+  background: color-mix(in srgb, var(--c) 12%, var(--white));
   white-space: nowrap;
   transition: opacity 0.15s;
 }
@@ -207,13 +207,13 @@ button.chip:hover,
   cursor: pointer;
 }
 .chip .edit:hover {
-  color: #b45309;
+  color: var(--amber-700);
 }
 /* Rewritten fields: amber, the colour of caution, and a removed field struck through. */
 .chip.edit-added,
 .chip.edit-removed,
 button.chip.edited {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid var(--amber-500);
   outline-offset: 1px;
 }
 .chip.edit-removed {
@@ -221,10 +221,10 @@ button.chip.edited {
 }
 .chip.edit-removed .pick {
   text-decoration: line-through;
-  text-decoration-color: #b45309;
+  text-decoration-color: var(--amber-700);
 }
 button.chip.open {
-  background: color-mix(in srgb, var(--c) 22%, white);
+  background: color-mix(in srgb, var(--c) 22%, var(--white));
 }
 .chip.sub {
   font-size: 11px;
@@ -237,14 +237,14 @@ button.chip.open {
 .chip.state-possible {
   background: transparent;
   border-style: dotted;
-  border-color: color-mix(in srgb, var(--c) 50%, white);
-  color: color-mix(in srgb, var(--c) 45%, #94a3b8);
+  border-color: color-mix(in srgb, var(--c) 50%, var(--white));
+  color: color-mix(in srgb, var(--c) 45%, var(--slate-400));
 }
 .chip.state-unexpected {
-  border-color: #dc2626;
-  background: #fef2f2;
-  color: #b91c1c;
-  text-decoration: underline wavy #dc2626 1px;
+  border-color: var(--red-600);
+  background: var(--red-50);
+  color: var(--red-700);
+  text-decoration: underline wavy var(--red-600) 1px;
   text-underline-offset: 3px;
 }
 .chip.dimmed {
@@ -259,6 +259,6 @@ button.chip.open {
   font-size: 10px;
   padding: 0 4px;
   border-radius: 6px;
-  background: color-mix(in srgb, var(--c) 25%, white);
+  background: color-mix(in srgb, var(--c) 25%, var(--white));
 }
 </style>

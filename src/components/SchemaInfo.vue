@@ -167,8 +167,8 @@ const fieldTitle = (name: string) => {
 <style scoped>
 .schema-info {
   padding: 10px 14px 12px;
-  border-bottom: 1px solid #e2e8f0;
-  background: color-mix(in srgb, var(--c) 5%, white);
+  border-bottom: 1px solid var(--slate-200);
+  background: color-mix(in srgb, var(--c) 5%, var(--white));
   border-left: 4px solid var(--c);
   max-height: 45vh;
   overflow: auto;
@@ -191,21 +191,21 @@ header {
 }
 .title {
   font: 600 14px var(--sans);
-  color: #1e293b;
+  color: var(--slate-800);
 }
 .kind {
   font: 500 10px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--slate-600);
+  background: var(--slate-100);
   border-radius: 4px;
   padding: 1px 5px;
 }
 .maturity {
   font: 600 10px var(--sans);
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--amber-800);
+  background: var(--amber-100);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -218,7 +218,7 @@ header {
 }
 .currency .note {
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .close {
   margin-left: auto;
@@ -226,7 +226,7 @@ header {
   background: none;
   font-size: 18px;
   cursor: pointer;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .links {
   margin: 4px 0 8px;
@@ -237,7 +237,7 @@ header {
   flex-wrap: wrap;
 }
 .links a {
-  color: #4f46e5;
+  color: var(--indigo-600);
 }
 .prefix {
   font-size: 11px;
@@ -246,26 +246,26 @@ header {
   font: 600 11px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: var(--slate-500);
   margin-right: 6px;
 }
 .description {
   margin: 0 0 8px;
   line-height: 1.5;
-  color: #1e293b;
+  color: var(--slate-800);
 }
 .missing {
-  color: #b45309;
+  color: var(--amber-700);
   font-size: 12px;
 }
 .error {
-  color: #b91c1c;
+  color: var(--red-700);
   font-size: 12px;
 }
 .row {
   margin: 0 0 8px;
   font-size: 12px;
-  color: #334155;
+  color: var(--slate-700);
 }
 .places,
 .fields {
@@ -288,16 +288,16 @@ header {
   font: 500 11px var(--sans);
   border: 1.5px solid var(--c);
   border-radius: 999px;
-  background: white;
+  background: var(--white);
   padding: 1px 8px;
   cursor: pointer;
-  color: #334155;
+  color: var(--slate-700);
 }
 .fields button {
   font-family: var(--mono);
 }
 .fields button.here {
-  background: color-mix(in srgb, var(--c) 14%, white);
+  background: color-mix(in srgb, var(--c) 14%, var(--white));
 }
 .places button.presence {
   border-style: dashed;
@@ -307,20 +307,20 @@ header {
 }
 .toggle {
   font: 500 12px var(--sans);
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--slate-300);
   border-radius: 6px;
-  background: white;
+  background: var(--white);
   padding: 2px 10px;
   cursor: pointer;
-  color: #334155;
+  color: var(--slate-700);
 }
 .toggle[aria-pressed='true'] {
   border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, white);
+  background: color-mix(in srgb, var(--c) 14%, var(--white));
 }
 :deep(code) {
   font-family: var(--mono);
-  background: #f1f5f9;
+  background: var(--slate-100);
   border-radius: 3px;
   padding: 0 3px;
 }

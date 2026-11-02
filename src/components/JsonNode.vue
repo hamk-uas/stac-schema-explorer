@@ -75,48 +75,48 @@ const primitiveClass = computed(() => (props.value === null ? 'null' : typeof pr
 }
 .children {
   padding-left: 16px;
-  border-left: 1px dotted #e2e8f0;
+  border-left: 1px dotted var(--slate-200);
 }
 .hl {
-  background: #eef2ff;
-  outline: 1px solid #c7d2fe;
+  background: var(--indigo-50);
+  outline: 1px solid var(--indigo-200);
   border-radius: 3px;
 }
 .key {
-  color: #0f172a;
+  color: var(--slate-900);
 }
 .key.field {
-  color: color-mix(in srgb, var(--c) 85%, black);
-  background: color-mix(in srgb, var(--c) 14%, white);
+  color: color-mix(in srgb, var(--c) 85%, var(--ink));
+  background: color-mix(in srgb, var(--c) 14%, var(--white));
   border-radius: 3px;
   padding: 0 2px;
   font-weight: 600;
 }
 .key.field.state-unexpected {
-  background: #fee2e2;
-  color: #b91c1c;
-  text-decoration: underline wavy #dc2626 1px;
+  background: var(--red-100);
+  color: var(--red-700);
+  text-decoration: underline wavy var(--red-600) 1px;
 }
 .punct {
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 .toggle {
   cursor: pointer;
 }
 .ellipsis {
-  color: #6366f1;
+  color: var(--indigo-500);
   cursor: pointer;
   font-style: italic;
   padding: 0 4px;
 }
 .prim.string {
-  color: #047857;
+  color: var(--emerald-700);
 }
 .prim.number {
-  color: #b45309;
+  color: var(--amber-700);
 }
 .prim.boolean,
 .prim.null {
-  color: #7c3aed;
+  color: var(--violet-600);
 }
 </style>

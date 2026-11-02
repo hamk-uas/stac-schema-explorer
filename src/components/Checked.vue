@@ -36,17 +36,17 @@ const newer = computed(() => !!props.live && props.live !== props.latest);
   flex-wrap: wrap;
   gap: 4px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .checked a {
   color: inherit;
   text-decoration: underline dotted;
 }
 .ok {
-  color: #0f766e;
+  color: var(--teal-700);
 }
 .warn {
-  color: #b45309;
+  color: var(--amber-700);
   font-weight: 600;
 }
 </style>

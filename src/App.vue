@@ -26,6 +26,7 @@ import { getAt, joinPointer, objectLocations } from './lib/pointer';
 import { readEmbeddedFile } from './lib/reader';
 import { addedSchemas, applyRewrites, declareConventionsAttribute, declareStacExtensions, declareZarrConventions, fieldEdits, templateValue, toggleRewrite, type Rewrite } from './lib/rewrites';
 import { precedenceFor, softwareFor } from './lib/software';
+import { ALL_CORES } from './lib/cores';
 import { LAYERS, schemaLayer } from './lib/layers';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
 import { documentView, fieldIndex, templateView, undeclaredExtensions, type FieldView } from './lib/tree';
@@ -482,6 +483,26 @@ watch([sideWidth, jsonWidth], ([side, json]) => {
     }
 });
 
+/** Which sidebar panels are open; remembered per browser like the pane widths, not in share links. */
+const PANELS_KEY = 'stac-schema-explorer:panels';
+const panels = reactive<Record<'cores' | 'extensions' | 'conventions' | 'display' | 'legend', boolean>>({
+    cores: true, extensions: true, conventions: true, display: true, legend: true,
+});
+try {
+    const stored = JSON.parse(localStorage.getItem(PANELS_KEY) ?? '{}') as Record<string, unknown>;
+    for (const key of Object.keys(panels) as (keyof typeof panels)[]) if (typeof stored[key] === 'boolean') panels[key] = stored[key];
+} catch {
+    // Unavailable storage: all panels start open.
+}
+function setPanel(key: keyof typeof panels, event: Event) {
+    panels[key] = (event.target as HTMLDetailsElement).open;
+    try {
+        localStorage.setItem(PANELS_KEY, JSON.stringify(panels));
+    } catch {
+        // Storage may be unavailable; the state then lasts for the page only.
+    }
+}
+
 const widthOf = (el: HTMLElement | undefined) => el?.getBoundingClientRect().width ?? 0;
 const maxSide = () => widthOf(appEl.value) - (jsonOpen.value ? widthOf(jsonEl.value) : 0) - MIN_MAIN;
 const maxJson = () => widthOf(appEl.value) - widthOf(sideEl.value) - MIN_MAIN;
@@ -790,33 +811,52 @@ onMounted(() => {
     </header>
 
     <aside id="side-pane" ref="sideEl" class="side">
-      <section>
-        <h2><span aria-hidden="true">{{ LAYERS.standard.symbol }}{{ LAYERS.format.symbol }}</span> Cores</h2>
-        <p class="hint">What STAC documents and data files are built on: STAC itself and the data formats. Like extensions and conventions, a selected core shows its fields.</p>
-        <CorePicker v-model="state.cores" v-model:stac-version="state.stacVersion" :explore="state.mode === 'href'" @focus="focusFromPicker" />
-      </section>
-      <section>
-        <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Extensions</h2>
-        <ExtensionPicker v-model="state.extensions" :sources="sources" @focus="focusFromPicker" />
-      </section>
-      <section>
-        <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Data conventions</h2>
-        <p class="hint">Conventions of metadata embedded in data files (Zarr, netCDF, TIFF): the counterparts of STAC extensions.</p>
-        <ConventionPicker v-model="state.conventions" :sources="embeddedSources" @focus="focusFromPicker" />
-      </section>
-      <section>
-        <h2>Display</h2>
-        <label><input v-model="state.groupFields" type="checkbox" /> Group fields by extension</label>
-        <label v-if="state.mode === 'href'"><input v-model="state.includeDeclared" type="checkbox" /> Include extensions the documents declare</label>
-        <div v-if="state.focus" class="focus">
-          Highlighting <span class="swatch" :style="{ background: colorOf(state.focus) }" /> {{ sourceLabel(state.focus, [...sources, ...embeddedSources]) }}
-          <button type="button" class="link" @click="state.focus = ''">clear</button>
+      <details class="panel" :open="panels.cores" @toggle="setPanel('cores', $event)">
+        <summary>
+          <h2><span aria-hidden="true">{{ LAYERS.standard.symbol }}{{ LAYERS.format.symbol }}</span> Cores</h2>
+          <span class="count" :title="`${state.cores.length} of ${ALL_CORES.length} cores selected`">{{ state.cores.length }}/{{ ALL_CORES.length }}</span>
+        </summary>
+        <div class="panel-body">
+          <p class="hint">What STAC documents and data files are built on: STAC itself and the data formats. Like extensions and conventions, a selected core shows its fields.</p>
+          <CorePicker v-model="state.cores" v-model:stac-version="state.stacVersion" :explore="state.mode === 'href'" @focus="focusFromPicker" />
         </div>
-      </section>
-      <section>
-        <h2>Legend</h2>
-        <Legend />
-      </section>
+      </details>
+      <details class="panel" :open="panels.extensions" @toggle="setPanel('extensions', $event)">
+        <summary>
+          <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Extensions</h2>
+          <span class="count" :title="`${state.extensions.length} extensions selected`">{{ state.extensions.length }}</span>
+        </summary>
+        <div class="panel-body">
+          <ExtensionPicker v-model="state.extensions" :sources="sources" @focus="focusFromPicker" />
+        </div>
+      </details>
+      <details class="panel" :open="panels.conventions" @toggle="setPanel('conventions', $event)">
+        <summary>
+          <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Data conventions</h2>
+          <span class="count" :title="`${state.conventions.length} data conventions selected`">{{ state.conventions.length }}</span>
+        </summary>
+        <div class="panel-body">
+          <p class="hint">Conventions of metadata embedded in data files (Zarr, netCDF, TIFF): the counterparts of STAC extensions.</p>
+          <ConventionPicker v-model="state.conventions" :sources="embeddedSources" @focus="focusFromPicker" />
+        </div>
+      </details>
+      <details class="panel" :open="panels.display" @toggle="setPanel('display', $event)">
+        <summary><h2>Display</h2></summary>
+        <div class="panel-body">
+          <label><input v-model="state.groupFields" type="checkbox" /> Group fields by extension</label>
+          <label v-if="state.mode === 'href'"><input v-model="state.includeDeclared" type="checkbox" /> Include extensions the documents declare</label>
+          <div v-if="state.focus" class="focus">
+            Highlighting <span class="swatch" :style="{ background: colorOf(state.focus) }" /> {{ sourceLabel(state.focus, [...sources, ...embeddedSources]) }}
+            <button type="button" class="link" @click="state.focus = ''">clear</button>
+          </div>
+        </div>
+      </details>
+      <details class="panel" :open="panels.legend" @toggle="setPanel('legend', $event)">
+        <summary><h2>Legend</h2></summary>
+        <div class="panel-body">
+          <Legend />
+        </div>
+      </details>
     </aside>
 
     <main class="main">
@@ -1097,13 +1137,13 @@ onMounted(() => {
   align-items: center;
   gap: 24px;
   padding: 10px 18px;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
+  border-bottom: 1px solid var(--slate-200);
+  background: var(--white);
 }
 .brand h1 {
   margin: 0;
   font: 700 18px var(--sans);
-  color: #0f172a;
+  color: var(--slate-900);
 }
 .brand .home {
   color: inherit;
@@ -1115,12 +1155,12 @@ onMounted(() => {
 .brand p {
   margin: 2px 0 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .modes {
   display: flex;
   gap: 4px;
-  background: #f1f5f9;
+  background: var(--slate-100);
   padding: 3px;
   border-radius: 8px;
 }
@@ -1131,14 +1171,14 @@ onMounted(() => {
   padding: 5px 12px;
   border-radius: 6px;
   font: 500 13px var(--sans);
-  color: #475569;
+  color: var(--slate-600);
   cursor: pointer;
 }
 .modes button.on,
 .tabs button.on {
-  background: white;
-  color: #0f172a;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+  background: var(--white);
+  color: var(--slate-900);
+  box-shadow: 0 1px 2px var(--shadow);
 }
 .app.no-json {
   --json-col: 0;
@@ -1146,32 +1186,79 @@ onMounted(() => {
 .json-toggle {
   margin-left: auto;
   font-size: 12px;
-  border: 1px solid #cbd5e1;
-  background: white;
+  border: 1px solid var(--slate-300);
+  background: var(--white);
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
 }
 .gh {
   font-size: 12px;
-  color: #4f46e5;
+  color: var(--indigo-600);
 }
 .side {
   grid-area: side;
   overflow: auto;
-  padding: 12px 14px 40px;
-  border-right: 1px solid #e2e8f0;
-  background: white;
+  padding: 10px 10px 40px;
+  border-right: 1px solid var(--slate-200);
+  background: var(--slate-100);
 }
-.side section {
-  margin-bottom: 18px;
+/* Sidebar sub-panels: collapsible, with a header strip naming them and counting what is selected. */
+.panel {
+  margin-bottom: 10px;
+  background: var(--white);
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+.panel > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  list-style: none;
+  cursor: pointer;
+  background: var(--slate-50);
+  border-radius: 8px;
+}
+.panel > summary::-webkit-details-marker {
+  display: none;
+}
+.panel > summary::before {
+  content: '▸';
+  color: var(--slate-500);
+  font-size: 11px;
+  width: 10px;
+}
+.panel[open] > summary {
+  border-bottom: 1px solid var(--slate-200);
+  border-radius: 8px 8px 0 0;
+}
+.panel[open] > summary::before {
+  content: '▾';
+}
+.panel > summary:focus-visible {
+  outline: 2px solid var(--indigo-500);
+  outline-offset: 1px;
+}
+.panel-body {
+  padding: 8px 10px 10px;
+}
+.count {
+  margin-left: auto;
+  font: 600 11px var(--sans);
+  color: var(--slate-600);
+  background: var(--slate-100);
+  border: 1px solid var(--slate-200);
+  border-radius: 999px;
+  padding: 0 7px;
 }
 .side h2 {
-  margin: 0 0 6px;
+  margin: 0;
   font: 600 12px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: var(--slate-600);
 }
 .side label {
   display: block;
@@ -1184,7 +1271,7 @@ onMounted(() => {
 }
 .hint {
   font-size: 11px;
-  color: #64748b;
+  color: var(--slate-500);
 }
 .focus {
   font-size: 12px;
@@ -1203,11 +1290,11 @@ onMounted(() => {
   grid-area: main;
   overflow: auto;
   padding: 12px 18px 60px;
-  background: #f8fafc;
+  background: var(--slate-50);
 }
 .json {
   grid-area: json;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--slate-200);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1247,7 +1334,7 @@ onMounted(() => {
   font-size: 12px;
 }
 .embed-bar a {
-  color: #4f46e5;
+  color: var(--indigo-600);
 }
 .toolbar {
   display: flex;
@@ -1259,13 +1346,13 @@ onMounted(() => {
 .tabs {
   display: flex;
   gap: 4px;
-  background: #e2e8f0;
+  background: var(--slate-200);
   padding: 3px;
   border-radius: 8px;
 }
 .explain {
   font-size: 12px;
-  color: #64748b;
+  color: var(--slate-500);
   margin: 4px 0 8px;
   flex: 1;
   min-width: 260px;
@@ -1274,14 +1361,14 @@ onMounted(() => {
   position: relative;
   height: 22px;
   border-radius: 6px;
-  background: #e0e7ff;
+  background: var(--indigo-100);
   overflow: hidden;
   margin-bottom: 8px;
 }
 .progress .bar {
   position: absolute;
   inset: 0 auto 0 0;
-  background: #a5b4fc;
+  background: var(--indigo-300);
   transition: width 0.2s;
 }
 .progress span {
@@ -1289,10 +1376,10 @@ onMounted(() => {
   font-size: 12px;
   padding-left: 8px;
   line-height: 22px;
-  color: #3730a3;
+  color: var(--indigo-800);
 }
 .error {
-  color: #b91c1c;
+  color: var(--red-700);
   font-size: 13px;
 }
 .href-form {
@@ -1303,20 +1390,20 @@ onMounted(() => {
   flex: 1;
   font-size: 13px;
   padding: 6px 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--slate-300);
   border-radius: 6px;
 }
 .href-form button {
   padding: 0 14px;
   border-radius: 6px;
-  border: 1px solid #4f46e5;
-  background: #4f46e5;
-  color: white;
+  border: 1px solid var(--indigo-600);
+  background: var(--indigo-600);
+  color: var(--white);
   cursor: pointer;
 }
 .examples {
   font-size: 12px;
-  color: #64748b;
+  color: var(--slate-500);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -1325,7 +1412,7 @@ onMounted(() => {
 .link {
   border: 0;
   background: none;
-  color: #4f46e5;
+  color: var(--indigo-600);
   cursor: pointer;
   font-size: 12px;
   padding: 0;
@@ -1333,8 +1420,8 @@ onMounted(() => {
 .findings {
   margin-top: 14px;
   font-size: 12px;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border: 1px solid var(--slate-200);
   border-radius: 8px;
   padding: 8px 12px;
 }
@@ -1344,20 +1431,20 @@ onMounted(() => {
 }
 .findings li.conflict,
 .findings li.error {
-  color: #b91c1c;
+  color: var(--red-700);
 }
 .findings li.warn {
-  color: #b45309;
+  color: var(--amber-700);
 }
 .detached {
   font: 600 12px var(--sans);
-  color: #64748b;
+  color: var(--slate-500);
   margin: 18px 0 0;
 }
 .embedded-section {
   margin-top: 22px;
   padding-top: 10px;
-  border-top: 1px dashed #cbd5e1;
+  border-top: 1px dashed var(--slate-300);
 }
 .format-matrix {
   margin-top: 14px;
@@ -1365,26 +1452,26 @@ onMounted(() => {
 .embedded-section h3 {
   margin: 0 0 4px;
   font: 600 14px var(--sans);
-  color: #334155;
+  color: var(--slate-700);
 }
 .rewrites-banner {
   margin: 4px 0 10px;
   padding: 6px 10px;
   font-size: 12px;
   line-height: 1.5;
-  color: #78350f;
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
+  color: var(--amber-900);
+  background: var(--amber-100);
+  border: 1px solid var(--amber-500);
   border-left-width: 4px;
   border-radius: 6px;
 }
 .rewrites-banner button {
   margin-left: 6px;
   font: 600 12px var(--sans);
-  border: 1px solid #d97706;
+  border: 1px solid var(--amber-600);
   border-radius: 5px;
-  background: white;
-  color: #92400e;
+  background: var(--white);
+  color: var(--amber-800);
   padding: 1px 8px;
   cursor: pointer;
 }

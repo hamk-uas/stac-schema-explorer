@@ -109,13 +109,13 @@ function key(event: KeyboardEvent) {
 }
 .splitter:hover::after,
 .splitter.dragging::after {
-  background: #a5b4fc;
+  background: var(--indigo-300);
 }
 .splitter:focus-visible {
   outline: none;
 }
 .splitter:focus-visible::after {
-  background: #4f46e5;
+  background: var(--indigo-600);
 }
 @media (prefers-reduced-motion: reduce) {
   .splitter::after {

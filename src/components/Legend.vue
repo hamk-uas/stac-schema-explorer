@@ -35,7 +35,7 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
   margin: 0;
   padding: 0;
   font-size: 12px;
-  color: #475569;
+  color: var(--slate-600);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -43,43 +43,43 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
 .doc {
   display: inline-block;
   font: 700 11px var(--sans);
-  color: #0f766e;
-  border: 1px solid #e2e8f0;
-  border-left: 3px solid #0d9488;
+  color: var(--teal-700);
+  border: 1px solid var(--slate-200);
+  border-left: 3px solid var(--teal-600);
   border-radius: 4px;
   padding: 0 5px;
-  background: #f0fdfa;
+  background: var(--teal-50);
 }
 .glyph {
   font: 600 11px var(--mono);
-  color: #94a3b8;
+  color: var(--slate-400);
 }
 .node {
   display: inline-block;
   font: 700 11px var(--sans);
-  color: #334155;
-  border: 1px dashed #94a3b8;
-  border-left: 3px solid #475569;
+  color: var(--slate-700);
+  border: 1px dashed var(--slate-400);
+  border-left: 3px solid var(--slate-600);
   border-radius: 4px;
   padding: 0 5px;
-  background: #f8fafc;
+  background: var(--slate-50);
 }
 .geo {
   font: 500 11px var(--mono);
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
   border-radius: 4px;
   padding: 0 5px;
 }
 .chip {
-  --c: #2563eb;
+  --c: var(--blue-600);
   display: inline-block;
   font: 500 11px var(--mono);
   padding: 0 6px;
   border-radius: 999px;
   border: 1.5px solid var(--c);
-  color: color-mix(in srgb, var(--c) 80%, black);
-  background: color-mix(in srgb, var(--c) 12%, white);
+  color: color-mix(in srgb, var(--c) 80%, var(--ink));
+  background: color-mix(in srgb, var(--c) 12%, var(--white));
 }
 .chip.presence {
   border-style: dashed;
@@ -87,28 +87,28 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
 .chip.possible {
   background: transparent;
   border-style: dotted;
-  border-color: color-mix(in srgb, var(--c) 50%, white);
-  color: color-mix(in srgb, var(--c) 45%, #94a3b8);
+  border-color: color-mix(in srgb, var(--c) 50%, var(--white));
+  color: color-mix(in srgb, var(--c) 45%, var(--slate-400));
 }
 .chip.unexpected {
-  border-color: #dc2626;
-  background: #fef2f2;
-  color: #b91c1c;
-  text-decoration: underline wavy #dc2626 1px;
+  border-color: var(--red-600);
+  background: var(--red-50);
+  color: var(--red-700);
+  text-decoration: underline wavy var(--red-600) 1px;
 }
 .chip.added,
 .chip.removed {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid var(--amber-500);
   outline-offset: 1px;
   margin: 2px 2px 2px 0;
 }
 .chip.removed {
   outline-style: dashed;
-  text-decoration: line-through #b45309;
+  text-decoration: line-through var(--amber-700);
 }
 .note {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--slate-400);
   margin: 8px 0 0;
 }
 .layers-title {
@@ -116,7 +116,7 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
   font: 600 11px var(--sans);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: var(--slate-600);
 }
 .layer-symbol {
   display: inline-block;
