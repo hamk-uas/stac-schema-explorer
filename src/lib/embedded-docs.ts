@@ -1,4 +1,4 @@
-import { DATA_FORMATS, KNOWN_CONVENTIONS } from './conventions';
+import { DATA_FORMATS, KNOWN_CONVENTIONS, loadableSchema } from './conventions';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo, NodeTemplate } from './embedded-probe';
 import { CORE, type Json, type JsonObject, type TypeTemplate } from './model';
 import { documentView, templateView, type FieldEdits, type FieldView, type ObjectView } from './tree';
@@ -63,8 +63,9 @@ export function realNodeView(node: JsonObject, template: NodeTemplate | undefine
     const typeTemplate = template ? { ...asTemplate(template, formatSchema, true), placements } : undefined;
     const view = documentView(node, typeTemplate, asCore, showFormat, edits);
     // Objects within a format field (netCDF `filters`, Zarr `codecs`, `chunk_grid`) are that field's value, not places of
-    // fields: a key there (a filter's `id`) is not the convention field of the same name (ACDD `id`).
-    const inContainer = (pointer: string) => CONTAINER_KEYS.includes(pointer.split('/')[1] ?? '');
+    // fields: a key there (a filter's `id`) is not the convention field of the same name (ACDD `id`). Nor are the entries
+    // of `zarr_conventions`, which declare conventions (their `name` is not a convention's `name` field).
+    const inContainer = (pointer: string) => CONTAINER_KEYS.includes(pointer.split('/')[1] ?? '') && !pointer.startsWith('/attributes/zarr_conventions');
     // Back from the part of STAC core: format fields are the format's (named and coloured by it), and present structure
     // is in place even where no template places it.
     const asFormat = (field: FieldView): FieldView => {
@@ -73,7 +74,8 @@ export function realNodeView(node: JsonObject, template: NodeTemplate | undefine
         return { ...field, source: formatSchema, state };
     };
     const relabel = (object: ObjectView): ObjectView => ({ ...object, fields: object.fields.map(asFormat), children: object.children.map(relabel) });
-    return relabel({ ...view, children: view.children.filter((child) => child.pointers.every(inContainer)) });
+    const within = (object: ObjectView): ObjectView => ({ ...object, children: object.children.filter((child) => child.pointers.every(inContainer)).map(within) });
+    return relabel(within(view));
 }
 
 /** A Zarr metadata document of a store or one of its nodes. */
@@ -108,17 +110,21 @@ export function zarrDocument(json: Json): ZarrDocument | undefined {
     return undefined;
 }
 
-/** Convention schemas that apply to a node: its `zarr_conventions` (by UUID), the root's `Conventions` attribute, and conventions recognised from its keys. */
+/**
+ * Convention schemas that apply to a node: its `zarr_conventions` (by UUID), the root's `Conventions` attribute (or
+ * `conventions`, which NZ uses and treats as equivalent), and conventions recognised from its keys.
+ */
 export function nodeConventions(format: string, node: JsonObject, root: JsonObject | undefined): string[] {
     const out = new Set<string>();
     const attributes = isObject(node.attributes) ? node.attributes : {};
     for (const declared of Array.isArray(attributes.zarr_conventions) ? attributes.zarr_conventions : []) {
         if (!isObject(declared)) continue;
         const known = KNOWN_CONVENTIONS.find((c) => c.declaration?.zarrConventions?.uuid === declared.uuid);
-        const url = typeof declared.schema_url === 'string' ? declared.schema_url : known?.versions[0].schema;
+        const url = typeof declared.schema_url === 'string' ? loadableSchema(declared.schema_url) : known?.versions[0].schema;
         if (url) out.add(url);
     }
-    const tokens = isObject(root?.attributes) && typeof root.attributes.Conventions === 'string' ? root.attributes.Conventions.split(/[\s,]+/) : [];
+    const rootAttributes = isObject(root?.attributes) ? root.attributes : {};
+    const tokens = [rootAttributes.Conventions, rootAttributes.conventions].flatMap((value) => (typeof value === 'string' ? value.split(/[\s,]+/) : []));
     for (const convention of KNOWN_CONVENTIONS) {
         if (!convention.formats.includes(format)) continue;
         const pattern = convention.declaration?.conventionsAttribute;

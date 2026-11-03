@@ -29,7 +29,13 @@ export interface KnownConvention {
     specification: string;
     declaration?: { zarrConventions?: { uuid: string }; conventionsAttribute?: string };
     detection?: string[][];
-    versions: { version: string; schema: string; specification?: string }[];
+    versions: {
+        version: string;
+        schema: string;
+        specification?: string;
+        /** The schema URL data declares for this version (in `zarr_conventions`) where it differs from `schema`: not published yet. */
+        declaredSchema?: string;
+    }[];
 }
 
 export interface CrosswalkEntry {
@@ -66,6 +72,16 @@ export function conventionOfSchema(url: string): { convention: KnownConvention; 
         if (version) return { convention, version: version.version };
     }
     return undefined;
+}
+
+/** The schema to load for a convention schema URL: the vendored copy of a version declared at a URL not published yet. */
+export function loadableSchema(url: string): string {
+    const normalized = normalizeSchemaUrl(url);
+    for (const convention of KNOWN_CONVENTIONS) {
+        const version = convention.versions.find((v) => v.declaredSchema === normalized);
+        if (version) return version.schema;
+    }
+    return url;
 }
 
 /** True for a schema of the embedded-metadata layer: a format schema or a known convention's schema. */

@@ -152,11 +152,16 @@ function nodeFields(store: SchemaStore, url: string, ownValues = false): NodeFie
         const own = (key: string) => prefixes.size === 0 || prefixes.has(prefixOfKey(key) ?? '');
         const descend = ownValues && prefixes.size === 0;
         const seen = new Set<string>();
+        // Only the schema's own document is searched: keys a document it `$ref`s defines (`proj:code` of the proj object
+        // the coordinate set convention takes as an `id`) are fields where they are, but are not searched within (PROJJSON).
+        const ownDocument = (refs: FieldSchemaRef[]) => refs.filter((r) => r.schemaUrl === url);
         const visit = (ref: FieldSchemaRef, path: string[]) => {
-            const key = `${ref.schemaUrl}#${ref.pointer}`;
-            if (seen.has(key) || path.length > 6) return;
+            // Per path: the same definition can hold fields in several places (CRS objects of a coordinate set and of a group).
+            const key = `${ref.schemaUrl}#${ref.pointer}|${path.join('/')}`;
+            if (seen.has(key) || path.length > 10 || ref.schemaUrl !== url) return;
             seen.add(key);
-            for (const [child, childRefs] of properties(store, ref.schemaUrl, ref.pointer)) {
+            for (const [child, allRefs] of properties(store, ref.schemaUrl, ref.pointer)) {
+                const childRefs = ownDocument(allRefs).length ? ownDocument(allRefs) : allRefs;
                 if (own(child)) {
                     const existing = nested.find((f) => f.name === child && f.path!.join('/') === path.join('/'));
                     if (existing) existing.refs.push(...childRefs);
@@ -165,6 +170,11 @@ function nodeFields(store: SchemaStore, url: string, ownValues = false): NodeFie
                 if (!own(child) || descend) childRefs.forEach((r) => visit(r, [...path, child]));
             }
             for (const item of itemsOf(store, ref.schemaUrl, ref.pointer)) visit(item, [...path, '*']);
+            // Entries of a map keyed by name (`axes` keyed by dimension name, `crs` objects of a group keyed by CRS name).
+            const node = store.resolveAt(ref.schemaUrl, ref.pointer);
+            if (isSchema(node) && isSchema(node.additionalProperties)) {
+                visit({ schemaUrl: ref.schemaUrl, pointer: joinPointer(ref.pointer, 'additionalProperties') } as FieldSchemaRef, [...path, '*']);
+            }
         };
         for (const [child, childRefs] of children) {
             if (own(child)) out.push({ name: child, container: name, refs: childRefs });
@@ -281,7 +291,8 @@ function describe(store: SchemaStore, url: string, fields: NodeField[], kind: Em
         if (!(field.name in containers)) containers[field.name] = field.container;
     }
     const names = [...new Set(fields.map((f) => f.name))];
-    const prefixes = [...new Set(names.map((n) => /^([a-z0-9_]+):/i.exec(n)?.[1]).filter((p): p is string => !!p))];
+    // Prefixes are those of the schema's own entries: keys within its values may be another's (`proj:code` in a coordinate set).
+    const prefixes = [...new Set(fields.filter((f) => !f.path).map((f) => /^([a-z0-9_]+):/i.exec(f.name)?.[1]).filter((p): p is string => !!p))];
     const schema = store.getDocument(url) as { description?: unknown } | undefined;
     const description = typeof schema?.description === 'string' ? schema.description : undefined;
     return { key: url, url, title, version, description, prefixes, fields: names, unsampled: [], docs, kind, containers, formats };
@@ -370,27 +381,52 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
         if (fields.length) inner.push({ url, validate: await store.validator(url), fields });
     }
     const placed = new Set<string>();
+    // The example node first, then variants holding alternatives the example cannot (`external` coordinate values where
+    // the example has `regular` ones), which are searched further for the fields inside them (its `ref`).
+    const docs: JsonObject[] = [combined];
+    const MAX_VARIANTS = 16;
     for (let round = 0, changed = true; changed && round < 4; round++) {
         changed = false;
         for (const { url, validate, fields } of inner) {
             for (const field of fields) {
-                for (const location of expand(combined, joinPointer('', field.container!), field.path!)) {
-                    const key = `${url}|${location}|${field.name}`;
-                    if (placed.has(key)) continue;
-                    const before = failures(combined);
-                    const present = (getAt(combined, location) as JsonObject)[field.name];
-                    const candidates = present !== undefined ? [present, ...sample(field)] : sample(field);
-                    const value = candidates.find((candidate) => failures(setAt(combined, location, field.name, candidate)) <= before);
-                    if (value === undefined) continue;
-                    combined = setAt(combined, location, field.name, value);
-                    const validated = invalidCandidates(value).some((invalid) => !validate(setAt(combined, location, field.name, invalid)));
-                    placements.push({ source: url, field: field.name, location, kind: validated ? 'validated' : 'presence' });
-                    placed.add(key);
-                    changed = true;
+                for (let d = 0; d < docs.length; d++) {
+                    for (const location of expand(docs[d], joinPointer('', field.container!), field.path!)) {
+                        const key = `${url}|${location}|${field.name}`;
+                        if (placed.has(key)) continue;
+                        const doc = docs[d];
+                        const before = failures(doc);
+                        const present = (getAt(doc, location) as JsonObject)[field.name];
+                        const candidates = present !== undefined ? [present, ...sample(field)] : sample(field);
+                        const value = candidates.find((candidate) => failures(setAt(doc, location, field.name, candidate)) <= before);
+                        if (value !== undefined) {
+                            docs[d] = setAt(doc, location, field.name, value);
+                            const validated = invalidCandidates(value).some((invalid) => !validate(setAt(docs[d], location, field.name, invalid)));
+                            placements.push({ source: url, field: field.name, location, kind: validated ? 'validated' : 'presence' });
+                            placed.add(key);
+                            changed = true;
+                            continue;
+                        }
+                        // An alternative of what is placed here (`regular` coordinate values where `explicit` ones are: exactly
+                        // one is allowed) is placed in a variant without the fields placed here.
+                        if (docs.length >= MAX_VARIANTS) continue;
+                        const variant = clone(doc);
+                        const holder = getAt(variant, location) as JsonObject;
+                        for (const p of placements) if (p.location === location) delete holder[p.field];
+                        const variantBefore = failures(variant);
+                        const alternative = candidates.find((candidate) => failures(setAt(variant, location, field.name, candidate)) <= variantBefore);
+                        if (alternative === undefined) continue;
+                        const withAlternative = setAt(variant, location, field.name, alternative);
+                        const validated = invalidCandidates(alternative).some((invalid) => !validate(setAt(variant, location, field.name, invalid)));
+                        placements.push({ source: url, field: field.name, location, kind: validated ? 'validated' : 'presence' });
+                        placed.add(key);
+                        docs.push(withAlternative);
+                        changed = true;
+                    }
                 }
             }
         }
     }
+    combined = docs[0];
     const errors: string[] = [];
     if (!formatValidate(combined)) errors.push(...formatErrors(formatValidate.errors, format.title));
     for (const { url } of conventions) {

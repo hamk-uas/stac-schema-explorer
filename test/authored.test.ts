@@ -25,7 +25,7 @@ interface Registry {
         id: string; kind: string; formats: string[]; authored: boolean;
         declaration?: { zarrConventions?: { uuid: string }; conventionsAttribute?: string };
         detection?: string[][];
-        versions: { version: string; schema: string }[];
+        versions: { version: string; schema: string; declaredSchema?: string }[];
     }[];
 }
 interface CrosswalkEntry {
@@ -147,6 +147,15 @@ describe('registry', () => {
         for (const convention of registry.conventions.filter((c) => c.kind === 'zarr-convention')) {
             const schema = read(convention.versions[0]!.schema);
             expect(getPointer(schema, '/$defs/conventionMetadata/properties/uuid/const')).toBe(convention.declaration?.zarrConventions?.uuid);
+        }
+    });
+
+    it('maps the schema URL each Zarr convention version declares for itself to its vendored copy', () => {
+        for (const convention of registry.conventions.filter((c) => c.kind === 'zarr-convention')) {
+            for (const version of convention.versions) {
+                const declared = getPointer(read(version.schema), '/$defs/conventionMetadata/properties/schema_url/const');
+                expect(declared, `${convention.id} ${version.version}`).toBe(version.declaredSchema ?? version.schema);
+            }
         }
     });
 

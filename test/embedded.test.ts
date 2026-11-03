@@ -3,10 +3,11 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { embeddedCounterparts, fromConventionShortId, KNOWN_CONVENTIONS, stacCounterparts, toConventionShortId } from '../src/lib/conventions';
-import { realNodeView } from '../src/lib/embedded-docs';
+import { nodeConventions, realNodeView } from '../src/lib/embedded-docs';
 import { probeEmbedded, validateNode } from '../src/lib/embedded-probe';
 import { buildMatrix } from '../src/lib/matrix';
 import type { JsonObject } from '../src/lib/model';
+import { conventionsToken } from '../src/lib/rewrites';
 import { fieldIndex } from '../src/lib/tree';
 import { fixtureStore } from './helpers';
 
@@ -86,6 +87,68 @@ describe('embedded placement probing', () => {
         expect(matrix.cells.get(`${ZC('spatial')}|spatial:shape|node:zarr-v3:group attributes › multiscales › layout[]`)).toBeDefined();
         expect(matrix.cells.get(`${ZC('multiscales')}|multiscales|node:zarr-v3:group attributes`)?.kind).toBe('validated');
         expect(matrix.rows.some((r) => r.source === `${B}zarr/v3/schema.json`)).toBe(false);
+    });
+
+    it('places NZ in Zarr v3 groups and arrays, and recognises it however data declares it', async () => {
+        const NZ = 'https://raw.githubusercontent.com/zarr-conventions/nz/7c923cf7b5467c1a873ca93c9223bf08d60efc07/schema.json';
+        const store = fixtureStore();
+        const result = await probeEmbedded(store, [NZ]);
+        expect(result.nodes.map((n) => n.key)).toEqual(['zarr-v3:group', 'zarr-v3:array']);
+        const at = (key: string, field: string) => result.nodes.find((n) => n.key === key)!.placements.find((p) => p.source === NZ && p.field === field);
+        expect(at('zarr-v3:group', 'conventions')).toMatchObject({ location: '/attributes', kind: 'validated' });
+        expect(at('zarr-v3:array', '_FillValue')).toMatchObject({ location: '/attributes' });
+        // The schema checks `conventions` only in groups: in arrays it is allowed but not validated.
+        expect(at('zarr-v3:array', 'conventions')?.kind).toBe('presence');
+        for (const node of result.nodes) expect(node.errors, node.key).toEqual([]);
+
+        // Data declares the v1 URL its schema names, which is not published yet: it is read as the vendored draft.
+        const declared = {
+            zarr_format: 3, node_type: 'group',
+            attributes: {
+                zarr_conventions: [{ uuid: 'd0a980b5-c644-4dcc-85a1-283799a58f40', schema_url: 'https://raw.githubusercontent.com/zarr-conventions/nz/refs/tags/v1/schema.json', name: 'NZ-1.0' }],
+                conventions: 'NZ-1.0',
+            },
+        };
+        expect(nodeConventions('zarr-v3', declared, declared)).toEqual([NZ]);
+        expect(await validateNode(store, declared, `${B}zarr/v3/schema.json`, [NZ])).toEqual([]);
+        // NZ's lowercase `conventions` declares attribute conventions too, as the NUG's `Conventions` does.
+        const byAttribute = { zarr_format: 3, node_type: 'group', attributes: { conventions: 'NZ-1.0 CF-1.13' } };
+        expect(nodeConventions('zarr-v3', byAttribute, byAttribute).sort()).toEqual([`${B}cf/v1.13/schema.json`, NZ].sort());
+        // Rewrites declare NZ by its zarr_conventions entry, not by a Conventions token made of its version label.
+        expect(conventionsToken(NZ)).toBeUndefined();
+        expect(conventionsToken(`${B}cf/v1.13/schema.json`)).toBe('CF-1.13');
+    });
+
+    it('places the coordinate set convention down to coordinate values, and its examples show no unexpected field', async () => {
+        const CS = 'https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json';
+        const store = fixtureStore();
+        const result = await probeEmbedded(store, [CS]);
+        const node = (key: string) => result.nodes.find((n) => n.key === key)!;
+        for (const n of result.nodes) expect(n.errors, n.key).toEqual([]);
+        // Arrays carry a coordinate set, groups the CRS objects arrays can share; Zarr v2 arrays have no dimension_names.
+        expect(node('zarr-v3:array').placements.find((p) => p.field === 'cs')).toMatchObject({ location: '/attributes', kind: 'validated' });
+        expect(node('zarr-v3:group').placements.find((p) => p.field === 'crs' && p.location === '/attributes')?.kind).toBe('validated');
+        expect(node('zarr-v2:array').notApplicable).toEqual([CS]);
+        // Exactly one of regular, external or explicit values: each is placed, though the example holds only one.
+        const values = node('zarr-v3:array').placements.filter((p) => p.location.endsWith('/values') && p.location.includes('/axes/')).map((p) => p.field);
+        expect([...new Set(values)].sort()).toEqual(['explicit', 'external', 'regular']);
+        // Keys a referenced document defines (proj: of its id) are fields there, but the convention claims no proj: prefix.
+        const source = result.sources.find((s) => s.key === CS)!;
+        expect(source.fields).toContain('proj:code');
+        expect(source.prefixes).toEqual([]);
+
+        const read = (name: string) => JSON.parse(readFileSync(new URL(`./fixtures/embedded/${name}`, import.meta.url), 'utf8')) as JsonObject;
+        for (const [name, key] of [['cs-cmip6-day.json', 'zarr-v3:array'], ['cs-cru-group.json', 'zarr-v3:group']] as const) {
+            const example = read(name);
+            // It declares the schema URL the convention names, which does not resolve: read as the vendored copy.
+            expect(nodeConventions('zarr-v3', example, example), name).toContain(CS);
+            // The examples are abbreviated zarr.json documents: checked against the convention only.
+            expect(await validateNode(store, example, CS, []), name).toEqual([]);
+            const view = realNodeView(example, node(key), result.sources.filter((s) => s.formats.includes('zarr-v3')), `${B}zarr/v3/schema.json`, true);
+            const fields = [...fieldIndex(view).entries()];
+            expect(fields.some(([pointer]) => pointer.includes('/axes/')), name).toBe(true);
+            expect(fields.filter(([, f]) => f.state === 'unexpected').map(([pointer]) => pointer), name).toEqual([]);
+        }
     });
 
     it('places the fields within the objects of a convention without prefixes, and shows them in real nodes', async () => {

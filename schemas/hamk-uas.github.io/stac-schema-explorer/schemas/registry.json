@@ -179,6 +179,70 @@
       ]
     },
     {
+      "id": "nz",
+      "kind": "zarr-convention",
+      "title": "NZ",
+      "formats": [
+        "zarr-v3"
+      ],
+      "description": "NetCDF Zarr convention: the structural layer between Zarr v3 and domain conventions such as CF, as the NetCDF Users Guide is for netCDF (dimension names, the conventions attribute, _FillValue).",
+      "authored": false,
+      "specification": "https://github.com/zarr-conventions/nz",
+      "maturity": "Proposal",
+      "checked": {
+        "date": "2026-11-03",
+        "latest": "v1-draft",
+        "source": "https://github.com/zarr-conventions/nz",
+        "note": "NZ-1.0 has no release yet: the v1 tag its README and schema name is not published, and the only tag, v1-proposed, is an earlier draft named NZUG-1.0. The schema is pinned to commit 7c923cf of main."
+      },
+      "declaration": {
+        "zarrConventions": {
+          "uuid": "d0a980b5-c644-4dcc-85a1-283799a58f40"
+        },
+        "conventionsAttribute": "^NZ-(?<version>[0-9]+(?:\\.[0-9]+)*)$"
+      },
+      "versions": [
+        {
+          "version": "v1-draft",
+          "schema": "https://raw.githubusercontent.com/zarr-conventions/nz/7c923cf7b5467c1a873ca93c9223bf08d60efc07/schema.json",
+          "declaredSchema": "https://raw.githubusercontent.com/zarr-conventions/nz/refs/tags/v1/schema.json",
+          "specification": "https://github.com/zarr-conventions/nz/blob/7c923cf7b5467c1a873ca93c9223bf08d60efc07/README.md"
+        }
+      ]
+    },
+    {
+      "id": "cs",
+      "kind": "zarr-convention",
+      "title": "cs",
+      "formats": [
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Coordinate sets: the CRSs, axes and coordinate values that give the dimensions of an array meaning, after OGC Referencing by Coordinates; groups can hold CRSs that arrays share.",
+      "authored": false,
+      "specification": "https://github.com/R-CF/zarr_conventions_cs",
+      "maturity": "Pilot",
+      "checked": {
+        "date": "2026-11-03",
+        "latest": "main-33df41a",
+        "source": "https://github.com/R-CF/zarr_conventions_cs",
+        "note": "No tags or releases: pinned to commit 33df41a of main. The schema URL it declares (R-CF/zarr_convention_cs, singular) does not resolve; the repository is R-CF/zarr_conventions_cs. It references the ref, geolocation, proj (geo-proj) and units-of-measure conventions, vendored unmodified, mostly from their main branches."
+      },
+      "declaration": {
+        "zarrConventions": {
+          "uuid": "e4dbf0b7-7a00-4ce6-b23e-484292014ab4"
+        }
+      },
+      "versions": [
+        {
+          "version": "main-33df41a",
+          "schema": "https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json",
+          "declaredSchema": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/schema.json",
+          "specification": "https://github.com/R-CF/zarr_conventions_cs/blob/33df41a6164e5af1761b32c6686b342bfe4beb3c/README.md"
+        }
+      ]
+    },
+    {
       "id": "cf",
       "kind": "attribute-convention",
       "title": "CF",

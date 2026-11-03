@@ -94,8 +94,10 @@ function counts(group: FieldGroup): string {
     return populated === group.fields.length ? '' : `${populated}/${group.fields.length}`;
 }
 
+/** `v1.1.0`, `v0.1`; a version that is no number (`main-33df41a`, a pinned commit) as it is. */
 function version(source: string): string | undefined {
-    return props.sources.find((s) => s.key === source)?.version;
+    const value = props.sources.find((s) => s.key === source)?.version;
+    return value && /^\d/.test(value) ? `v${value}` : value;
 }
 
 function dimmed(source: string): boolean {
@@ -117,7 +119,7 @@ function dimmed(source: string): boolean {
         >
           <span class="name">{{ g.label }}</span>
           <span v-if="counts(g)" class="count">{{ counts(g) }}</span>
-          <span v-if="version(g.source)" class="ver">v{{ version(g.source) }}</span>
+          <span v-if="version(g.source)" class="ver">{{ version(g.source) }}</span>
         </button>
         <template v-if="expanded.has(g.source)">
           <span
@@ -143,7 +145,7 @@ function dimmed(source: string): boolean {
       >
         <button type="button" class="pick" :title="fieldTitle(f)" @click.stop="emit('field', f.source, f.name)">
           <span class="name">{{ f.name }}</span>
-          <span v-if="version(f.source)" class="ver">v{{ version(f.source) }}</span>
+          <span v-if="version(f.source)" class="ver">{{ version(f.source) }}</span>
         </button>
         <button v-if="editable" type="button" class="edit" :title="editAction(f).label" :aria-label="editAction(f).label" @click.stop="emit('edit', f)">{{ editAction(f).symbol }}</button>
       </span>

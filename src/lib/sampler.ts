@@ -3,7 +3,7 @@ import type { SchemaStore } from './schemas';
 
 type Schema = Record<string, unknown>;
 
-const MAX_DEPTH = 7;
+const MAX_DEPTH = 10;
 const MAX_CANDIDATES = 6;
 
 const FORMAT_SAMPLES: Record<string, string> = {
@@ -220,6 +220,11 @@ function uniqueJson(values: Json[]): Json[] {
 }
 
 export class Sampler {
+    /** Candidates per `schemaUrl#pointer`: the same field is sampled for every node type and place it is tried in. */
+    private readonly cache = new Map<string, Json[]>();
+    /** Candidates per `$ref` and depth: nested fields share definitions (PROJJSON under every `proj:projjson`). */
+    private readonly refCache = new Map<string, Json[]>();
+
     constructor(private readonly store: SchemaStore) {}
 
     private deref(ref: string): Schema | boolean | undefined {
@@ -233,10 +238,16 @@ export class Sampler {
 
     /** Candidate values for the subschema at `pointer` of the schema at `schemaUrl`. */
     samplesAt(schemaUrl: string, pointer: string): Json[] {
-        const node = this.store.resolveAt(schemaUrl, pointer);
-        if (typeof node === 'boolean') return node ? ['example'] : [];
-        if (!isSchema(node)) return [];
-        return this.sample(absolutize(node, this.store.baseOf(schemaUrl)) as Schema, 0, new Set());
+        const key = `${schemaUrl}#${pointer}`;
+        let samples = this.cache.get(key);
+        if (!samples) {
+            const node = this.store.resolveAt(schemaUrl, pointer);
+            if (typeof node === 'boolean') samples = node ? ['example'] : [];
+            else if (!isSchema(node)) samples = [];
+            else samples = this.sample(absolutize(node, this.store.baseOf(schemaUrl)) as Schema, 0, new Set());
+            this.cache.set(key, samples);
+        }
+        return structuredClone(samples);
     }
 
     private flatten(schema: Schema, refs: Set<string>, depth = 0): Schema {
@@ -261,6 +272,15 @@ export class Sampler {
 
     sample(input: Schema, depth: number, refs: Set<string>): Json[] {
         if (depth > MAX_DEPTH) return [];
+        const refKey = typeof input.$ref === 'string' && Object.keys(input).length === 1 ? `${input.$ref}@${depth}` : undefined;
+        const cached = refKey ? this.refCache.get(refKey) : undefined;
+        if (cached) return cached;
+        const out = this.sampleUncached(input, depth, refs);
+        if (refKey) this.refCache.set(refKey, out);
+        return out;
+    }
+
+    private sampleUncached(input: Schema, depth: number, refs: Set<string>): Json[] {
         const schema = this.flatten(input, refs);
         const results: Json[] = [];
         if ('const' in schema) return [schema.const as Json];
@@ -272,15 +292,42 @@ export class Sampler {
         }
 
         const branches = (Array.isArray(schema.oneOf) ? schema.oneOf : Array.isArray(schema.anyOf) ? schema.anyOf : undefined) as unknown[] | undefined;
+        // `if` that only asks for properties (`if: {required: [uri]}`): with them, `then` applies; without the first, `else`.
+        const condition = isSchema(schema.if) ? schema.if : undefined;
+        if (!branches && condition && Array.isArray(condition.required) && Object.keys(condition).every((k) => k === 'required')) {
+            const keys = condition.required as string[];
+            const rest: Schema = { ...schema };
+            delete rest.if;
+            delete rest.then;
+            delete rest.else;
+            const holds = mergeSchemas(mergeSchemas(rest, { required: keys }), isSchema(schema.then) ? schema.then : {});
+            const fails = mergeSchemas(rest, isSchema(schema.else) ? schema.else : {});
+            const alwaysRequired = Array.isArray(rest.required) && (rest.required as string[]).includes(keys[0]);
+            const out = this.sample(holds, depth + 1, refs);
+            if (!alwaysRequired) {
+                fails.properties = { ...(isSchema(fails.properties) ? fails.properties : {}), [keys[0]]: false };
+                out.push(...this.sample(fails, depth + 1, refs));
+            }
+            return uniqueJson(out).slice(0, MAX_CANDIDATES);
+        }
         if (branches) {
             const rest: Schema = { ...schema };
             delete rest.oneOf;
             delete rest.anyOf;
             delete rest.examples;
             delete rest.default;
+            const requiredOf = (branch: unknown) => (isSchema(branch) && Array.isArray(branch.required) ? (branch.required as string[]) : []);
             for (const branch of branches) {
                 if (!isSchema(branch)) continue;
-                results.push(...this.sample(mergeSchemas(rest, this.flatten(branch, refs)), depth + 1, refs));
+                // Properties that only other branches require are left out (`regular`, `external` or `explicit` values):
+                // an object with all of them would match several branches of a oneOf.
+                const own = new Set(requiredOf(branch));
+                const others = branches.filter((b) => b !== branch).flatMap(requiredOf).filter((key) => !own.has(key));
+                const merged = mergeSchemas(rest, this.flatten(branch, refs));
+                if (others.length && isSchema(merged.properties)) {
+                    merged.properties = Object.fromEntries(Object.entries(merged.properties).map(([key, value]) => [key, others.includes(key) ? false : value]));
+                }
+                results.push(...this.sample(merged, depth + 1, refs));
                 if (results.length >= MAX_CANDIDATES) break;
             }
             return uniqueJson(results).slice(0, MAX_CANDIDATES);
@@ -316,25 +363,33 @@ export class Sampler {
     private sampleObject(schema: Schema, depth: number, refs: Set<string>): Json[] {
         const properties = isSchema(schema.properties) ? schema.properties : {};
         const required = Array.isArray(schema.required) ? (schema.required as string[]) : [];
-        const build = (keys: string[]): JsonObject => {
+        // An object missing a required property (one too deep to sample) is no candidate: an optional property holding it is
+        // left out instead, rather than added with a value that fails (`values` of deeply nested coordinates).
+        const build = (keys: string[]): JsonObject | undefined => {
             const out: JsonObject = {};
             for (const key of keys) {
                 const value = key in properties ? this.first(properties[key], depth, refs) : 'example';
                 if (value !== undefined) out[key] = value;
+                else if (required.includes(key)) return undefined;
             }
             return out;
         };
         const candidates: JsonObject[] = [];
         const allKeys = [...new Set([...required, ...Object.keys(properties)])].filter((k) => properties[k] !== false);
-        candidates.push(build(allKeys));
-        if (allKeys.length !== required.length) candidates.push(build(required));
+        const all = build(allKeys);
+        if (all) candidates.push(all);
+        if (allKeys.length !== required.length) {
+            const minimal = build(required);
+            if (minimal) candidates.push(minimal);
+        }
 
         const entrySchema = isSchema(schema.additionalProperties) ? schema.additionalProperties : undefined;
         const patterns = isSchema(schema.patternProperties) ? Object.entries(schema.patternProperties) : [];
+        const minProperties = typeof schema.minProperties === 'number' ? schema.minProperties : 0;
         if (entrySchema || patterns.length > 0) {
             const names = isSchema(schema.propertyNames) && typeof schema.propertyNames.pattern === 'string' ? schema.propertyNames.pattern : undefined;
             for (const candidate of candidates) {
-                if (Object.keys(candidate).length > 0 && !(typeof schema.minProperties === 'number' && Object.keys(candidate).length < schema.minProperties)) continue;
+                if (Object.keys(candidate).length > 0 && Object.keys(candidate).length >= minProperties) continue;
                 const [pattern, sub] = patterns.find(([, s]) => isSchema(s) && Object.keys(s).length > 0) ?? [undefined, entrySchema];
                 const keyPattern = pattern ?? names;
                 const key = keyPattern
@@ -344,7 +399,8 @@ export class Sampler {
                 if (value !== undefined) candidate[key] = value;
             }
         }
-        return candidates;
+        // A map that needs entries (`terms` of a parametric coordinate) without one it could sample is no candidate either.
+        return candidates.filter((candidate) => Object.keys(candidate).length >= minProperties);
     }
 
     private sampleArray(schema: Schema, depth: number, refs: Set<string>): Json[] {

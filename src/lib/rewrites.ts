@@ -78,9 +78,13 @@ export function declareZarrConventions(node: JsonObject, schemas: readonly strin
     return additions.length ? { ...node, attributes: { ...attributes, zarr_conventions: [...declared, ...additions] } } : node;
 }
 
-/** `CF-1.13`, `ACDD-1.3`: the `Conventions` token of an attribute convention schema, if it has one. */
+/**
+ * `CF-1.13`, `ACDD-1.3`: the `Conventions` token of an attribute convention schema, if it has one. A Zarr convention
+ * that also has a token (NZ) is declared by its `zarr_conventions` entry instead.
+ */
 export function conventionsToken(url: string): string | undefined {
     const known = conventionOfSchema(url);
+    if (known?.convention.declaration?.zarrConventions) return undefined;
     const pattern = known?.convention.declaration?.conventionsAttribute;
     const name = pattern ? /^\^([A-Za-z]+)-/.exec(pattern)?.[1] : undefined;
     return name && known ? `${name}-${known.version.replace(/^v/, '')}` : undefined;

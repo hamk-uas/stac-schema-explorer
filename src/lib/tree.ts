@@ -44,7 +44,8 @@ export interface ObjectView {
     children: ObjectView[];
 }
 
-export const MAP_KEYS = new Set(['assets', 'item_assets', 'cube:dimensions', 'cube:variables', 'table:tables', 'storage:schemes', 'renders']);
+/** Keys whose objects are maps keyed by name: STAC's, and the coordinate set convention's (`crs` of a group, `axes`, `terms`). */
+export const MAP_KEYS = new Set(['assets', 'item_assets', 'cube:dimensions', 'cube:variables', 'table:tables', 'storage:schemes', 'renders', 'crs', 'axes', 'terms']);
 
 /** Replaces array indices and keys of known maps with `*`, so equivalent objects of different documents match. */
 export function shapeOf(pointer: string): string {
@@ -209,6 +210,8 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
     const fieldsAt = (pointer: string): FieldView[] => {
         const node = getAt(doc, pointer);
         if (!node || typeof node !== 'object' || Array.isArray(node)) return [];
+        // The keys of a map are names of its entries (an asset named `title`, an axis named `time`), not fields.
+        if (MAP_KEYS.has(splitPointer(pointer).at(-1) ?? '')) return [];
         const present = new Set(Object.keys(node));
         const removed = edits?.removedAt(pointer).filter((name) => !present.has(name)) ?? [];
         const possible = possibleByShape.get(shapeOf(pointer)) ?? new Map();

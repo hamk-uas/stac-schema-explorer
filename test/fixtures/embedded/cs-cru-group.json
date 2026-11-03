@@ -1,0 +1,79 @@
+{
+  "zarr_format": 3,
+  "node_type": "group",
+  "attributes": {
+    "zarr_conventions": [
+      {
+        "schema_url": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/schema.json",
+        "name": "cs"
+      },
+      {
+        "schema_url": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json",
+        "name": "ref"
+      },
+      {
+        "schema_url": "https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json",
+        "name": "proj"
+      }
+    ],
+    "crs": {
+      "WGS84": {
+        "type": "planar",
+        "axes": {
+          "lon": {
+            "abbreviation": "X",
+            "coordinates": [
+              {
+                "direction": "east",
+                "unit": "degrees",
+                "values": {
+                  "regular": [-179.75, 0.5]
+                }
+              }
+            ]
+          },
+          "lat": {
+            "abbreviation": "Y",
+            "coordinates": [
+              {
+                "direction": "north",
+                "unit": "degrees",
+                "values": {
+                  "regular": [-89.75, 0.5]
+                }
+              }
+            ]
+          }
+        },
+        "id": {
+          "proj:code": "EPSG:4326"
+        }
+      },
+      "standard_calendar": {
+        "type": "temporal",
+        "axes": {
+          "time": {
+            "abbreviation": "T",
+            "coordinates": [
+              {
+                "direction": "future",
+                "time": {
+                    "unit": "day",
+                    "epoch": "1900-01-01",
+                  "calendar": "standard"
+                },
+                "values": {
+                  "external": {
+                    "ref": {
+                      "node": "../time"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

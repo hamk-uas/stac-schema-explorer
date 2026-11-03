@@ -147,15 +147,15 @@ const undeclaredTitle = computed(() => [
       class="data"
       :aria-label="`Metadata embedded in the ${READER_LABEL[file.kind]} of asset ${file.assets.join(', ')}`"
     >
-      <div class="data-head">
+      <div class="data-head file-head">
         <button type="button" class="data-toggle" :aria-expanded="file.expanded" @click="emit('data', entry, file)">
           <span class="data-twisty" aria-hidden="true">{{ file.expanded ? '▾' : '▸' }}</span>
           <span class="data-icon" aria-hidden="true">
             <svg viewBox="0 0 16 16" width="14" height="14"><ellipse cx="8" cy="3.5" rx="5.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
           </span>
           <span class="data-kind">{{ READER_LABEL[file.kind] }}</span>
-          <span class="data-tag">embedded in the data, not STAC</span>
-          <span class="data-assets">asset <code v-for="key in file.assets" :key="key">{{ key }}</code></span>
+          <span class="data-tag" title="Embedded in the data, not STAC">embedded in the data, not STAC</span>
+          <span class="data-assets" :title="`asset ${file.assets.join(', ')}`">asset <code v-for="key in file.assets" :key="key">{{ key }}</code></span>
         </button>
         <span v-if="file.status === 'loading'" class="status">reading…</span>
         <span v-else-if="file.status === 'error'" class="status error" :title="file.error">⚠ {{ file.error }}</span>
@@ -173,6 +173,7 @@ const undeclaredTitle = computed(() => [
           :selected-doc="selectedDoc"
           :selected-pointers="selectedPointers"
           editable
+          in-data-section
           @select="(k: string, p: string[], names?: string[]) => emit('select', k, p, names)"
           @field="(s: string, n: string, src: SourceInfo[]) => emit('field', s, n, src)"
           @schema="(s: string, n: string[], src: SourceInfo[]) => emit('schema', s, n, src)"
@@ -382,8 +383,14 @@ header {
   padding: 4px 8px;
   flex-wrap: wrap;
 }
+/* A read file: its status and link stay on the heading's row. */
+.data-head.file-head {
+  flex-wrap: nowrap;
+}
 .data-toggle {
   display: inline-flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
   gap: 6px;
   border: 0;
@@ -415,6 +422,29 @@ header {
   background: var(--field);
   border-radius: 4px;
   padding: 1px 5px;
+}
+/* A read file's heading stays one row: the tag and then the asset keys shorten (in full in their tooltips). */
+.file-head .data-toggle {
+  flex-wrap: nowrap;
+}
+.file-head .data-kind,
+.file-head .data-twisty,
+.file-head .status {
+  flex: none;
+  white-space: nowrap;
+}
+.file-head .data-tag {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.data-assets {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .data-assets code {
   margin-left: 4px;

@@ -1,6 +1,7 @@
 import Ajv, { type AnySchemaObject, type ErrorObject, type ValidateFunction } from 'ajv';
 import Ajv2019 from 'ajv/dist/2019.js';
 import Ajv2020 from 'ajv/dist/2020.js';
+import draft7MetaSchema from 'ajv/dist/refs/json-schema-draft-07.json';
 import addFormats from 'ajv-formats';
 import addFormatsDraft2019 from 'ajv-formats-draft2019';
 
@@ -114,6 +115,9 @@ export class SchemaStore {
                 loadSchema: (uri: string) => this.load(uri) as Promise<AnySchemaObject>,
             };
             ajv = draft === '2020' ? new Ajv2020(options) : draft === '2019' ? new Ajv2019(options) : new Ajv(options);
+            // A 2019-09 or 2020-12 schema may `$ref` a draft-07 one (the coordinate set convention reaches PROJJSON):
+            // without its meta-schema, compileAsync tries to load it through loadSchema and never settles.
+            if (draft !== '07') ajv.addMetaSchema(draft7MetaSchema);
             addFormats(ajv);
             addFormatsDraft2019(ajv);
             this.ajvs.set(draft, ajv);

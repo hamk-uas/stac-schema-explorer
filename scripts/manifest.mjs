@@ -64,13 +64,22 @@ export const VENDORED = [
     ZARR_CONVENTION('proj', 'v0.1'),
     ZARR_CONVENTION('spatial', 'v0.1'),
     ZARR_CONVENTION('multiscales', 'v0.1'),
+    // NZ-1.0 has no release tag yet (its only tag, v1-proposed, is an earlier draft named NZUG-1.0): pinned to a commit.
+    ZARR_CONVENTION('nz', '7c923cf7b5467c1a873ca93c9223bf08d60efc07'),
+    // The coordinate set convention (R-CF), registered in `zarr_conventions` by UUID outside github.com/zarr-conventions.
+    // No tags or releases: pinned to a commit of main.
+    {
+        schemas: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json'],
+        readmes: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/README.md'],
+    },
 ];
 
-/** A Zarr convention of github.com/zarr-conventions: its schema and README at a release tag. */
+/** A Zarr convention of github.com/zarr-conventions: its schema and README at a release tag, or at a commit (a 40-digit SHA). */
 function ZARR_CONVENTION(name, tag) {
+    const ref = /^[0-9a-f]{40}$/.test(tag) ? tag : `refs/tags/${tag}`;
     return {
-        schemas: [`https://raw.githubusercontent.com/zarr-conventions/${name}/refs/tags/${tag}/schema.json`],
-        readmes: [`https://raw.githubusercontent.com/zarr-conventions/${name}/refs/tags/${tag}/README.md`],
+        schemas: [`https://raw.githubusercontent.com/zarr-conventions/${name}/${ref}/schema.json`],
+        readmes: [`https://raw.githubusercontent.com/zarr-conventions/${name}/${ref}/README.md`],
     };
 }
 
@@ -88,6 +97,18 @@ export function isAuthored(url) {
 /** Hosts whose schemas are only dependencies: vendored unmodified, never enriched. */
 export const DEPENDENCY_HOSTS = ['geojson.org', 'proj.org', 'json-schema.org'];
 
+/**
+ * Other schemas that are only dependencies: those of other conventions that a vendored convention `$ref`s (the coordinate
+ * set convention uses ref, geolocation, proj and units of measure). Vendored unmodified, as fetched from these URLs.
+ */
+export const DEPENDENCY_URLS = [
+    'https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json',
+    'https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json',
+    'https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/main/schema.json',
+    'https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json',
+    'https://raw.githubusercontent.com/clbarnes/zarr-convention-uom/refs/tags/v1/schema.json',
+];
+
 /** `https://host/path` → `host/path`, the relative location under `schemas/` and `upstream/`. */
 export function localPath(url) {
     const { host, pathname } = new URL(url);
@@ -95,5 +116,5 @@ export function localPath(url) {
 }
 
 export function isDependency(url) {
-    return DEPENDENCY_HOSTS.includes(new URL(url).host);
+    return DEPENDENCY_HOSTS.includes(new URL(url).host) || DEPENDENCY_URLS.includes(url);
 }

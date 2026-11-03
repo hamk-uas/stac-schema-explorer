@@ -50,7 +50,8 @@ technical visual language; it need not adopt Observatory instance branding.
   selected schema shows its fields; documents and nodes appear either way.
   Cores share one slate color. Data conventions are visibly apart from
   extensions: their own picker grouped by kind, square markers, and node cards
-  marked "embedded in the data" (`NodeCard`).
+  marked "embedded in the data" (`NodeCard`'s tag, or the data-file section or
+  heading that holds nodes read from data).
   Data files of a STAC document's assets are shown inside its `DocCard`, in
   unfilled sections with a quiet dashed outline that must never look like its
   STAC objects (flat filled cards); Zarr is
@@ -74,7 +75,8 @@ technical visual language; it need not adopt Observatory instance branding.
   layout behavior must work at a domain root and a subdirectory.
 - Never change accepted/rejected STAC documents just to obtain nicer schema
   documentation. Preserve `$id`, upstream annotations and validation constraints.
-  GeoJSON/PROJJSON dependency copies remain unmodified.
+  Dependency copies (GeoJSON, PROJJSON, and other conventions' schemas a vendored
+  convention references, listed in `DEPENDENCY_URLS`) remain unmodified.
 
 ## Schema maintenance: source versus generated data
 
@@ -88,7 +90,9 @@ source data, **not disposable build output**; `dist` is build output.
    it does not overwrite existing enriched copies.
 3. `node scripts/draft-docs.mjs <name>` drafts missing documentation and titled
    enum alternatives. It is assistance, not authoritative scientific prose:
-   review additions against the sources and existing text.
+   review additions against the sources and existing text. It can also annotate
+   schemas reached through `$ref`; restore dependency copies (delete and re-run
+   `fetch-upstream`) if it does.
 4. Use `node scripts/report.mjs <name>`, `node scripts/review.mjs <name>` and
    `git diff` to review gaps/changes. Omit the name for all schemas.
 5. Run focused vendoring tests, then affected engine checks. Upstream changes
@@ -115,7 +119,10 @@ in their description and are published at their `$id` by `vite.config.ts`.
   published Zarr convention schemas rely on it.
 - `registry.json` and `crosswalk.json` are contracts read by Observatory. Identify
   Zarr conventions by UUID, not name or URL. Changing ids, paths, relations or
-  conversion names requires coordinated Observatory changes.
+  conversion names requires coordinated Observatory changes. Vendor Zarr
+  conventions at a release tag; one without a release yet (NZ, cs) is pinned to a
+  commit, and its version records the URL its schema declares for itself as
+  `declaredSchema` (an optional field), so declaring data loads the vendored copy.
 - `software.json` is published beside them and names conventions and formats by
   their registry ids and STAC extensions by name. Conventions say who *defines*
   fields (never overlapping); software says who *uses* them (overlapping freely).

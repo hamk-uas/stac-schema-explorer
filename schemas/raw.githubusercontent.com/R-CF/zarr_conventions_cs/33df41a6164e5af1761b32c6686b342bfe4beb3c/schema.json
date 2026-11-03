@@ -1,0 +1,534 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Coordinate Set Convention",
+  "description": "Schema for the coordinate set convention",
+  "type": "object",
+  "properties": {
+    "zarr_format": {
+      "type": "integer",
+      "oneOf": [
+        {
+          "const": 2,
+          "title": "Zarr v2"
+        },
+        {
+          "const": 3,
+          "title": "Zarr v3"
+        }
+      ],
+      "description": "Zarr format version",
+      "title": "Zarr format"
+    },
+    "node_type": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "array",
+          "title": "Array",
+          "description": "A Zarr array node: it carries a coordinate set (cs)."
+        },
+        {
+          "const": "group",
+          "title": "Group",
+          "description": "A Zarr group node: it can hold CRS objects (crs) that arrays elsewhere in the store reference."
+        }
+      ],
+      "description": "Type of Zarr node",
+      "title": "Node type"
+    },
+    "shape": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "title": "Shape",
+      "description": "Length of each dimension of the array."
+    },
+    "dimension_names": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
+      },
+      "title": "Dimension names",
+      "description": "Names of the array's dimensions, each once: a letter followed by letters, digits or underscores. The axes of the coordinate set are keyed by these names."
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Zarr attributes containing convention metadata and properties",
+      "properties": {
+        "zarr_conventions": {
+          "type": "array",
+          "description": "Array of convention metadata objects",
+          "contains": {
+            "$ref": "#/$defs/conventionMetadata"
+          },
+          "title": "Declared conventions"
+        }
+      },
+      "required": [
+        "zarr_conventions"
+      ],
+      "title": "Attributes"
+    }
+  },
+  "required": [
+    "zarr_format",
+    "node_type",
+    "attributes"
+  ],
+  "if": {
+    "properties": {
+      "node_type": {
+        "const": "array"
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "shape",
+      "dimension_names"
+    ],
+    "properties": {
+      "attributes": {
+        "type": "object",
+        "required": [
+          "cs"
+        ],
+        "properties": {
+          "cs": {
+            "$ref": "#/$defs/cs"
+          }
+        },
+        "title": "Array attributes",
+        "description": "Attributes of an array: its coordinate set, in cs."
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "attributes": {
+        "type": "object",
+        "required": [
+          "crs"
+        ],
+        "properties": {
+          "crs": {
+            "type": "object",
+            "description": "Keyed CRS objects stored in a Zarr group, keyed by CRS name",
+            "minProperties": 1,
+            "additionalProperties": {
+              "$ref": "#/$defs/crs"
+            },
+            "title": "CRS objects"
+          }
+        },
+        "title": "Group attributes",
+        "description": "Attributes of a group: CRS objects, in crs, for arrays elsewhere in the store to reference."
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "conventionMetadata": {
+      "type": "object",
+      "description": "Convention metadata object for use in zarr_conventions array",
+      "properties": {
+        "schema_url": {
+          "type": "string",
+          "const": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/schema.json",
+          "description": "URL to the JSON Schema definition for this convention",
+          "title": "Schema URL"
+        },
+        "spec_url": {
+          "type": "string",
+          "const": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/README.md",
+          "description": "URL to the full specification document",
+          "title": "Specification URL"
+        },
+        "uuid": {
+          "type": "string",
+          "const": "e4dbf0b7-7a00-4ce6-b23e-484292014ab4",
+          "description": "UUID that permanently identifies this convention",
+          "title": "Convention UUID"
+        },
+        "name": {
+          "type": "string",
+          "description": "cs",
+          "title": "Convention name"
+        },
+        "description": {
+          "type": "string",
+          "const": "Coordinate set convention for Zarr arrays",
+          "description": "Convention to assign semantic meaning to the dimensions of Zarr arrays, using axes and coordinates",
+          "title": "Convention description"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "schema_url"
+          ]
+        },
+        {
+          "required": [
+            "spec_url"
+          ]
+        },
+        {
+          "required": [
+            "uuid"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "cs": {
+      "type": "object",
+      "description": "Coordinate set for n-dimensional arrays",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Descriptive name for the coordinate set.",
+          "title": "Name"
+        },
+        "crs": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/crs"
+              },
+              {
+                "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json#/$defs/ref"
+              }
+            ]
+          },
+          "title": "CRSs",
+          "description": "The CRSs that together make up the coordinate set: CRS objects, or references to CRS objects defined in a group elsewhere in the store. Their axes are read in the order of the array's dimension_names."
+        },
+        "id": {
+          "$ref": "https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json#/$defs/projAttributes",
+          "title": "Identifier (proj)",
+          "description": "Unique identifier of the compound CRS, in the fields of the proj convention. It overrides the identifiers of the CRSs in crs."
+        },
+        "attributes": {
+          "type": "object",
+          "title": "Attributes",
+          "description": "Other attributes of the coordinate set."
+        }
+      },
+      "required": [
+        "crs"
+      ],
+      "title": "Coordinate set"
+    },
+    "crs": {
+      "type": "object",
+      "description": "CRS definition",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the CRS",
+          "title": "Name"
+        },
+        "type": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "compound",
+              "title": "Compound",
+              "description": "A CRS whose full contents are unknown to the application, typically spatial data described only by a WKT2 string or an identifier code (nominally CompoundCRS, but possibly of another type)."
+            },
+            {
+              "const": "planar",
+              "title": "Planar",
+              "description": "Planar coordinates: geographic, geodetic, projected or engineering 2D CRSs of the OGC standard."
+            },
+            {
+              "const": "vertical",
+              "title": "Vertical",
+              "description": "Vertical coordinates (VerticalCRS)."
+            },
+            {
+              "const": "temporal",
+              "title": "Temporal",
+              "description": "Time coordinates (TemporalCRS)."
+            },
+            {
+              "const": "undefined",
+              "title": "Undefined",
+              "description": "Axes outside the X-Y-Z-T domain."
+            }
+          ],
+          "description": "Type of the CRS",
+          "title": "Type"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the nature of the CRS",
+          "title": "Description"
+        },
+        "axes": {
+          "type": "object",
+          "description": "Keyed axis objects, keyed by dimension name",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/axis"
+          },
+          "title": "Axes"
+        },
+        "id": {
+          "$ref": "https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json#/$defs/projAttributes",
+          "title": "Identifier (proj)",
+          "description": "Unique identifier of the CRS, in the fields of the proj convention; left out when the coordinate set has an id or the CRS has geolocation arrays."
+        },
+        "geolocation": {
+          "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/main/schema.json#/$defs/geolocation",
+          "title": "Geolocation arrays",
+          "description": "Coordinates for each element of the array, in arrays referenced with the geolocation convention."
+        }
+      },
+      "required": [
+        "type",
+        "axes"
+      ],
+      "additionalProperties": true,
+      "title": "CRS"
+    },
+    "axis": {
+      "type": "object",
+      "description": "Properties of an individual axis.",
+      "properties": {
+        "abbreviation": {
+          "type": "string",
+          "description": "Abbreviation of the axis, such as \"X\" or \"Y\".",
+          "title": "Abbreviation"
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/coordinates"
+          },
+          "title": "Coordinates",
+          "description": "Array of coordinates for the axis."
+        },
+        "attributes": {
+          "type": "object",
+          "title": "Attributes",
+          "description": "Any other attributes of the axis."
+        }
+      },
+      "additionalProperties": true,
+      "title": "Axis"
+    },
+    "coordinates": {
+      "type": "object",
+      "description": "Properties of a set of coordinates",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the set of coordinates.",
+          "title": "Name"
+        },
+        "direction": {
+          "type": "string",
+          "description": "The direction of increasing coordinate values. Its value must be taken from Table 48 of OGC standard \"Referencing by Coordinates\".",
+          "title": "Direction"
+        },
+        "unit": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "https://raw.githubusercontent.com/clbarnes/zarr-convention-uom/refs/tags/v1/schema.json#/$defs/uom"
+            }
+          ],
+          "title": "Unit",
+          "description": "Unit-of-measure of the coordinates."
+        },
+        "time": {
+          "$ref": "#/$defs/time"
+        },
+        "values": {
+          "$ref": "#/$defs/values"
+        },
+        "boundaries": {
+          "$ref": "#/$defs/boundaries"
+        },
+        "parametric": {
+          "$ref": "#/$defs/parametric"
+        },
+        "attributes": {
+          "type": "object",
+          "title": "Attributes",
+          "description": "Any other attributes of the coordinates."
+        }
+      },
+      "required": [
+        "values"
+      ],
+      "additionalProperties": true,
+      "title": "Coordinates"
+    },
+    "time": {
+      "type": "object",
+      "description": "The time definition of a set of coordinates.",
+      "properties": {
+        "unit": {
+          "type": "string",
+          "title": "Unit",
+          "description": "Time unit."
+        },
+        "epoch": {
+          "type": "string",
+          "title": "Epoch",
+          "description": "The epoch for the time calculations."
+        },
+        "calendar": {
+          "type": "string",
+          "title": "Calendar",
+          "description": "Name of a calendar."
+        }
+      },
+      "required": [
+        "unit",
+        "epoch"
+      ],
+      "additionalProperties": true,
+      "title": "Time"
+    },
+    "values": {
+      "type": "object",
+      "description": "The coordinate values of an axis",
+      "properties": {
+        "regular": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Initial coordinate value (at shape index 0) and increment between successive coordinates.",
+          "minItems": 2,
+          "maxItems": 2,
+          "title": "Regular (start and step)"
+        },
+        "external": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json#/$defs/ref",
+              "title": "Reference",
+              "description": "Where the 1-dimensional array of coordinate values is, in the form of the ref convention."
+            }
+          },
+          "required": [
+            "ref"
+          ],
+          "description": "Reference to a 1-dimensional array with coordinate values.",
+          "title": "External array"
+        },
+        "explicit": {
+          "type": "array",
+          "description": "JSON array of coordinate values.",
+          "title": "Explicit values"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "regular"
+          ]
+        },
+        {
+          "required": [
+            "external"
+          ]
+        },
+        {
+          "required": [
+            "explicit"
+          ]
+        }
+      ],
+      "additionalProperties": true,
+      "title": "Values"
+    },
+    "boundaries": {
+      "type": "object",
+      "description": "The boundary values around coordinate values of an axis",
+      "properties": {
+        "regular": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "JSON array with the extent below and above the coordinate value.",
+          "minItems": 2,
+          "maxItems": 2,
+          "title": "Regular (below and above)"
+        },
+        "external": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json#/$defs/ref",
+              "title": "Reference",
+              "description": "Where the array of boundary values is, in the form of the ref convention."
+            }
+          },
+          "required": [
+            "ref"
+          ],
+          "description": "Path to an array providing boundary values.",
+          "title": "External array"
+        },
+        "attributes": {
+          "type": "object",
+          "title": "Attributes",
+          "description": "Any other attributes of the boundaries object."
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "regular"
+          ]
+        },
+        {
+          "required": [
+            "external"
+          ]
+        }
+      ],
+      "additionalProperties": true,
+      "title": "Boundaries"
+    },
+    "parametric": {
+      "type": "object",
+      "description": "Formula and terms for parametric coordinates",
+      "properties": {
+        "formula": {
+          "type": "string",
+          "title": "Formula",
+          "description": "The name of the formulation, the `\"standard_name\"` used in CF."
+        },
+        "terms": {
+          "type": "object",
+          "description": "Keyed values objects, keyed by name of the formula term",
+          "minProperties": 1,
+          "additionalProperties": {
+            "$ref": "#/$defs/values"
+          },
+          "title": "Terms"
+        }
+      },
+      "required": [
+        "formula",
+        "terms"
+      ],
+      "title": "Parametric"
+    }
+  }
+}

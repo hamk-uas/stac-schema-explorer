@@ -128,7 +128,10 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
    *other* extensions that a schema validates (for example `cf:cell_methods` in Table columns in the Observatory
    extension) are reported too, attributed to the schema that validates them.
 2. **Example values** ([src/lib/sampler.ts](src/lib/sampler.ts)). A value valid against each field's subschema is
-   generated from the schema (with readable hints for well-known fields) and checked with Ajv.
+   generated from the schema (with readable hints for well-known fields) and checked with Ajv. Each `oneOf`/`anyOf`
+   branch is sampled without the properties only the other branches require, an `if` that only asks for properties is
+   sampled with them (its `then`) and without (its `else`), and an object that misses a required property too deep to
+   sample is left out rather than given an invalid value. Samples are cached per field and per `$ref`.
 3. **Placement probing** ([src/lib/probe.ts](src/lib/probe.ts)). Starting from minimal valid Catalog, Collection and
    Item documents with one link, provider, asset and item asset each, every field is tried in every object of the
    document:
@@ -164,7 +167,12 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
    spatial alone does not place `multiscales`. The same pass places a convention's own fields within the objects of its
    entries when its entries have no prefix (`layout` of multiscales, `asset` and `transform` of its items), repeated so
    that fields needing company (`derived_from` requires `transform`) are placed too. Within a prefixed entry's value
-   (PROJJSON of `proj:projjson`), keys are that value, not fields.
+   (PROJJSON of `proj:projjson`), keys are that value, not fields. The objects searched include array items and the
+   entries of maps keyed by name (the coordinate set convention's `axes`, keyed by dimension name), down to coordinate
+   values. A document the convention `$ref`s is not searched: its keys are fields where the convention places its object
+   (`proj:code` in a CRS `id`), not deeper (PROJJSON). Mutually exclusive alternatives (exactly one of `regular`,
+   `external` or `explicit` coordinate values) are each placed, in variants of the example node that are searched
+   further, while the example shown keeps the first.
 
 ### Limitations
 
@@ -193,14 +201,17 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 
 Most published STAC schemas have no descriptions and list allowed values without explaining them; the explanations are
 in the extensions' READMEs. This repository therefore vendors STAC core (1.0.0 and 1.1.0), the extensions of the
-quick-select list and the Zarr conventions `proj`, `spatial` and `multiscales`
-([zarr-conventions](https://github.com/zarr-conventions)) in [schemas/](schemas), as copies that add a title and a
+quick-select list, the Zarr conventions `proj`, `spatial`, `multiscales` and `nz`
+([zarr-conventions](https://github.com/zarr-conventions)) and the coordinate set convention `cs`
+([R-CF/zarr_conventions_cs](https://github.com/R-CF/zarr_conventions_cs)) in [schemas/](schemas), as copies that add a title and a
 description to every field and turn every `enum` into a `oneOf` of titled (and, where documented, described) constants.
 The [Observatory](https://github.com/hamk-uas/observatory) uses these copies, adding its own Finnish and Swedish
 translations of STAC core.
 
 - [schemas/](schemas)`/<host>/<path>` is the documented copy of `https://<host>/<path>`; its `$id` is that URL (upstream
-  ids end in `#` or, for v1.1.0 `common.json`, have a typo). Dependencies (GeoJSON, PROJJSON) are unmodified.
+  ids end in `#` or, for v1.1.0 `common.json`, have a typo). Dependencies are unmodified: GeoJSON and PROJJSON, and
+  the schemas of other conventions that `cs` references (ref, geolocation, geo-proj and units of measure), listed in
+  `DEPENDENCY_URLS` of [scripts/manifest.mjs](scripts/manifest.mjs).
 - [upstream/](upstream) holds the published originals. The tests ([test/vendored.test.ts](test/vendored.test.ts)) check
   that each copy validates exactly like its original (annotations removed, value lists turned back into `enum`), keeps
   every upstream title and description, documents every field, and lists each allowed value exactly once: a value listed
@@ -236,7 +247,7 @@ treatment as STAC:
 | STAC | Embedded metadata |
 | --- | --- |
 | STAC core (Catalog, Collection, Item) | **Format schemas**: Zarr v3 and v2 nodes, netCDF groups and variables, TIFF files and images |
-| STAC extensions, declared in `stac_extensions` | **Conventions**: Zarr conventions declared in `zarr_conventions`; CF and ACDD declared in the `Conventions` attribute; GeoTIFF, GDAL, xarray and EOPF recognised from their keys |
+| STAC extensions, declared in `stac_extensions` | **Conventions**: Zarr conventions declared in `zarr_conventions` (NZ also in `conventions`); CF and ACDD declared in the `Conventions` attribute; GeoTIFF, GDAL, xarray and EOPF recognised from their keys |
 
 Every schema validates one **node** of a format document: a Zarr group or array (its `zarr.json`, or for Zarr v2 its
 `.zgroup`/`.zarray` with `.zattrs` as `attributes`), a netCDF group or variable, or a TIFF file or image (Image File
@@ -254,7 +265,10 @@ They have no upstream copy; the build publishes them at their `$id`,
 - [registry.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/registry.json): the formats (schema, media
   types, node types) and conventions (kind, formats, versions and how each is declared or recognised). Zarr conventions
   are identified by the UUID of their `zarr_conventions` entry, which stays the same when a schema moves; their names
-  are only labels (TESSERA writes `spatial:` where the convention says `spatial`).
+  are only labels (TESSERA writes `spatial:` where the convention says `spatial`). A version vendored before the schema
+  URL it declares for itself is published (NZ, pinned to a commit until its `v1` tag exists; `cs`, whose declared URL
+  names a repository that does not exist) records that URL as
+  `declaredSchema`, so that data declaring it is validated with the vendored copy.
 - [crosswalk.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/crosswalk.json): where embedded fields
   correspond to STAC fields (`proj:code` in both, ACDD `title` and STAC `title`, GeoTIFF `ProjectedCRSGeoKey` and
   `proj:code`, …): the same value, the same value after a named conversion, or related information in different forms.
@@ -274,7 +288,8 @@ The explorer places everything in **layers**: 📜 standards (STAC itself), 🤝
 fields, 💾 formats that contain them, and the 🔌 drivers, 🧰 libraries and 🖥️ packages and apps that read and write
 them. Field information says which convention defines a field and which formats contain it, then lists the software by
 layer. To tell whether this information is current, the registry records for every format and convention when it was
-checked, its latest release then and the maturity a convention states (proj, spatial and multiscales are *Pilot*), and
+checked, its latest release then and the maturity a convention states (proj, spatial, multiscales and cs are *Pilot*,
+NZ a *Proposal*), and
 the software list does the same for every program. Checks older than three months are flagged as possibly outdated,
 and the latest releases of the Python packages are looked up on PyPI when shown, to flag newer releases.
 

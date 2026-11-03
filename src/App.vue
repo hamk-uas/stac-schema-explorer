@@ -1044,6 +1044,7 @@ onMounted(() => {
               :selected-doc="state.selected"
               :selected-pointers="selectedPointers"
               editable
+              in-data-section
               @select="select"
               @field="openField"
               @schema="openSchema"

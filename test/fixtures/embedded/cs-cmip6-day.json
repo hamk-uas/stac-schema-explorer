@@ -1,0 +1,104 @@
+{
+  "zarr_format": 3,
+  "node_type": "array",
+  "shape": [8605, 180, 288],
+  "dimension_names": ["time", "lat", "lon"],
+  "attributes": {
+    "zarr_conventions": [
+      {
+        "schema_url": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/schema.json",
+        "name": "cs"
+      },
+      {
+        "schema_url": "https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json",
+        "name": "proj"
+      }
+    ],
+    "cs": {
+      "crs": [
+        {
+          "type": "planar",
+          "description": "WGS84",
+          "axes": {
+            "lon": {
+              "abbreviation": "X",
+              "coordinates": [
+                {
+                  "direction": "east",
+                  "unit": "degrees",
+                  "values": {
+                    "regular": [0.625, 1.25]
+                  },
+                  "boundaries": {
+                    "regular": [-0.625, 0.625]
+                  }
+                }
+              ]
+            },
+            "lat": {
+              "abbreviation": "Y",
+              "coordinates": [
+                {
+                  "direction": "north",
+                  "unit": "degrees",
+                  "values": {
+                    "regular": [-89.5, 1]
+                  },
+                  "boundaries": {
+                    "regular": [-0.5, 0.5]
+                  }
+                }
+              ]
+            }
+          },
+          "id": {
+            "proj:code": "EPSG:4326"
+          }
+        },
+        {
+          "type": "temporal",
+          "description": "Time based on the 'noleap' calendar with 1850-01-01 epoch",
+          "axes": {
+            "time": {
+              "abbreviation": "T",
+              "coordinates": [
+                {
+                  "direction": "future",
+                  "time": {
+                    "unit": "day",
+                    "epoch": "1850-01-01",
+                    "calendar": "noleap"
+                  },
+                  "values": {
+                    "regular": [27895.5, 1]
+                  },
+                  "boundaries": {
+                    "regular": [-0.5, 0.5]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "temporal",
+          "description": "Height above surface for standard meteorological measurements",
+          "axes": {
+            "height": {
+              "abbreviation": "Z",
+              "coordinates": [
+                {
+                  "direction": "up",
+                  "unit": "meter",
+                  "values": {
+                    "explicit": [2]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

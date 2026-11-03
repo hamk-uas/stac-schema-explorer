@@ -17,6 +17,8 @@ const props = defineProps<{
     selectedPointers: string[];
     /** A node read from data, which can be rewritten (not a node template of the example). */
     editable?: boolean;
+    /** Shown within a section that already says it is embedded in the data, so the card need not repeat it. */
+    inDataSection?: boolean;
 }>();
 const emit = defineEmits<{
     /** Select a node and objects in it; `names` are the fields to show in them (a clicked chip). */
@@ -60,8 +62,8 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
         </span>
         <span class="format">{{ entry.formatTitle }}</span>
         <span class="type">{{ entry.nodeType }}</span>
-        <span class="tag" :title="`Metadata embedded in the data (${DOCUMENT[entry.format] ?? entry.format}), not a STAC document`">embedded in the data</span>
-        <span class="title">{{ entry.title || 'root' }}</span>
+        <span v-if="!inDataSection" class="tag" :title="`Metadata embedded in the data (${DOCUMENT[entry.format] ?? entry.format}), not a STAC document`">embedded in the data</span>
+        <span class="title" :title="entry.title || 'root'">{{ entry.title || 'root' }}</span>
       </button>
       <span class="validity" :class="{ ok: entry.valid, bad: entry.valid === false }" :title="validityTitle">
         {{ entry.valid === undefined ? '…' : entry.valid ? '✓ valid' : `✗ ${entry.errors?.length ?? 0} error(s)` }}
@@ -152,10 +154,15 @@ header {
   border-radius: 4px;
   padding: 1px 5px;
 }
+/* The path takes the space left and shortens (in full in its tooltip) before the heading wraps. */
 .title {
+  flex: 1 1 4em;
+  min-width: 0;
   font: 500 13px var(--mono);
   color: var(--slate-700);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .validity {
   font-size: 12px;

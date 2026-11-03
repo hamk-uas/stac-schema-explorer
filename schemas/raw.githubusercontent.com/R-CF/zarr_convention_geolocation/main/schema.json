@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/main/schema.json",
+  "title": "Geolocation Convention",
+  "description": "Schema for the geolocation Zarr convention",
+  "type": "object",
+  "properties": {
+    "zarr_format": {
+      "type": "integer",
+      "description": "Zarr format version"
+    },
+    "node_type": {
+      "type": "string",
+      "enum": [
+        "array",
+        "group"
+      ],
+      "description": "Type of Zarr node"
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Zarr attributes containing convention metadata and properties",
+      "properties": {
+        "zarr_conventions": {
+          "type": "array",
+          "description": "Array of convention metadata objects",
+          "contains": {
+            "$ref": "#/$defs/conventionMetadata"
+          }
+        },
+        "geolocation": {
+          "$ref": "#/$defs/geolocation"
+        }
+      },
+      "required": [
+        "zarr_conventions"
+      ]
+    }
+  },
+  "required": [
+    "zarr_format",
+    "node_type",
+    "attributes"
+  ],
+  "additionalProperties": true,
+  "$defs": {
+    "conventionMetadata": {
+      "type": "object",
+      "description": "Geolocation convention metadata object for use in zarr_conventions array",
+      "properties": {
+        "schema_url": {
+          "type": "string",
+          "pattern": "^https://raw\\.githubusercontent\\.com/R-CF/zarr_convention_geolocation/refs/tags/v1\\.[0-9]+\\.[0-9]+/schema\\.json$",
+          "description": "URL to the JSON Schema definition for this convention"
+        },
+        "spec_url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/R-CF/zarr_convention_geolocation/blob/v1\\.[0-9]+\\.[0-9]+/README\\.md$",
+          "description": "URL to the full specification document"
+        },
+        "uuid": {
+          "type": "string",
+          "const": "bb9ee930-8c60-4c47-ad6b-8daa558987ed",
+          "description": "UUID that permanently identifies this convention"
+        },
+        "name": {
+          "type": "string",
+          "description": "Geolocation arrays for Zarr arrays"
+        },
+        "description": {
+          "type": "string",
+          "const": "Convention for storing geolocation arrays",
+          "description": "This convention provides a standard way to store geolocation arrays"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "schema_url"
+          ]
+        },
+        {
+          "required": [
+            "spec_url"
+          ]
+        },
+        {
+          "required": [
+            "uuid"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "geolocation": {
+      "type": "object",
+      "properties": {
+        "geodetic": {
+          "$ref": "#/$defs/arrays"
+        },
+        "planar": {
+          "$ref": "#/$defs/arrays"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "geodetic"
+          ]
+        },
+        {
+          "required": [
+            "planar"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "arrays": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json#/$defs/refProperty"
+        },
+        "y": {
+          "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json#/$defs/refProperty"
+        },
+        "id": {
+          "$ref": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json#/$defs/projAttributes"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
