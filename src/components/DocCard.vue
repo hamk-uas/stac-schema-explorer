@@ -250,11 +250,8 @@ const undeclaredTitle = computed(() => [
 .doc {
   --accent: var(--indigo-500);
   margin: 8px 0;
-  border: 1px solid var(--slate-200);
-  border-left: 4px solid var(--accent);
-  border-radius: 10px;
-  background: var(--white);
-  box-shadow: 0 1px 2px var(--shadow);
+  border-radius: 8px;
+  background: var(--layer);
 }
 .doc.type-Collection {
   --accent: var(--teal-600);
@@ -262,18 +259,18 @@ const undeclaredTitle = computed(() => [
 .doc.type-Feature {
   --accent: var(--amber-600);
 }
-.doc.selected {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
-}
 header {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
   cursor: pointer;
-  background: color-mix(in srgb, var(--accent) 7%, var(--white));
-  border-radius: 6px 10px 0 0;
+  border-radius: 8px;
   flex-wrap: wrap;
+}
+/* The selected document: its heading takes a tint of its type colour. */
+.doc.selected > header {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .twisty,
 .twisty-space {
@@ -299,8 +296,7 @@ header {
   color: var(--slate-500);
 }
 .role {
-  background: var(--white);
-  border: 1px solid var(--slate-200);
+  background: var(--field);
   border-radius: 4px;
   padding: 0 5px;
 }
@@ -337,8 +333,7 @@ header {
 .undeclared {
   font: 600 11px var(--sans);
   color: var(--amber-800);
-  background: var(--amber-50);
-  border: 1px solid var(--amber-300);
+  background: var(--amber-100);
   border-radius: 4px;
   padding: 0 6px;
   white-space: nowrap;
@@ -361,7 +356,7 @@ header {
   flex-wrap: wrap;
 }
 .root-fields:hover {
-  background: var(--slate-100);
+  background: var(--hover);
 }
 .root-fields.selected {
   background: var(--indigo-100);
@@ -372,13 +367,11 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-/* Data files of assets: slate and dashed like the node cards they hold, never like the STAC objects above them. */
+/* Data files of assets: unfilled within a quiet dashed outline, never like the STAC objects above them. */
 .data {
   margin: 0 10px 8px 12px;
-  border: 1px dashed var(--slate-400);
-  border-left: 4px solid var(--slate-600);
+  border: 1px dashed var(--slate-300);
   border-radius: 8px;
-  background: var(--slate-100);
 }
 .data-head {
   display: flex;
@@ -417,14 +410,13 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--slate-600);
-  background: var(--slate-200);
+  background: var(--field);
   border-radius: 4px;
   padding: 1px 5px;
 }
 .data-assets code {
   margin-left: 4px;
-  background: var(--white);
-  border: 1px solid var(--slate-300);
+  background: var(--field);
   border-radius: 3px;
   padding: 0 3px;
 }
@@ -444,21 +436,20 @@ header {
   color: var(--slate-500);
 }
 .data-file {
-  border: 1px dashed var(--slate-400);
+  border: 0;
   border-radius: 6px;
-  background: var(--white);
+  background: var(--field);
   color: var(--slate-700);
   font: 500 11px var(--sans);
-  padding: 0 6px;
+  padding: 1px 6px;
   cursor: pointer;
 }
 .data-file:hover {
-  border-color: var(--slate-600);
+  background: var(--slate-200);
 }
 .media-type {
   font-size: 11px;
-  background: var(--white);
-  border: 1px solid var(--slate-300);
+  background: var(--field);
   border-radius: 3px;
   padding: 0 4px;
 }
@@ -481,11 +472,14 @@ header {
 .more {
   margin: 4px 0;
   font-size: 12px;
-  border: 1px dashed var(--slate-300);
-  background: var(--white);
+  border: 0;
+  background: var(--field);
   border-radius: 6px;
   padding: 4px 10px;
   cursor: pointer;
   color: var(--slate-600);
+}
+.more:hover {
+  background: var(--slate-200);
 }
 </style>

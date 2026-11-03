@@ -974,7 +974,7 @@ onMounted(() => {
         <p class="explain">
           Populated fields are highlighted within the fields the schemas would allow at the same place (dotted = allowed but
           absent; red = present but not placed there by any selected or declared schema). Expand a document to load its children. The data
-          files of assets (Zarr, netCDF, TIFF) appear inside their document as slate “embedded in the data” sections: Zarr
+          files of assets (Zarr, netCDF, TIFF) appear inside their document in dashed “embedded in the data” sections: Zarr
           stores are read at once, netCDF and TIFF files when expanded.
           Use + and − on a field to add it with an example value or remove it: a local rewrite, kept in the share link.
         </p>
@@ -1137,8 +1137,7 @@ onMounted(() => {
   align-items: center;
   gap: 24px;
   padding: 10px 18px;
-  border-bottom: 1px solid var(--slate-200);
-  background: var(--white);
+  background: var(--pane);
 }
 .brand h1 {
   margin: 0;
@@ -1160,7 +1159,7 @@ onMounted(() => {
 .modes {
   display: flex;
   gap: 4px;
-  background: var(--slate-100);
+  background: var(--field);
   padding: 3px;
   border-radius: 8px;
 }
@@ -1176,9 +1175,8 @@ onMounted(() => {
 }
 .modes button.on,
 .tabs button.on {
-  background: var(--white);
+  background: var(--bg);
   color: var(--slate-900);
-  box-shadow: 0 1px 2px var(--shadow);
 }
 .app.no-json {
   --json-col: 0;
@@ -1186,11 +1184,15 @@ onMounted(() => {
 .json-toggle {
   margin-left: auto;
   font-size: 12px;
-  border: 1px solid var(--slate-300);
-  background: var(--white);
+  border: 0;
+  background: var(--field);
+  color: var(--slate-800);
   border-radius: 6px;
-  padding: 4px 10px;
+  padding: 5px 10px;
   cursor: pointer;
+}
+.json-toggle:hover {
+  background: var(--slate-200);
 }
 .gh {
   font-size: 12px;
@@ -1199,26 +1201,22 @@ onMounted(() => {
 .side {
   grid-area: side;
   overflow: auto;
-  padding: 10px 10px 40px;
-  border-right: 1px solid var(--slate-200);
-  background: var(--slate-100);
+  padding: 4px 10px 40px;
+  background: var(--pane);
 }
-/* Sidebar sub-panels: collapsible, with a header strip naming them and counting what is selected. */
+/* Sidebar sub-panels: flat, collapsible, with a plain heading naming them and counting what is selected. */
 .panel {
-  margin-bottom: 10px;
-  background: var(--white);
-  border: 1px solid var(--slate-200);
+  margin-bottom: 8px;
+  background: var(--layer);
   border-radius: 8px;
-  box-shadow: 0 1px 2px var(--shadow);
 }
 .panel > summary {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 10px;
+  padding: 8px 10px 6px;
   list-style: none;
   cursor: pointer;
-  background: var(--slate-50);
   border-radius: 8px;
 }
 .panel > summary::-webkit-details-marker {
@@ -1230,10 +1228,6 @@ onMounted(() => {
   font-size: 11px;
   width: 10px;
 }
-.panel[open] > summary {
-  border-bottom: 1px solid var(--slate-200);
-  border-radius: 8px 8px 0 0;
-}
 .panel[open] > summary::before {
   content: '▾';
 }
@@ -1242,14 +1236,13 @@ onMounted(() => {
   outline-offset: 1px;
 }
 .panel-body {
-  padding: 8px 10px 10px;
+  padding: 2px 10px 10px;
 }
 .count {
   margin-left: auto;
   font: 600 11px var(--sans);
   color: var(--slate-600);
-  background: var(--slate-100);
-  border: 1px solid var(--slate-200);
+  background: var(--field);
   border-radius: 999px;
   padding: 0 7px;
 }
@@ -1290,14 +1283,14 @@ onMounted(() => {
   grid-area: main;
   overflow: auto;
   padding: 12px 18px 60px;
-  background: var(--slate-50);
+  background: var(--bg);
 }
 .json {
   grid-area: json;
-  border-left: 1px solid var(--slate-200);
   display: flex;
   flex-direction: column;
   min-height: 0;
+  background: var(--pane);
 }
 .json-view {
   flex: 1;
@@ -1346,7 +1339,7 @@ onMounted(() => {
 .tabs {
   display: flex;
   gap: 4px;
-  background: var(--slate-200);
+  background: var(--field);
   padding: 3px;
   border-radius: 8px;
 }
@@ -1390,13 +1383,15 @@ onMounted(() => {
   flex: 1;
   font-size: 13px;
   padding: 6px 8px;
-  border: 1px solid var(--slate-300);
+  border: 0;
   border-radius: 6px;
+  background: var(--field);
+  color: var(--slate-900);
 }
 .href-form button {
   padding: 0 14px;
   border-radius: 6px;
-  border: 1px solid var(--indigo-600);
+  border: 0;
   background: var(--indigo-600);
   color: var(--white);
   cursor: pointer;
@@ -1420,8 +1415,7 @@ onMounted(() => {
 .findings {
   margin-top: 14px;
   font-size: 12px;
-  background: var(--white);
-  border: 1px solid var(--slate-200);
+  background: var(--layer);
   border-radius: 8px;
   padding: 8px 12px;
 }
@@ -1442,9 +1436,7 @@ onMounted(() => {
   margin: 18px 0 0;
 }
 .embedded-section {
-  margin-top: 22px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--slate-300);
+  margin-top: 28px;
 }
 .format-matrix {
   margin-top: 14px;
@@ -1461,16 +1453,14 @@ onMounted(() => {
   line-height: 1.5;
   color: var(--amber-900);
   background: var(--amber-100);
-  border: 1px solid var(--amber-500);
-  border-left-width: 4px;
   border-radius: 6px;
 }
 .rewrites-banner button {
   margin-left: 6px;
   font: 600 12px var(--sans);
-  border: 1px solid var(--amber-600);
+  border: 0;
   border-radius: 5px;
-  background: var(--white);
+  background: var(--bg);
   color: var(--amber-800);
   padding: 1px 8px;
   cursor: pointer;

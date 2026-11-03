@@ -134,9 +134,7 @@ const vendoredLink = computed(() => {
 <style scoped>
 .field-info {
   padding: 10px 14px 12px;
-  border-bottom: 1px solid var(--slate-200);
-  background: color-mix(in srgb, var(--c) 5%, var(--white));
-  border-left: 4px solid var(--c);
+  background: var(--layer);
   max-height: 45vh;
   overflow: auto;
   font-size: 13px;
@@ -234,13 +232,14 @@ header {
   text-align: left;
   font: 600 11px var(--sans);
   color: var(--slate-500);
-  border-bottom: 1px solid var(--slate-200);
   padding: 2px 6px 2px 0;
 }
 .values td {
   padding: 3px 6px 3px 0;
-  border-bottom: 1px solid var(--slate-100);
   vertical-align: top;
+}
+.values tbody tr:nth-child(odd) td {
+  background: var(--layer);
 }
 .places ul {
   list-style: none;
@@ -252,9 +251,9 @@ header {
 }
 .places button {
   font: 500 11px var(--sans);
-  border: 1.5px solid var(--c);
+  border: 1.5px solid color-mix(in srgb, var(--c) var(--edge), transparent);
   border-radius: 999px;
-  background: var(--white);
+  background: var(--bg);
   padding: 1px 8px;
   cursor: pointer;
   color: var(--slate-700);
@@ -286,7 +285,7 @@ header {
   border-radius: 4px;
   padding: 0 5px;
   color: var(--slate-600);
-  background: var(--slate-100);
+  background: var(--field);
 }
 .relation.same,
 .relation.converted {
@@ -299,7 +298,7 @@ header {
 }
 :deep(code) {
   font-family: var(--mono);
-  background: var(--slate-100);
+  background: var(--field);
   border-radius: 3px;
   padding: 0 3px;
 }

@@ -102,20 +102,18 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
 .node {
   --accent: var(--slate-600);
   margin: 8px 0;
-  border: 1px dashed var(--slate-400);
-  border-left: 4px solid var(--accent);
-  border-radius: 10px;
-  background: var(--slate-50);
-}
-.node.selected {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 8px;
+  background: var(--layer);
 }
 header {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--slate-200);
+  border-radius: 8px;
+}
+.node.selected > header {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 .select {
   display: flex;
@@ -150,7 +148,7 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--slate-700);
-  background: var(--slate-200);
+  background: var(--field);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -188,7 +186,6 @@ header {
 }
 .root-fields.selected {
   background: var(--indigo-100);
-  outline: 1px solid var(--indigo-300);
 }
 .glyph {
   font: 600 11px var(--mono);

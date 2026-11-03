@@ -50,25 +50,37 @@
   --violet-600: #7c3aed;
   --blue-600: #2563eb;
   --shadow: rgb(15 23 42 / 0.12);
+  /*
+   * Surfaces: flat fills instead of borders. `--bg` is the main view, `--pane` the bars and side panes around it.
+   * `--layer` is translucent, so that cards within cards (a Collection within a Catalog) stand out a little more
+   * with each level; `--field` fills controls (inputs, plain buttons) and `--hover` rows under the pointer.
+   */
+  --bg: #ffffff;
+  --pane: #f4f6f9;
+  --layer: rgb(15 23 42 / 0.035);
+  --field: rgb(15 23 42 / 0.06);
+  --hover: rgb(15 23 42 / 0.05);
+  /* How strongly identity colours (`--c`) outline chips: softer in dark mode, where full mid-tones glare. */
+  --edge: 85%;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --white: #131c2e;
+    --white: #181d25;
     --ink: #ffffff;
-    --surface-sunken: #0d1526;
-    --slate-50: #0b1120;
-    --slate-100: #1c2638;
-    --slate-200: #2b3649;
-    --slate-300: #3f4b60;
-    --slate-400: #66758c;
-    --slate-500: #8e9bb0;
-    --slate-600: #aeb9ca;
-    --slate-700: #cbd5e1;
-    --slate-800: #e2e8f0;
-    --slate-900: #f1f5f9;
-    --indigo-50: #1b1d3f;
-    --indigo-100: #23265a;
+    --surface-sunken: #15191f;
+    --slate-50: #15191f;
+    --slate-100: #232932;
+    --slate-200: #2c333d;
+    --slate-300: #3a424e;
+    --slate-400: #646d7a;
+    --slate-500: #8a93a0;
+    --slate-600: #a4acb8;
+    --slate-700: #bcc3cd;
+    --slate-800: #d0d5dc;
+    --slate-900: #e1e5ea;
+    --indigo-50: #1f2438;
+    --indigo-100: #282e4d;
     --indigo-200: #343a85;
     --indigo-300: #4c54b8;
     --indigo-500: #818cf8;
@@ -78,8 +90,8 @@
     --teal-100: #0f3f3b;
     --teal-600: #2dd4bf;
     --teal-700: #5eead4;
-    --green-50: #0a2615;
-    --green-100: #0f3a1f;
+    --green-50: #15241b;
+    --green-100: #1a3324;
     --green-200: #1a5c33;
     --green-700: #4ade80;
     --emerald-700: #34d399;
@@ -98,6 +110,12 @@
     --violet-600: #c4b5fd;
     --blue-600: #60a5fa;
     --shadow: rgb(0 0 0 / 0.45);
+    --bg: #181d25;
+    --pane: #1d232c;
+    --layer: rgb(255 255 255 / 0.03);
+    --field: rgb(255 255 255 / 0.06);
+    --hover: rgb(255 255 255 / 0.045);
+    --edge: 55%;
   }
 }
 
@@ -106,7 +124,7 @@
   --mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
   font-family: var(--sans);
   color: var(--slate-900);
-  background: var(--slate-50);
+  background: var(--bg);
 }
 
 * {
@@ -136,7 +154,6 @@ code {
   font: 600 11px var(--sans);
   color: var(--amber-800);
   background: var(--amber-100);
-  border: 1px solid var(--amber-500);
   border-radius: 4px;
   padding: 0 6px;
   white-space: nowrap;

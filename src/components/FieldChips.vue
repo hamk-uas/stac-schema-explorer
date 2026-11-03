@@ -170,7 +170,7 @@ function dimmed(source: string): boolean {
   font: 500 12px/1.2 var(--mono);
   padding: 2px 7px;
   border-radius: 999px;
-  border: 1.5px solid var(--c);
+  border: 1.5px solid color-mix(in srgb, var(--c) var(--edge), transparent);
   color: color-mix(in srgb, var(--c) 80%, var(--ink));
   background: color-mix(in srgb, var(--c) 12%, var(--white));
   white-space: nowrap;
@@ -237,7 +237,7 @@ button.chip.open {
 .chip.state-possible {
   background: transparent;
   border-style: dotted;
-  border-color: color-mix(in srgb, var(--c) 50%, var(--white));
+  border-color: color-mix(in srgb, var(--c) calc(var(--edge) * 0.6), transparent);
   color: color-mix(in srgb, var(--c) 45%, var(--slate-400));
 }
 .chip.state-unexpected {

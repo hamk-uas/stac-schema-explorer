@@ -105,7 +105,7 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   border-radius: 6px;
 }
 .selected li:hover {
-  background: var(--slate-100);
+  background: var(--hover);
 }
 .none {
   color: var(--slate-500);
@@ -139,7 +139,7 @@ function links(core: Core): { label: string; href: string; title: string }[] {
 .kind {
   font-size: 10px;
   color: var(--slate-600);
-  background: var(--slate-100);
+  background: var(--field);
   border-radius: 3px;
   padding: 0 4px;
   margin-left: 4px;
@@ -194,17 +194,21 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   font: 500 12px var(--sans);
   padding: 3px 8px;
   border-radius: 999px;
-  border: 1px solid var(--slate-300);
-  background: var(--white);
+  border: 0;
+  background: var(--field);
   color: var(--slate-700);
   cursor: pointer;
+}
+.q:hover {
+  background: var(--slate-200);
 }
 .q.square {
   border-radius: 4px;
 }
+/* Selected: tinted and bold, so that the state does not rest on colour alone. */
 .q.on {
-  border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, var(--white));
+  font-weight: 600;
+  background: color-mix(in srgb, var(--c) 22%, transparent);
   color: color-mix(in srgb, var(--c) 75%, var(--ink));
 }
 .q .ver {

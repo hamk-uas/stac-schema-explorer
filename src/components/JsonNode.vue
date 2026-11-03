@@ -80,7 +80,6 @@ const indent = computed(() => '  '.repeat(props.depth));
 }
 .hl {
   background: var(--indigo-50);
-  outline: 1px solid var(--indigo-200);
   border-radius: 3px;
 }
 .key {

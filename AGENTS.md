@@ -52,7 +52,8 @@ technical visual language; it need not adopt Observatory instance branding.
   extensions: their own picker grouped by kind, square markers, and node cards
   marked "embedded in the data" (`NodeCard`).
   Data files of a STAC document's assets are shown inside its `DocCard`, in
-  slate dashed sections that must never look like its STAC objects; Zarr is
+  unfilled sections with a quiet dashed outline that must never look like its
+  STAC objects (flat filled cards); Zarr is
   read when the document loads, netCDF/TIFF only on request or for a share link.
   Reuse `templateView`/`documentView`, `FieldChips`, `FieldInfo` and `SchemaInfo` for nodes;
   only the probing differs (format nodes instead of STAC objects).
@@ -145,19 +146,30 @@ the whole suite as unconditionally offline. Refresh specific caches intentionall
 Keep the interface compact, technical and inspection-oriented. Extend the existing
 components rather than introducing another design library.
 
-- **Palette:** light slate page, white/pale panels, dark slate text, subtle
-  slate borders and indigo actions. Use teal/green for valid states, amber for
-  caution and red for errors. Reuse established meanings; a new color should
-  not introduce an ambiguous new state.
+- **Palette and surfaces:** calm and flat, in both schemes: a plain main view
+  between slightly tinted panes, panels and cards as flat fills, dark slate
+  text and indigo actions. Separate things by fill and spacing, not line
+  borders: no borders, shadows or filled title rows on panels and cards.
+  Lines are kept where they carry meaning (chip outlines for
+  populated/possible/presence/unexpected/rewritten, the dashed outline of data
+  file sections, matrix headers). Selection is a tint, not a ring. Use
+  teal/green for valid states, amber for caution and red for errors. Reuse
+  established meanings; a new color should not introduce an ambiguous new state.
 - **Color tokens and dark mode:** UI colors are CSS custom properties in
   [style.css](src/style.css) (`--white`, `--ink`, `--slate-*`, `--indigo-*`,
   status families, `--shadow`), named after their light-mode value. A
   `prefers-color-scheme: dark` block mirrors each family (`--slate-50` becomes
-  near-black, `--white` a dark panel) so components keep using the same names.
-  Use these tokens in component styles, not hex literals, and check both
-  schemes. Identity mid-tones (`colorOf`, document accents) work in both.
+  near-black, `--white` a dark panel) so components keep using the same names;
+  dark mode is softer than a straight inversion (muted neutrals, lower text
+  contrast, chip outlines toned down through `--edge`). Surfaces have semantic
+  tokens: `--bg` (main view), `--pane` (bars and side panes), `--layer`
+  (translucent card/panel fill, so nested cards deepen per level), `--field`
+  (control fill) and `--hover`. Use these tokens in component styles, not hex
+  literals, and check both schemes. Identity mid-tones (`colorOf`, document
+  accents) work in both.
 - **Identity colors:** document accents distinguish Catalog (indigo), Collection
-  (teal) and Item/Feature (amber). Extension identity comes from `colorOf` in
+  (teal) and Item/Feature (amber) through the card's icon and type name (and
+  the tint of a selected card's heading). Extension identity comes from `colorOf` in
   [colors.ts](src/lib/colors.ts) and the shared `--c` convention; do not invent
   per-component extension color maps. Keep labels/icons alongside color.
 - **Typography:** system sans for prose/controls, the existing Cascadia/SF
@@ -167,7 +179,7 @@ components rather than introducing another design library.
 - **Layout:** toolbar, sidebar, flexible main view and JSON/details
   pane. The sidebar is a stack of collapsible `<details class="panel">`
   sub-panels (Cores, Extensions, Data conventions, Display, Legend), each with a
-  header strip and a count badge; their open state is kept in `localStorage`,
+  plain heading and a count badge; their open state is kept in `localStorage`,
   not share URLs. Desktop panes scroll independently; `Splitter.vue` handles resize the
   sidebar and JSON pane (pointer or keyboard, persisted per full/embedded mode
   in `localStorage`, not share URLs). The existing <=1100px layout stacks
@@ -206,9 +218,10 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
 
 ## TODO: observed discrepancies and decisions
 
-- [ ] Semantic UI tokens: colors are centralized as palette tokens
-  (`--slate-200`, …) but not yet as semantic roles (`--border`, `--valid`, …),
-  and spacing is still literal. Preserve the standalone tool's identity, not an
+- [ ] Semantic UI tokens: surfaces have semantic tokens (`--bg`, `--pane`,
+  `--layer`, `--field`, `--hover`), but other colors are still palette tokens
+  (`--slate-500`, …) rather than roles (`--muted`, `--valid`, …), and spacing
+  is still literal. Preserve the standalone tool's identity, not an
   assumed Observatory rebrand.
 - [ ] Establish consistent explicit focus-visible styling; current components
   mostly rely on browser defaults. Audit icon-only accessible names in

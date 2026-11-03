@@ -88,15 +88,13 @@ watch(() => [props.pointers, props.doc], async () => {
   flex-direction: column;
   min-height: 0;
   height: 100%;
-  background: var(--surface-sunken);
+  background: var(--pane);
 }
 .bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--slate-200);
-  background: var(--white);
+  padding: 8px 12px 4px;
   font-size: 12px;
 }
 .title {
@@ -108,13 +106,20 @@ watch(() => [props.pointers, props.doc], async () => {
 .spacer {
   flex: 1;
 }
+.bar a {
+  color: var(--indigo-600);
+}
 .bar button {
   font-size: 12px;
-  border: 1px solid var(--slate-300);
-  background: var(--white);
+  border: 0;
+  background: var(--field);
+  color: var(--slate-800);
   border-radius: 5px;
-  padding: 2px 8px;
+  padding: 3px 8px;
   cursor: pointer;
+}
+.bar button:hover:not(:disabled) {
+  background: var(--slate-200);
 }
 .scroll {
   overflow: auto;

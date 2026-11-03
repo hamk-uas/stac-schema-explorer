@@ -140,7 +140,7 @@ li {
   border-radius: 4px;
   padding: 0 5px;
   color: var(--slate-600);
-  background: var(--slate-100);
+  background: var(--field);
 }
 .level.interpret {
   color: var(--teal-700);

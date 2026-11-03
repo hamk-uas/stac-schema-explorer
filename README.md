@@ -66,7 +66,7 @@ asking the schemas themselves.
   of STAC core, are shown when its core is selected.
 - **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
   file directly, or open a STAC document with such assets: their data files appear inside the document's card, in
-  slate “embedded in the data, not STAC” sections apart from its STAC objects. Assets naming the same Zarr store
+  dashed “embedded in the data, not STAC” sections apart from its STAC objects. Assets naming the same Zarr store
   (a `data` store and its `metadata` zarr.json) are one file. Zarr stores are read as soon as their document loads;
   netCDF and TIFF files, which can need larger downloads, are listed compactly and read when clicked, or when a share
   link selects or rewrites one of their nodes. Assets whose embedded metadata the app does not read (CSV tables, images,

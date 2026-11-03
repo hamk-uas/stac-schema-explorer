@@ -82,11 +82,10 @@ function isSelected(): boolean {
   cursor: pointer;
 }
 .row:hover {
-  background: var(--slate-100);
+  background: var(--hover);
 }
 .row.selected {
   background: var(--indigo-100);
-  outline: 1px solid var(--indigo-300);
 }
 .glyph {
   font: 600 11px var(--mono);
@@ -99,18 +98,12 @@ function isSelected(): boolean {
   color: var(--slate-700);
 }
 .children {
-  margin-left: 14px;
-  padding-left: 10px;
-  border-left: 1px solid var(--slate-200);
+  margin-left: 24px;
 }
 .kind-properties {
   margin: 4px 0;
   border-radius: 8px;
-  background: var(--green-50);
-  border: 1px solid var(--green-200);
-}
-.kind-properties > .children {
-  border-left-color: var(--green-200);
+  background: color-mix(in srgb, var(--green-100) 60%, transparent);
 }
 .kind-summaries > .row .label {
   font-style: italic;
@@ -120,7 +113,7 @@ function isSelected(): boolean {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--slate-500);
-  background: var(--slate-100);
+  background: var(--field);
   border-radius: 4px;
   padding: 1px 5px;
 }

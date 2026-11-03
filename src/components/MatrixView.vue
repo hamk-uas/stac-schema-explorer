@@ -116,9 +116,8 @@ function fieldTitle(source: string, field: string): string {
 }
 .scroll {
   overflow: auto;
-  border: 1px solid var(--slate-200);
   border-radius: 8px;
-  background: var(--white);
+  background: var(--bg);
   max-height: calc(100vh - 230px);
 }
 table {
@@ -128,7 +127,7 @@ table {
 }
 thead th {
   position: sticky;
-  background: var(--white);
+  background: var(--bg);
   z-index: 1;
 }
 thead tr:first-child th {
@@ -142,13 +141,11 @@ thead tr:nth-child(2) th {
   z-index: 2;
   text-align: left;
   padding: 4px 8px;
-  border-bottom: 1px solid var(--slate-200);
 }
 th.type {
   font: 700 12px var(--sans);
   padding: 4px;
-  border-bottom: 1px solid var(--slate-200);
-  border-left: 2px solid var(--slate-200);
+  border-left: 2px solid var(--slate-100);
 }
 th.type-Catalog {
   color: var(--indigo-600);
@@ -182,9 +179,8 @@ th.col span {
 .source-row th {
   text-align: left;
   font: 600 12px var(--sans);
-  padding: 6px 8px 2px;
+  padding: 12px 8px 2px;
   color: color-mix(in srgb, var(--c) 80%, var(--ink));
-  border-top: 1px solid var(--slate-200);
   position: sticky;
   left: 0;
 }
@@ -202,7 +198,7 @@ th.col span {
 th.field {
   position: sticky;
   left: 0;
-  background: var(--white);
+  background: var(--bg);
   text-align: left;
   padding: 2px 8px 2px 16px;
   white-space: nowrap;
@@ -221,11 +217,11 @@ th.field button:hover {
 td {
   text-align: center;
   padding: 2px 4px;
-  border-left: 1px solid var(--slate-100);
 }
+/* Opaque, since the field column stays in place over scrolled cells. */
 tr:hover td,
 tr:hover th.field {
-  background: var(--slate-50);
+  background: color-mix(in srgb, var(--ink) 5%, var(--bg));
 }
 tr.dimmed {
   opacity: 0.25;
@@ -242,10 +238,10 @@ tr.dimmed {
   vertical-align: middle;
 }
 .mark.presence {
-  background: var(--white);
+  background: var(--bg);
   border-style: dashed;
 }
 .mark.partial {
-  background: linear-gradient(90deg, var(--c, var(--slate-600)) 50%, var(--white) 50%);
+  background: linear-gradient(90deg, var(--c, var(--slate-600)) 50%, var(--bg) 50%);
 }
 </style>

@@ -167,9 +167,7 @@ const fieldTitle = (name: string) => {
 <style scoped>
 .schema-info {
   padding: 10px 14px 12px;
-  border-bottom: 1px solid var(--slate-200);
-  background: color-mix(in srgb, var(--c) 5%, var(--white));
-  border-left: 4px solid var(--c);
+  background: var(--layer);
   max-height: 45vh;
   overflow: auto;
   font-size: 13px;
@@ -198,7 +196,7 @@ header {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--slate-600);
-  background: var(--slate-100);
+  background: var(--field);
   border-radius: 4px;
   padding: 1px 5px;
 }
@@ -286,9 +284,9 @@ header {
 .places button,
 .fields button {
   font: 500 11px var(--sans);
-  border: 1.5px solid var(--c);
+  border: 1.5px solid color-mix(in srgb, var(--c) var(--edge), transparent);
   border-radius: 999px;
-  background: var(--white);
+  background: var(--bg);
   padding: 1px 8px;
   cursor: pointer;
   color: var(--slate-700);
@@ -297,7 +295,7 @@ header {
   font-family: var(--mono);
 }
 .fields button.here {
-  background: color-mix(in srgb, var(--c) 14%, var(--white));
+  background: color-mix(in srgb, var(--c) 14%, var(--bg));
 }
 .places button.presence {
   border-style: dashed;
@@ -307,20 +305,21 @@ header {
 }
 .toggle {
   font: 500 12px var(--sans);
-  border: 1px solid var(--slate-300);
+  border: 0;
   border-radius: 6px;
-  background: var(--white);
-  padding: 2px 10px;
+  background: var(--field);
+  padding: 3px 10px;
   cursor: pointer;
   color: var(--slate-700);
 }
 .toggle[aria-pressed='true'] {
-  border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, var(--white));
+  font-weight: 600;
+  background: color-mix(in srgb, var(--c) 20%, transparent);
+  color: color-mix(in srgb, var(--c) 75%, var(--ink));
 }
 :deep(code) {
   font-family: var(--mono);
-  background: var(--slate-100);
+  background: var(--field);
   border-radius: 3px;
   padding: 0 3px;
 }

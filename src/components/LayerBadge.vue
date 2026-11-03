@@ -21,7 +21,7 @@ const props = defineProps<{ layer: Layer; label?: string }>();
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--slate-600);
-  background: var(--slate-100);
+  background: var(--field);
   border-radius: 4px;
   padding: 1px 5px;
   white-space: nowrap;

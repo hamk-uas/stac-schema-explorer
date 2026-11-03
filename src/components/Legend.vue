@@ -44,11 +44,9 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
   display: inline-block;
   font: 700 11px var(--sans);
   color: var(--teal-700);
-  border: 1px solid var(--slate-200);
-  border-left: 3px solid var(--teal-600);
   border-radius: 4px;
   padding: 0 5px;
-  background: var(--teal-50);
+  background: var(--layer);
 }
 .glyph {
   font: 600 11px var(--mono);
@@ -58,16 +56,13 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
   display: inline-block;
   font: 700 11px var(--sans);
   color: var(--slate-700);
-  border: 1px dashed var(--slate-400);
-  border-left: 3px solid var(--slate-600);
   border-radius: 4px;
   padding: 0 5px;
-  background: var(--slate-50);
+  background: var(--layer);
 }
 .geo {
   font: 500 11px var(--mono);
-  background: var(--green-50);
-  border: 1px solid var(--green-200);
+  background: color-mix(in srgb, var(--green-100) 60%, transparent);
   border-radius: 4px;
   padding: 0 5px;
 }
@@ -77,7 +72,7 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
   font: 500 11px var(--mono);
   padding: 0 6px;
   border-radius: 999px;
-  border: 1.5px solid var(--c);
+  border: 1.5px solid color-mix(in srgb, var(--c) var(--edge), transparent);
   color: color-mix(in srgb, var(--c) 80%, var(--ink));
   background: color-mix(in srgb, var(--c) 12%, var(--white));
 }
@@ -87,7 +82,7 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
 .chip.possible {
   background: transparent;
   border-style: dotted;
-  border-color: color-mix(in srgb, var(--c) 50%, var(--white));
+  border-color: color-mix(in srgb, var(--c) calc(var(--edge) * 0.6), transparent);
   color: color-mix(in srgb, var(--c) 45%, var(--slate-400));
 }
 .chip.unexpected {

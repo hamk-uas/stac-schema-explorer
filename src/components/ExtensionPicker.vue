@@ -123,7 +123,7 @@ function add() {
   border-radius: 6px;
 }
 .selected li:hover {
-  background: var(--slate-100);
+  background: var(--hover);
 }
 .selected li.failed .name {
   color: var(--red-700);
@@ -157,7 +157,7 @@ function add() {
 .prefix {
   font-size: 11px;
   color: var(--slate-600);
-  background: var(--slate-100);
+  background: var(--field);
   border-radius: 3px;
   padding: 0 3px;
   margin-left: 3px;
@@ -195,14 +195,18 @@ function add() {
   min-width: 0;
   font-size: 12px;
   padding: 4px 6px;
-  border: 1px solid var(--slate-300);
+  border: 0;
   border-radius: 5px;
+  background: var(--field);
+  color: var(--slate-900);
 }
 .add button {
   font-size: 12px;
-  border: 1px solid var(--slate-300);
+  border: 0;
   border-radius: 5px;
-  background: var(--white);
+  padding: 0 8px;
+  background: var(--field);
+  color: var(--slate-800);
   cursor: pointer;
 }
 .quick-head {
@@ -242,14 +246,18 @@ function add() {
   font: 500 12px var(--sans);
   padding: 3px 8px;
   border-radius: 999px;
-  border: 1px solid var(--slate-300);
-  background: var(--white);
+  border: 0;
+  background: var(--field);
   color: var(--slate-700);
   cursor: pointer;
 }
+.q:hover {
+  background: var(--slate-200);
+}
+/* Selected: tinted and bold, so that the state does not rest on colour alone. */
 .q.on {
-  border-color: var(--c);
-  background: color-mix(in srgb, var(--c) 14%, var(--white));
+  font-weight: 600;
+  background: color-mix(in srgb, var(--c) 22%, transparent);
   color: color-mix(in srgb, var(--c) 75%, var(--ink));
 }
 .q .ver {
