@@ -7,15 +7,25 @@
   "properties": {
     "zarr_format": {
       "type": "integer",
-      "description": "Zarr format version"
+      "description": "Zarr format version",
+      "title": "Zarr format"
     },
     "node_type": {
       "type": "string",
-      "enum": [
-        "array",
-        "group"
+      "oneOf": [
+        {
+          "const": "array",
+          "title": "Array",
+          "description": "A Zarr array node that references another node."
+        },
+        {
+          "const": "group",
+          "title": "Group",
+          "description": "A Zarr group node that references another node."
+        }
       ],
-      "description": "Type of Zarr node"
+      "description": "Type of Zarr node",
+      "title": "Node type"
     },
     "attributes": {
       "type": "object",
@@ -26,7 +36,8 @@
           "description": "Array of convention metadata objects",
           "contains": {
             "$ref": "#/$defs/conventionMetadata"
-          }
+          },
+          "title": "Declared conventions"
         },
         "ref": {
           "$ref": "#/$defs/ref"
@@ -34,7 +45,8 @@
       },
       "required": [
         "zarr_conventions"
-      ]
+      ],
+      "title": "Attributes"
     }
   },
   "required": [
@@ -51,26 +63,31 @@
         "schema_url": {
           "type": "string",
           "pattern": "^https://raw\\.githubusercontent\\.com/R-CF/zarr_convention_ref/refs/tags/v2\\.[0-9]+\\.[0-9]+/schema\\.json$",
-          "description": "URL to the JSON Schema definition for this convention"
+          "description": "URL to the JSON Schema definition for this convention",
+          "title": "Schema URL"
         },
         "spec_url": {
           "type": "string",
           "pattern": "^https://github\\.com/R-CF/zarr_convention_ref/blob/v2\\.[0-9]+\\.[0-9]+/README\\.md$",
-          "description": "URL to the full specification document"
+          "description": "URL to the full specification document",
+          "title": "Specification URL"
         },
         "uuid": {
           "type": "string",
           "const": "d89b30cf-ed8c-43d5-9a16-b492f0cd8786",
-          "description": "UUID that permanently identifies this convention"
+          "description": "UUID that permanently identifies this convention",
+          "title": "Convention UUID"
         },
         "name": {
           "type": "string",
-          "description": "ref"
+          "description": "ref",
+          "title": "Convention name"
         },
         "description": {
           "type": "string",
           "const": "External Reference Convention",
-          "description": "Schema for referencing external Zarr objects"
+          "description": "Schema for referencing external Zarr objects",
+          "title": "Convention description"
         }
       },
       "anyOf": [
@@ -98,16 +115,19 @@
       "properties": {
         "uri": {
           "type": "string",
-          "description": "Uniform Resource Identifier for an external store where the referenced object is defined."
+          "description": "Uniform Resource Identifier for an external store where the referenced object is defined.",
+          "title": "Store URI"
         },
         "node": {
           "type": "string",
-          "description": "Path to the group or array where the referenced object is defined."
+          "description": "Path to the group or array where the referenced object is defined.",
+          "title": "Node path"
         },
         "attribute": {
           "type": "string",
           "pattern": "^(|(/([^~/]|~[01])*)*)$",
-          "description": "JSON pointer to the attribute being referenced."
+          "description": "JSON pointer to the attribute being referenced.",
+          "title": "Attribute pointer"
         }
       },
       "required": [
@@ -122,30 +142,38 @@
       "then": {
         "properties": {
           "node": {
-            "pattern": "^/"
+            "pattern": "^/",
+            "title": "Node path",
+            "description": "With a store URI: the absolute path of the node from the root of that store, starting with \"/\"."
           }
         }
       },
       "else": {
         "properties": {
           "node": {
-            "pattern": "^[^/]"
+            "pattern": "^[^/]",
+            "title": "Node path",
+            "description": "Within the current store: the path of the node relative to the referencing node (\"../sibling\"), not starting with \"/\"."
           }
         }
-      }
+      },
+      "title": "Reference"
     },
     "refProperty": {
       "type": "object",
       "description": "Object holding a reference to an external object.",
       "properties": {
         "ref": {
-          "$ref": "#/$defs/ref"
+          "$ref": "#/$defs/ref",
+          "title": "Reference",
+          "description": "Reference to an external object."
         }
       },
       "required": [
         "ref"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "title": "Reference holder"
     }
   }
 }

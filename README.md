@@ -169,8 +169,10 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
    that fields needing company (`derived_from` requires `transform`) are placed too. Within a prefixed entry's value
    (PROJJSON of `proj:projjson`), keys are that value, not fields. The objects searched include array items and the
    entries of maps keyed by name (the coordinate set convention's `axes`, keyed by dimension name), down to coordinate
-   values. A document the convention `$ref`s is not searched: its keys are fields where the convention places its object
-   (`proj:code` in a CRS `id`), not deeper (PROJJSON). Mutually exclusive alternatives (exactly one of `regular`,
+   values. A document the convention `$ref`s is searched only if it is another convention's (the ref objects of
+   geolocation arrays); keys of any other are fields where the convention places its object (`proj:code` in a CRS `id`),
+   not deeper (PROJJSON), and the values of prefixed keys (`proj:projjson`) are not searched. Mutually exclusive
+   alternatives (exactly one of `regular`,
    `external` or `explicit` coordinate values) are each placed, in variants of the example node that are searched
    further, while the example shown keeps the first.
 
@@ -202,16 +204,17 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 Most published STAC schemas have no descriptions and list allowed values without explaining them; the explanations are
 in the extensions' READMEs. This repository therefore vendors STAC core (1.0.0 and 1.1.0), the extensions of the
 quick-select list, the Zarr conventions `proj`, `spatial`, `multiscales` and `nz`
-([zarr-conventions](https://github.com/zarr-conventions)) and the coordinate set convention `cs`
-([R-CF/zarr_conventions_cs](https://github.com/R-CF/zarr_conventions_cs)) in [schemas/](schemas), as copies that add a title and a
+([zarr-conventions](https://github.com/zarr-conventions)) and the R-CF conventions `cs` (coordinate sets), `ref` and
+`geolocation` ([R-CF](https://github.com/R-CF)) in [schemas/](schemas), as copies that add a title and a
 description to every field and turn every `enum` into a `oneOf` of titled (and, where documented, described) constants.
 The [Observatory](https://github.com/hamk-uas/observatory) uses these copies, adding its own Finnish and Swedish
 translations of STAC core.
 
 - [schemas/](schemas)`/<host>/<path>` is the documented copy of `https://<host>/<path>`; its `$id` is that URL (upstream
   ids end in `#` or, for v1.1.0 `common.json`, have a typo). Dependencies are unmodified: GeoJSON and PROJJSON, and
-  the schemas of other conventions that `cs` references (ref, geolocation, geo-proj and units of measure), listed in
-  `DEPENDENCY_URLS` of [scripts/manifest.mjs](scripts/manifest.mjs).
+  the schemas `cs` references from other conventions' main branches (ref, geolocation, geo-proj) and units of measure,
+  listed in `DEPENDENCY_URLS` of [scripts/manifest.mjs](scripts/manifest.mjs); the released ref and geolocation are
+  documented copies of their own.
 - [upstream/](upstream) holds the published originals. The tests ([test/vendored.test.ts](test/vendored.test.ts)) check
   that each copy validates exactly like its original (annotations removed, value lists turned back into `enum`), keeps
   every upstream title and description, documents every field, and lists each allowed value exactly once: a value listed
@@ -230,7 +233,7 @@ To vendor another schema, add it to [scripts/manifest.mjs](scripts/manifest.mjs)
 
 ```sh
 node scripts/fetch-upstream.mjs     # download the original (and what it references) into upstream/ and schemas/
-node scripts/draft-docs.mjs <name>  # draft missing titles and descriptions from the README tables; never overwrites
+node scripts/draft-docs.mjs <name>  # draft missing titles and descriptions from the README tables; never overwrites, never writes into dependencies or other conventions' schemas
 node scripts/report.mjs             # list what is still undocumented
 node scripts/review.mjs <name>      # print the added texts for review
 ```
@@ -288,8 +291,8 @@ The explorer places everything in **layers**: 📜 standards (STAC itself), 🤝
 fields, 💾 formats that contain them, and the 🔌 drivers, 🧰 libraries and 🖥️ packages and apps that read and write
 them. Field information says which convention defines a field and which formats contain it, then lists the software by
 layer. To tell whether this information is current, the registry records for every format and convention when it was
-checked, its latest release then and the maturity a convention states (proj, spatial, multiscales and cs are *Pilot*,
-NZ a *Proposal*), and
+checked, its latest release then and the maturity a convention states (proj, spatial, multiscales, cs, ref and
+geolocation are *Pilot*, NZ a *Proposal*), and
 the software list does the same for every program. Checks older than three months are flagged as possibly outdated,
 and the latest releases of the Python packages are looked up on PyPI when shown, to flag newer releases.
 

@@ -10,8 +10,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { isDependency, localPath, VENDORED } from './manifest.mjs';
-import { documentation, documentationNode, documentationSites, inCondition, valueList, walkSchemas } from './schema-tools.mjs';
+import { draftWritable, isDependency, localPath, VENDORED } from './manifest.mjs';
+import { documentation, documentationSites, draftTarget, inCondition, valueList, walkSchemas } from './schema-tools.mjs';
 import { vendoredUrls } from './vendored.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -216,6 +216,8 @@ async function tablesFor(url) {
 
 function set(node, key, value, url) {
     if (node[key] || !value) return;
+    // Only into the schema being drafted or its entry's (see draftWritable); never a dependency or another convention.
+    if (isDependency(url)) throw new Error(`draft-docs would change the dependency ${url}`);
     node[key] = value;
     changed.add(url);
 }
@@ -251,6 +253,8 @@ function convertEnums(schema, url, values) {
 for (const [url, schema] of schemas) {
     if (isDependency(url) || !url.includes(filter)) continue;
     const core = url.includes('schemas.stacspec.org');
+    // Documentation drafted for this schema may go into it and the other schemas of its manifest entry, never elsewhere.
+    const writable = (target) => draftWritable(url, target);
     const tables = await tablesFor(url);
     const rows = fieldRows(tables);
     const values = valueRows(tables);
@@ -263,7 +267,7 @@ for (const [url, schema] of schemas) {
     const drafts = sites.map((site) => {
         const { row, ambiguous: unsure } = bestRow(rows, site.name, site.path, url);
         const label = fieldsLabel(stacFields, site.path);
-        const target = documentationNode(site.node, url, resolve);
+        const target = draftTarget(site.node, url, resolve, writable);
         if (row && !documentation(site.node, url, resolve).description && unsure) ambiguous.push(`${localPath(url)}${site.pointer}: chose "${row.heading}"`);
         return { site, target, title: label.label ?? humanize(site.name), description: row?.description ?? label.explain };
     });
@@ -280,7 +284,7 @@ for (const [url, schema] of schemas) {
         if (documentation(site.node, url, resolve).description) continue;
         const twin = sites.find((other) => other !== site && other.name === site.name && documentation(other.node, url, resolve).description
             && (site.name.includes(':') || other.path.slice(0, -1).join('/') === site.path.slice(0, -1).join('/')));
-        const { node, url: at } = documentationNode(site.node, url, resolve);
+        const { node, url: at } = draftTarget(site.node, url, resolve, writable);
         if (twin) set(node, 'description', documentation(twin.node, url, resolve).description, at);
     }
 }

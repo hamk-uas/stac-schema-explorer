@@ -90,9 +90,10 @@ source data, **not disposable build output**; `dist` is build output.
    it does not overwrite existing enriched copies.
 3. `node scripts/draft-docs.mjs <name>` drafts missing documentation and titled
    enum alternatives. It is assistance, not authoritative scientific prose:
-   review additions against the sources and existing text. It can also annotate
-   schemas reached through `$ref`; restore dependency copies (delete and re-run
-   `fetch-upstream`) if it does.
+   review additions against the sources and existing text. It writes only into
+   the schema drafted and the other schemas of its manifest entry; a property
+   referencing another document (a dependency, another convention) is
+   documented next to its `$ref`.
 4. Use `node scripts/report.mjs <name>`, `node scripts/review.mjs <name>` and
    `git diff` to review gaps/changes. Omit the name for all schemas.
 5. Run focused vendoring tests, then affected engine checks. Upstream changes

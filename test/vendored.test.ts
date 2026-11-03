@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
 
-import { isDependency, localPath } from '../scripts/manifest.mjs';
-import { annotations, canonicalize, documentation, documentationSites, inCondition, valueList, walkSchemas } from '../scripts/schema-tools.mjs';
+import { draftWritable, isDependency, localPath } from '../scripts/manifest.mjs';
+import { annotations, canonicalize, documentation, documentationSites, draftTarget, inCondition, valueList, walkSchemas } from '../scripts/schema-tools.mjs';
 import { vendoredUrls } from '../scripts/vendored.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -72,5 +72,37 @@ describe('vendored schemas', () => {
             }
         });
         expect(problems).toEqual([]);
+    });
+});
+
+describe('drafting documentation', () => {
+    const STAC = 'https://schemas.stacspec.org/v1.1.0/';
+    const R_CF = 'https://raw.githubusercontent.com/R-CF/';
+    const GEOLOCATION = `${R_CF}zarr_convention_geolocation/refs/tags/v1.0.0/schema.json`;
+    const PROJ = 'https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json';
+
+    it('writes only into the schema drafted and the other schemas of its manifest entry', () => {
+        expect(draftWritable(`${STAC}collection-spec/json-schema/collection.json`, `${STAC}item-spec/json-schema/common.json`)).toBe(true);
+        expect(draftWritable(`${STAC}item-spec/json-schema/item.json`, 'https://schemas.stacspec.org/v1.0.0/item-spec/json-schema/item.json')).toBe(false);
+        // Another convention's schema (geolocation's id is a proj object), or a dependency (PROJJSON, ref of main).
+        expect(draftWritable(GEOLOCATION, PROJ)).toBe(false);
+        expect(draftWritable(GEOLOCATION, `${R_CF}zarr_convention_ref/refs/tags/v2.0.0/schema.json`)).toBe(false);
+        expect(draftWritable(PROJ, 'https://proj.org/schemas/v0.7/projjson.schema.json')).toBe(false);
+        expect(draftWritable(`${R_CF}zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json`, `${R_CF}zarr_convention_ref/main/schema.json`)).toBe(false);
+    });
+
+    it('documents a property referencing a document it may not change next to its own $ref', () => {
+        const schema = read('schemas', GEOLOCATION);
+        const id = schema.$defs.arrays.properties.id;
+        const target = draftTarget(id, GEOLOCATION, resolve, (url: string) => draftWritable(GEOLOCATION, url));
+        expect(target.url).toBe(GEOLOCATION);
+        expect(target.node).toBe(id);
+        // Where it may, documentation goes on the definition referenced.
+        const A = 'https://example.org/a.json';
+        const B = 'https://example.org/b.json';
+        const docs: Record<string, unknown> = { [A]: { properties: { x: { $ref: 'b.json#/$defs/x' } } }, [B]: { $defs: { x: { type: 'string' } } } };
+        const x = (docs[A] as { properties: { x: object } }).properties.x;
+        expect(draftTarget(x, A, (url: string) => docs[url], () => true)).toMatchObject({ url: B });
+        expect(draftTarget(x, A, (url: string) => docs[url], (url: string) => url === A)).toMatchObject({ url: A, node: x });
     });
 });

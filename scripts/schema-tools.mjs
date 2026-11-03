@@ -188,6 +188,21 @@ export function documentationNode(node, url, resolve) {
 }
 
 /**
+ * Where drafted documentation of a property goes: the end of its reference chain as far as `writable` allows. A property
+ * referencing a document that may not be changed (a dependency, another convention's schema) is documented next to its
+ * own `$ref` instead, so that drafting one schema never alters another.
+ */
+export function draftTarget(node, url, resolve, writable) {
+    const chain = referenceChain(node, url, resolve);
+    let target = chain[0];
+    for (const link of chain.slice(1)) {
+        if (!writable(link.url)) break;
+        target = link;
+    }
+    return target;
+}
+
+/**
  * Properties that must be documented: every property of the schema, except conditions (`if`, `not`), constraint-only
  * discriminators, contents of `summaries`, core keys that extension schemas only re-declare, and fields of other
  * extensions. Each site is `{ pointer, name, node, path }`, `path` being the property names and definition names on the

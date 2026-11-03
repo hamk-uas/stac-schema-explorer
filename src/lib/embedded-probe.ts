@@ -152,13 +152,15 @@ function nodeFields(store: SchemaStore, url: string, ownValues = false): NodeFie
         const own = (key: string) => prefixes.size === 0 || prefixes.has(prefixOfKey(key) ?? '');
         const descend = ownValues && prefixes.size === 0;
         const seen = new Set<string>();
-        // Only the schema's own document is searched: keys a document it `$ref`s defines (`proj:code` of the proj object
-        // the coordinate set convention takes as an `id`) are fields where they are, but are not searched within (PROJJSON).
+        // The schema's own document is searched, and the documents of other conventions it composes (the ref objects of
+        // geolocation arrays). Keys of any other document it `$ref`s are fields where they are, but are not searched
+        // within (PROJJSON); nor are prefixed keys, whose values belong to their convention (`proj:projjson`).
         const ownDocument = (refs: FieldSchemaRef[]) => refs.filter((r) => r.schemaUrl === url);
+        const searchable = (schemaUrl: string) => schemaUrl === url || !!conventionOfSchema(schemaUrl);
         const visit = (ref: FieldSchemaRef, path: string[]) => {
             // Per path: the same definition can hold fields in several places (CRS objects of a coordinate set and of a group).
             const key = `${ref.schemaUrl}#${ref.pointer}|${path.join('/')}`;
-            if (seen.has(key) || path.length > 10 || ref.schemaUrl !== url) return;
+            if (seen.has(key) || path.length > 10 || !searchable(ref.schemaUrl)) return;
             seen.add(key);
             for (const [child, allRefs] of properties(store, ref.schemaUrl, ref.pointer)) {
                 const childRefs = ownDocument(allRefs).length ? ownDocument(allRefs) : allRefs;
@@ -167,7 +169,7 @@ function nodeFields(store: SchemaStore, url: string, ownValues = false): NodeFie
                     if (existing) existing.refs.push(...childRefs);
                     else nested.push({ name: child, container: name, path, refs: [...childRefs] });
                 }
-                if (!own(child) || descend) childRefs.forEach((r) => visit(r, [...path, child]));
+                if (!own(child) || (descend && !prefixOfKey(child))) childRefs.forEach((r) => visit(r, [...path, child]));
             }
             for (const item of itemsOf(store, ref.schemaUrl, ref.pointer)) visit(item, [...path, '*']);
             // Entries of a map keyed by name (`axes` keyed by dimension name, `crs` objects of a group keyed by CRS name).

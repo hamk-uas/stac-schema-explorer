@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v1.0.0/schema.json",
+  "title": "Geolocation Convention",
+  "description": "Schema for the geolocation Zarr convention",
+  "type": "object",
+  "properties": {
+    "zarr_format": {
+      "type": "integer",
+      "description": "Zarr format version",
+      "title": "Zarr format"
+    },
+    "node_type": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "array",
+          "title": "Array",
+          "description": "A Zarr array node whose elements the geolocation arrays locate."
+        },
+        {
+          "const": "group",
+          "title": "Group",
+          "description": "A Zarr group node."
+        }
+      ],
+      "description": "Type of Zarr node",
+      "title": "Node type"
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Zarr attributes containing convention metadata and properties",
+      "properties": {
+        "zarr_conventions": {
+          "type": "array",
+          "description": "Array of convention metadata objects",
+          "contains": {
+            "$ref": "#/$defs/conventionMetadata"
+          },
+          "title": "Declared conventions"
+        },
+        "geolocation": {
+          "$ref": "#/$defs/geolocation"
+        }
+      },
+      "required": [
+        "zarr_conventions"
+      ],
+      "title": "Attributes"
+    }
+  },
+  "required": [
+    "zarr_format",
+    "node_type",
+    "attributes"
+  ],
+  "additionalProperties": true,
+  "$defs": {
+    "conventionMetadata": {
+      "type": "object",
+      "description": "Geolocation convention metadata object for use in zarr_conventions array",
+      "properties": {
+        "schema_url": {
+          "type": "string",
+          "pattern": "^https://raw\\.githubusercontent\\.com/R-CF/zarr_convention_geolocation/refs/tags/v1\\.[0-9]+\\.[0-9]+/schema\\.json$",
+          "description": "URL to the JSON Schema definition for this convention",
+          "title": "Schema URL"
+        },
+        "spec_url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/R-CF/zarr_convention_geolocation/blob/v1\\.[0-9]+\\.[0-9]+/README\\.md$",
+          "description": "URL to the full specification document",
+          "title": "Specification URL"
+        },
+        "uuid": {
+          "type": "string",
+          "const": "bb9ee930-8c60-4c47-ad6b-8daa558987ed",
+          "description": "UUID that permanently identifies this convention",
+          "title": "Convention UUID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Geolocation arrays for Zarr arrays",
+          "title": "Convention name"
+        },
+        "description": {
+          "type": "string",
+          "const": "Convention for storing geolocation arrays",
+          "description": "This convention provides a standard way to store geolocation arrays",
+          "title": "Convention description"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "schema_url"
+          ]
+        },
+        {
+          "required": [
+            "spec_url"
+          ]
+        },
+        {
+          "required": [
+            "uuid"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    },
+    "geolocation": {
+      "type": "object",
+      "properties": {
+        "geodetic": {
+          "$ref": "#/$defs/arrays",
+          "title": "Geodetic arrays",
+          "description": "Arrays of longitude (x) and latitude (y) for each element."
+        },
+        "planar": {
+          "$ref": "#/$defs/arrays",
+          "title": "Planar arrays",
+          "description": "Arrays of planar coordinates (x and y) for each element, in the CRS given by id."
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "geodetic"
+          ]
+        },
+        {
+          "required": [
+            "planar"
+          ]
+        }
+      ],
+      "additionalProperties": false,
+      "title": "Geolocation",
+      "description": "References to arrays of geodetic and/or planar coordinates for each element of the array; at least one of the two."
+    },
+    "arrays": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json#/$defs/refProperty",
+          "title": "X array",
+          "description": "Reference to the array of X (west-east) coordinates: longitudes for geodetic arrays."
+        },
+        "y": {
+          "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json#/$defs/refProperty",
+          "title": "Y array",
+          "description": "Reference to the array of Y (south-north) coordinates: latitudes for geodetic arrays."
+        },
+        "id": {
+          "$ref": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json#/$defs/projAttributes",
+          "title": "CRS (proj)",
+          "description": "CRS of the coordinate values, in the fields of the proj convention; it must agree with the x and y arrays."
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Geolocation arrays",
+      "description": "References to the x and y coordinate arrays, and the CRS of their values."
+    }
+  }
+}

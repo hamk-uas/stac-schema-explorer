@@ -151,6 +151,34 @@ describe('embedded placement probing', () => {
         }
     });
 
+    it('places geolocation arrays with the ref objects it composes, not the PROJJSON of their CRS', async () => {
+        const GL = 'https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v1.0.0/schema.json';
+        const REF = 'https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json';
+        const store = fixtureStore();
+        const result = await probeEmbedded(store, [GL, REF]);
+        for (const n of result.nodes) {
+            expect(n.errors, n.key).toEqual([]);
+            expect(n.notApplicable, n.key).toEqual([]);
+        }
+        const array = result.nodes.find((n) => n.key === 'zarr-v3:array')!;
+        const at = (location: string) => array.placements.filter((p) => p.location === location).map((p) => `${p.source === GL ? 'geolocation' : 'ref'}:${p.field}`).sort();
+        expect(at('/attributes')).toEqual(['geolocation:geolocation', 'ref:ref']);
+        // ref is a convention geolocation composes: its fields are placed inside geolocation's references too.
+        expect(at('/attributes/geolocation/geodetic/x/ref')).toEqual(['geolocation:attribute', 'geolocation:node', 'geolocation:uri']);
+        const geolocation = result.sources.find((s) => s.key === GL)!;
+        expect(geolocation.fields).toContain('proj:code');
+        expect(geolocation.fields).not.toContain('datum');
+        expect(geolocation.prefixes).toEqual([]);
+
+        const example = JSON.parse(readFileSync(new URL('./fixtures/embedded/geolocation-geodetic-planar.json', import.meta.url), 'utf8')) as JsonObject;
+        expect(nodeConventions('zarr-v3', example, example)).toEqual(expect.arrayContaining([GL, REF]));
+        for (const url of [GL, REF]) expect(await validateNode(store, example, url, []), url).toEqual([]);
+        const view = realNodeView(example, array, result.sources.filter((s) => s.formats.includes('zarr-v3')), `${B}zarr/v3/schema.json`, true);
+        const fields = [...fieldIndex(view).entries()];
+        expect(fields.some(([pointer]) => pointer === '/attributes/geolocation/planar/x/ref|node')).toBe(true);
+        expect(fields.filter(([, f]) => f.state === 'unexpected').map(([pointer]) => pointer)).toEqual([]);
+    });
+
     it('places the fields within the objects of a convention without prefixes, and shows them in real nodes', async () => {
         const store = fixtureStore();
         const both = await probeEmbedded(store, [ZC('multiscales'), ZC('spatial'), ZC('proj')]);

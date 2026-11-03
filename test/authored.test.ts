@@ -153,8 +153,13 @@ describe('registry', () => {
     it('maps the schema URL each Zarr convention version declares for itself to its vendored copy', () => {
         for (const convention of registry.conventions.filter((c) => c.kind === 'zarr-convention')) {
             for (const version of convention.versions) {
-                const declared = getPointer(read(version.schema), '/$defs/conventionMetadata/properties/schema_url/const');
-                expect(declared, `${convention.id} ${version.version}`).toBe(version.declaredSchema ?? version.schema);
+                const schema = read(version.schema);
+                const expected = version.declaredSchema ?? version.schema;
+                const declared = getPointer(schema, '/$defs/conventionMetadata/properties/schema_url/const');
+                // A schema declares its URL as a constant, or as a pattern of its releases (R-CF conventions).
+                const pattern = getPointer(schema, '/$defs/conventionMetadata/properties/schema_url/pattern');
+                if (declared !== undefined) expect(declared, `${convention.id} ${version.version}`).toBe(expected);
+                else expect(new RegExp(pattern).test(expected), `${convention.id} ${version.version}`).toBe(true);
             }
         }
     });

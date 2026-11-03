@@ -1,0 +1,54 @@
+{
+  "zarr_format": 3,
+  "node_type": "array",
+  "shape": [8605, 180, 288],
+  "dimension_names": ["time", "y", "x"],
+  "attributes": {
+    "zarr_conventions": [
+      {
+        "schema_url": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v1.0.0/schema.json",
+        "name": "geolocation"
+      },
+      {
+        "schema_url": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json",
+        "name": "ref"
+      },
+      {
+        "schema_url": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json",
+        "name": "proj"
+      }
+    ],
+    "geolocation": {
+      "geodetic": {
+        "x": {
+          "ref": {
+            "node": "../../geolocation/geodetic/longitude"
+          }
+        },
+        "y": {
+          "ref": {
+            "node": "../../geolocation/geodetic/latitude"
+          }
+        },
+        "id": {
+          "proj:code": "EPSG:4326"
+        }
+      },
+      "planar": {
+        "x": {
+          "ref": {
+            "node": "../../geolocation/UTM28N/easting"
+          }
+        },
+        "y": {
+          "ref": {
+            "node": "../../geolocation/UTM28N/northing"
+          }
+        },
+        "id": {
+          "proj:code": "EPSG:25828"
+        }
+      }
+    }
+  }
+}

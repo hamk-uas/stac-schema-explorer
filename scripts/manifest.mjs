@@ -72,7 +72,18 @@ export const VENDORED = [
         schemas: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json'],
         readmes: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/README.md'],
     },
+    // Conventions cs composes (R-CF), at their release tags: references to other nodes, and geolocation arrays.
+    R_CF_CONVENTION('zarr_convention_ref', 'v2.0.0'),
+    R_CF_CONVENTION('zarr_convention_geolocation', 'v1.0.0'),
 ];
+
+/** A convention of github.com/R-CF: its schema and README at a release tag. */
+function R_CF_CONVENTION(repo, tag) {
+    return {
+        schemas: [`https://raw.githubusercontent.com/R-CF/${repo}/refs/tags/${tag}/schema.json`],
+        readmes: [`https://raw.githubusercontent.com/R-CF/${repo}/refs/tags/${tag}/README.md`],
+    };
+}
 
 /** A Zarr convention of github.com/zarr-conventions: its schema and README at a release tag, or at a commit (a 40-digit SHA). */
 function ZARR_CONVENTION(name, tag) {
@@ -98,12 +109,12 @@ export function isAuthored(url) {
 export const DEPENDENCY_HOSTS = ['geojson.org', 'proj.org', 'json-schema.org'];
 
 /**
- * Other schemas that are only dependencies: those of other conventions that a vendored convention `$ref`s (the coordinate
- * set convention uses ref, geolocation, proj and units of measure). Vendored unmodified, as fetched from these URLs.
+ * Other schemas that are only dependencies: those of other conventions that a vendored convention `$ref`s from their
+ * main branches (the coordinate set convention uses ref, geolocation, proj and units of measure), whose released
+ * versions, where vendored, are documented copies of their own. Vendored unmodified, as fetched from these URLs.
  */
 export const DEPENDENCY_URLS = [
     'https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json',
-    'https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json',
     'https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/main/schema.json',
     'https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json',
     'https://raw.githubusercontent.com/clbarnes/zarr-convention-uom/refs/tags/v1/schema.json',
@@ -117,4 +128,23 @@ export function localPath(url) {
 
 export function isDependency(url) {
     return DEPENDENCY_HOSTS.includes(new URL(url).host) || DEPENDENCY_URLS.includes(url);
+}
+
+const directoryOf = (url) => url.replace(/\/[^/]+$/, '/');
+
+/**
+ * The manifest entry a vendored schema belongs to: the one listing it, or for a schema pulled in by `$ref`, the one whose
+ * schemas share its directory (STAC core's `common.json` with `item.json`). Undefined for schemas of no entry.
+ */
+export function manifestEntryOf(url) {
+    return VENDORED.find((entry) => entry.schemas.includes(url))
+        ?? VENDORED.find((entry) => entry.schemas.some((schema) => directoryOf(url).startsWith(directoryOf(schema)) || directoryOf(schema).startsWith(directoryOf(url))));
+}
+
+/** True when drafting documentation for `url` may write into `target`: the same schema, or another of its entry. */
+export function draftWritable(url, target) {
+    if (target === url) return true;
+    if (isDependency(target)) return false;
+    const entry = manifestEntryOf(url);
+    return !!entry && manifestEntryOf(target) === entry;
 }

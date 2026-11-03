@@ -243,6 +243,66 @@
       ]
     },
     {
+      "id": "geolocation",
+      "kind": "zarr-convention",
+      "title": "geolocation",
+      "formats": [
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Geolocation arrays: references to arrays of longitude and latitude, or planar coordinates, for each element of an array whose own coordinate system has no simple CRS (satellite swaths, rotated poles).",
+      "authored": false,
+      "specification": "https://github.com/R-CF/zarr_convention_geolocation",
+      "maturity": "Pilot",
+      "checked": {
+        "date": "2026-11-03",
+        "latest": "v1.0.0",
+        "source": "https://github.com/R-CF/zarr_convention_geolocation"
+      },
+      "declaration": {
+        "zarrConventions": {
+          "uuid": "bb9ee930-8c60-4c47-ad6b-8daa558987ed"
+        }
+      },
+      "versions": [
+        {
+          "version": "v1.0.0",
+          "schema": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v1.0.0/schema.json",
+          "specification": "https://github.com/R-CF/zarr_convention_geolocation/blob/v1.0.0/README.md"
+        }
+      ]
+    },
+    {
+      "id": "ref",
+      "kind": "zarr-convention",
+      "title": "ref",
+      "formats": [
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "References from the attributes of a node to another node (array, group or attribute) of the same or another store, composed by other conventions (cs, geolocation).",
+      "authored": false,
+      "specification": "https://github.com/R-CF/zarr_convention_ref",
+      "maturity": "Pilot",
+      "checked": {
+        "date": "2026-11-03",
+        "latest": "v2.0.0",
+        "source": "https://github.com/R-CF/zarr_convention_ref"
+      },
+      "declaration": {
+        "zarrConventions": {
+          "uuid": "d89b30cf-ed8c-43d5-9a16-b492f0cd8786"
+        }
+      },
+      "versions": [
+        {
+          "version": "v2.0.0",
+          "schema": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json",
+          "specification": "https://github.com/R-CF/zarr_convention_ref/blob/v2.0.0/README.md"
+        }
+      ]
+    },
+    {
       "id": "cf",
       "kind": "attribute-convention",
       "title": "CF",
