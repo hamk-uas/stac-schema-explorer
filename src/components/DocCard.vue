@@ -300,13 +300,15 @@ header {
   border-radius: 4px;
   padding: 0 5px;
 }
+/* The title takes the space left and shortens before the heading wraps, which would leave a near-empty second row. */
 .title {
+  flex: 1 1 4em;
+  min-width: 0;
   font: 13px var(--sans);
   color: var(--slate-700);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 340px;
 }
 .status {
   font-size: 12px;
