@@ -339,6 +339,34 @@ describe('embedded metadata of the lab catalogs', () => {
         }
     });
 
+    it('UNC netCDF nodes are valid netCDF with CF and UNC attributes, and UNC rules are checked', async () => {
+        const UNC = `${AUTHORED_BASE}unc/draft-v0.2/schema.json`;
+        for (const { node } of fixture('unc-sst.netcdf.json')) {
+            for (const schema of ['netcdf/v0.1.0', 'cf/v1.13', 'unc/draft-v0.2']) {
+                expect(await valid(`${AUTHORED_BASE}${schema}/schema.json`, node), `${schema} ${node.name}`).toEqual([]);
+            }
+        }
+        const variable = (attributes: Record<string, unknown>) => ({ node_type: 'variable', name: 'u', attributes });
+        const uncertainty = { coverage_interval: 'half_width', coverage_probability: 0.95 };
+        const rejects = async (node: unknown, why: string) => expect(await valid(UNC, node), why).not.toEqual([]);
+        await rejects(variable({ coverage_interval: 'half_width' }), 'coverage_probability is required');
+        await rejects(variable({ uncertainty_component: 'noise' }), 'an uncertainty variable needs its coverage interval');
+        await rejects(variable({ coverage_interval: 'standard_deviation', coverage_probability: 0.6827 }), 'standard_deviation requires a distribution');
+        await rejects(variable({ ...uncertainty, coverage_factor: 2 }), 'coverage_factor only with standard_deviation');
+        await rejects(variable({ ...uncertainty, coverage_probability: 1.5 }), 'probability out of range');
+        await rejects(variable({ ...uncertainty, uncertainty_representation: 'relative_difference', standard_name: 'sea_surface_temperature' }), 'relative differences have no standard_name');
+        await rejects(variable({ ...uncertainty, probability_distribution: 'cauchy' }), 'unknown distribution');
+        await rejects(variable({ ...uncertainty, probability_distribution: 'skewed_gaussian (shape: s)' }), 'unknown distribution parameter');
+        await rejects(variable({ ...uncertainty, uncertainty_evaluation: 'type_a' }), 'unknown evaluation');
+        await rejects(variable({ ...uncertainty, error_correlation: 'independent' }), 'error_correlation names dimensions');
+        await rejects({ node_type: 'group', name: '/', attributes: uncertainty }, 'not on groups');
+        // Forms of error_correlation from the specification, and the multi-line values of its examples.
+        for (const form of ['lat: correlations', 'lat: lon: correlations (length scale = 100 km)', 'time: independent (comment: grid spacing exceeds it)',
+            'lon: triangular (localization_radius: 15)', 'time: (time scale = 1 day)\n  lat: lon: (length scale = 100 km)']) {
+            expect(await valid(UNC, variable({ ...uncertainty, error_correlation: form })), form).toEqual([]);
+        }
+    });
+
     it('rejects a Zarr v3 array without its required metadata', async () => {
         expect(await valid(`${AUTHORED_BASE}zarr/v3/schema.json`, { zarr_format: 3, node_type: 'array' })).not.toEqual([]);
     });

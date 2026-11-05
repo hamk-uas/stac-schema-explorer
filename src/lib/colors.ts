@@ -27,7 +27,12 @@ export function sourceLabel(source: SourceKey, sources: SourceInfo[]): string {
         return spec ? `${spec.title} (${source.slice(1)}:, no STAC extension schema)` : `unknown extension (${source.slice(1)}:)`;
     }
     const info = sources.find((s) => s.key === source);
-    return info ? `${info.title}${info.version ? ` v${info.version}` : ''}` : source;
+    return info ? `${info.title}${info.version ? ` ${versionLabel(info.version)}` : ''}` : source;
+}
+
+/** `v1.1.0`, `v0.1`; a version that is no number (`draft-v0.2`, `main-33df41a`) as it is. */
+export function versionLabel(version: string): string {
+    return /^\d/.test(version) ? `v${version}` : version;
 }
 
 export function versionOf(source: SourceKey, sources: SourceInfo[]): string | undefined {

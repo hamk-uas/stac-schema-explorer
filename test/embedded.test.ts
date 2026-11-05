@@ -203,6 +203,35 @@ describe('embedded placement probing', () => {
         expect(fields.filter(([, f]) => f.state === 'unexpected').map(([key]) => key)).toEqual([]);
     });
 
+    it('places UNC attributes on netCDF variables and Zarr arrays, with the attributes they require', async () => {
+        const UNC = `${B}unc/draft-v0.2/schema.json`;
+        const store = fixtureStore();
+        const result = await probeEmbedded(store, [UNC, `${B}cf/v1.13/schema.json`]);
+        for (const n of result.nodes) expect(n.errors, n.key).toEqual([]);
+        const at = (key: string) => result.nodes.find((n) => n.key === key)!.placements.filter((p) => p.source === UNC).map((p) => p.field).sort();
+        const all = ['coverage_factor', 'coverage_interval', 'coverage_probability', 'error_correlation', 'probability_distribution', 'uncertainty_component',
+            'uncertainty_evaluation', 'uncertainty_representation', 'uncertainty_variables'];
+        // coverage_interval and coverage_probability require each other: they are placed together.
+        for (const key of ['netcdf:variable', 'zarr-v3:array', 'zarr-v2:array']) expect(at(key), key).toEqual(all);
+        for (const key of ['netcdf:group', 'zarr-v3:group']) {
+            expect(at(key), key).toEqual([]);
+            expect(result.nodes.find((n) => n.key === key)!.notApplicable, key).toContain(UNC);
+        }
+
+        // UNC defines no Conventions token: the data and uncertainty variables of a dataset are recognised from their attributes.
+        const nodes = JSON.parse(readFileSync(new URL('./fixtures/embedded/unc-sst.netcdf.json', import.meta.url), 'utf8')) as { path: string; node: JsonObject }[];
+        const root = nodes[0].node;
+        const netcdf = `${B}netcdf/v0.1.0/schema.json`;
+        const template = result.nodes.find((n) => n.key === 'netcdf:variable')!;
+        for (const { path, node } of nodes.slice(1)) {
+            const conventions = nodeConventions('netcdf', node, root);
+            const hasUnc = Object.keys(node.attributes as JsonObject).some((key) => all.includes(key));
+            expect(conventions.includes(UNC), path).toBe(hasUnc);
+            const view = realNodeView(node, template, result.sources.filter((s) => s.formats.includes('netcdf')), netcdf, true);
+            expect([...fieldIndex(view).values()].filter((f) => f.state === 'unexpected').map((f) => f.name), path).toEqual([]);
+        }
+    });
+
     it('validates a real node against its format and declared conventions', async () => {
         const store = fixtureStore();
         expect(await validateNode(store, { zarr_format: 3, node_type: 'group', attributes: {} }, `${B}zarr/v3/schema.json`, [])).toEqual([]);

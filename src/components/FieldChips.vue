@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import { colorOf, sourceLabel } from '../lib/colors';
+import { colorOf, sourceLabel, versionLabel } from '../lib/colors';
 import type { SourceInfo } from '../lib/model';
 import { groupFields, type FieldGroup, type FieldView } from '../lib/tree';
 
@@ -94,10 +94,10 @@ function counts(group: FieldGroup): string {
     return populated === group.fields.length ? '' : `${populated}/${group.fields.length}`;
 }
 
-/** `v1.1.0`, `v0.1`; a version that is no number (`main-33df41a`, a pinned commit) as it is. */
+/** The version shown after a source's name (see versionLabel). */
 function version(source: string): string | undefined {
     const value = props.sources.find((s) => s.key === source)?.version;
-    return value && /^\d/.test(value) ? `v${value}` : value;
+    return value ? versionLabel(value) : undefined;
 }
 
 function dimmed(source: string): boolean {

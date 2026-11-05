@@ -359,6 +359,42 @@
       ]
     },
     {
+      "id": "unc",
+      "kind": "attribute-convention",
+      "title": "UNC",
+      "formats": [
+        "netcdf",
+        "zarr-v3",
+        "zarr-v2"
+      ],
+      "description": "Uncertainty Metadata Naming Conventions: uncertainty variables of data variables, with their coverage intervals and probabilities, probability distributions and error correlations. Draft v0.2 is aligned with the proposed CF chapter 10 \"Uncertainty\".",
+      "authored": true,
+      "specification": "https://comet-toolkit.github.io/unc_website/",
+      "checked": {
+        "date": "2026-11-05",
+        "latest": "draft-v0.2",
+        "source": "https://comet-toolkit.github.io/unc_website/",
+        "note": "Draft v0.2 has the same attributes and vocabularies as CF pull request #661 (open), which proposes them as CF chapter 10 \"Uncertainty\" (issue #660); when CF releases it, that CF version will define these attributes. The review may still change them, for instance letting coverage_probability name a variable of probabilities. UNC defines no Conventions token: it is recognised from its attributes. Datasets written to v0.1 are not compatible."
+      },
+      "detection": [
+        [
+          "attributes",
+          "uncertainty_variables"
+        ],
+        [
+          "attributes",
+          "coverage_interval"
+        ]
+      ],
+      "versions": [
+        {
+          "version": "draft-v0.2",
+          "schema": "https://hamk-uas.github.io/stac-schema-explorer/schemas/unc/draft-v0.2/schema.json",
+          "specification": "https://comet-toolkit.github.io/unc_website/specification/draft-v0.2/unc_specification.html"
+        }
+      ]
+    },
+    {
       "id": "geotiff",
       "kind": "format-extension",
       "title": "GeoTIFF",

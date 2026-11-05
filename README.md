@@ -62,7 +62,7 @@ asking the schemas themselves.
   netCDF groups and variables, TIFF files and images) that are selected cores or that the selected **data conventions**
   apply to, with every field placed where the format and convention schemas allow it. Data conventions are chosen apart
   from extensions, with their own quick-select list grouped by kind: Zarr conventions, attribute conventions (CF,
-  ACDD), format extensions (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). A format's own fields, the counterparts
+  ACDD, UNC), format extensions (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). A format's own fields, the counterparts
   of STAC core, are shown when its core is selected.
 - **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
   file directly, or open a STAC document with such assets: their data files appear inside the document's card, in
@@ -155,7 +155,9 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
    convention schema are the keys it defines for a node and the entries of its `attributes`, `tags` and `geo_keys`.
    Starting from a minimal valid node of each format and node type (with the `zarr_conventions` entry a Zarr convention
    requires), each field is added with an example value and kept unless it adds validation errors, so required
-   companions (`spatial:dimensions` of an array) are kept in any order; a convention whose node still fails cannot apply
+   companions (`spatial:dimensions` of an array) are kept in any order; a field the convention accepts only with others it
+   then reports missing (UNC's `coverage_interval` and `coverage_probability`, each requiring the other) is added together
+   with them. A convention whose node still fails cannot apply
    there (`multiscales` in an array). As for STAC, a field is validated where an invalid value fails and presence-only
    where any value passes.
 
@@ -250,7 +252,7 @@ treatment as STAC:
 | STAC | Embedded metadata |
 | --- | --- |
 | STAC core (Catalog, Collection, Item) | **Format schemas**: Zarr v3 and v2 nodes, netCDF groups and variables, TIFF files and images |
-| STAC extensions, declared in `stac_extensions` | **Conventions**: Zarr conventions declared in `zarr_conventions` (NZ also in `conventions`); CF and ACDD declared in the `Conventions` attribute; GeoTIFF, GDAL, xarray and EOPF recognised from their keys |
+| STAC extensions, declared in `stac_extensions` | **Conventions**: Zarr conventions declared in `zarr_conventions` (NZ also in `conventions`); CF and ACDD declared in the `Conventions` attribute; UNC (uncertainty, no declaration of its own), GeoTIFF, GDAL, xarray and EOPF recognised from their keys |
 
 Every schema validates one **node** of a format document: a Zarr group or array (its `zarr.json`, or for Zarr v2 its
 `.zgroup`/`.zarray` with `.zattrs` as `attributes`), a netCDF group or variable, or a TIFF file or image (Image File
@@ -259,7 +261,7 @@ Directory). Conventions add their fields to the node's `attributes` (Zarr, netCD
 format schemas define one: what `ncdump -h` shows, and named TIFF tags with decoded GeoKeys and GDAL metadata.
 
 Zarr conventions are vendored like extensions (above). No official JSON Schema exists for Zarr core, netCDF, TIFF, CF,
-ACDD, GeoTIFF, GDAL, xarray or EOPF metadata, so this repository **authors** unofficial ones, each saying so in its
+ACDD, UNC, GeoTIFF, GDAL, xarray or EOPF metadata, so this repository **authors** unofficial ones, each saying so in its
 description, in
 [schemas/hamk-uas.github.io/stac-schema-explorer/schemas/](schemas/hamk-uas.github.io/stac-schema-explorer/schemas).
 They have no upstream copy; the build publishes them at their `$id`,
@@ -297,7 +299,18 @@ the software list does the same for every program. Checks older than three month
 and the latest releases of the Python packages are looked up on PyPI when shown, to flag newer releases.
 
 The CF attribute descriptions are those of the CF Conventions 1.13 Appendices A and F (public domain, CC0 1.0); the
-others summarise their specifications in our own words and link to them. The tests
+others summarise their specifications in our own words and link to them.
+
+UNC, the [Uncertainty Metadata Naming Conventions](https://comet-toolkit.github.io/unc_website/) (draft v0.2), is an
+authored convention of its own (`unc@draft-v0.2`), not part of the CF schema: its attributes (`uncertainty_variables`,
+`coverage_interval`, `coverage_probability`, …) are proposed as the new CF chapter 10 "Uncertainty" in
+[cf-conventions#661](https://github.com/cf-convention/cf-conventions/pull/661), with the same names and vocabularies,
+but are in no released CF version yet. When a CF release includes them, that CF version's schema gets them. UNC has no
+`Conventions` token, so it is recognised from its attributes; it applies to netCDF variables and Zarr arrays, not
+groups. Its schema checks what one variable's attributes show (vocabularies, which attributes require or exclude
+others); rules spanning variables (named variables exist, interval dimensions, equivalent units) are described only.
+
+The tests
 ([test/authored.test.ts](test/authored.test.ts)) check that every authored schema compiles, documents every field and
 lists allowed values as titled constants, that the registry and crosswalk point to existing schemas and fields, and
 that the embedded metadata of the Observatory lab's catalogs (Arctic CH4, Blue Marble and TESSERA Zarr v3, EOPF Zarr v2,

@@ -109,7 +109,7 @@ completeness. Treat them as the acceptance gate for enrichment.
 Format and convention schemas for metadata embedded in data assets (README
 "Embedded metadata schemas") have the same roles as STAC core and extensions.
 Zarr conventions are vendored through the manifest like extensions. Schemas
-without an official JSON Schema (Zarr core, netCDF, TIFF, CF, ACDD, GeoTIFF,
+without an official JSON Schema (Zarr core, netCDF, TIFF, CF, ACDD, UNC, GeoTIFF,
 GDAL, xarray, EOPF) are **authored** under `AUTHORED_BASE`
 (`scripts/manifest.mjs`), have no upstream copy, say "Unofficial JSON Schema"
 in their description and are published at their `$id` by `vite.config.ts`.
@@ -137,8 +137,13 @@ in their description and are published at their `$id` by `vite.config.ts`.
   program or specification, update its `checked` date and latest release in
   `software.json` or `registry.json`; the UI flags checks older than three months
   and looks up newer PyPI releases at runtime.
-- Do not copy text whose licence does not allow it: CF text is CC0; ACDD, OGC
-  and GDAL texts are summarised in our own words with links.
+- Do not copy text whose licence does not allow it: CF text is CC0; ACDD, OGC,
+  GDAL and UNC (its website declares no licence) texts are summarised in our own
+  words with links.
+- UNC (`unc/draft-v0.2`) is its own authored convention while CF's proposed
+  chapter 10 (cf-conventions#661) is unreleased; once a CF release includes the
+  uncertainty attributes, add them to that CF version's schema and note it in
+  UNC's registry entry rather than merging the two.
 - `test/authored.test.ts` checks documentation, registry/crosswalk/software targets and
   that the lab catalogs' metadata in `test/fixtures/embedded` validates. Fixtures
   must not contain personal data from source files (names, emails, user names).

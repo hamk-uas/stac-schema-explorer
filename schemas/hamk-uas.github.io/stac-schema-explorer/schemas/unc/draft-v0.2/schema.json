@@ -1,0 +1,351 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/unc/draft-v0.2/schema.json",
+  "title": "UNC uncertainty attributes",
+  "description": "Unofficial JSON Schema of the Uncertainty Metadata Naming Conventions (UNC) draft v0.2 (https://comet-toolkit.github.io/unc_website/specification/draft-v0.2/unc_specification.html): attributes that link a data variable to uncertainty variables, and describe the coverage interval, probability distribution and error correlation each gives. Draft v0.2 is aligned with the proposed CF chapter 10 \"Uncertainty\" (CF pull request #661, issue #660), which defines the same attributes and vocabularies and would deprecate the standard_error standard name modifier for uncertainty. Checks what the attributes of one variable can show: values, vocabularies, and which attributes require or exclude others. Rules that need the whole dataset (that named variables exist, dimensions and interval dimensions, equivalent units, array values) are described but not checked.",
+  "type": "object",
+  "properties": {
+    "attributes": {
+      "title": "Attributes",
+      "description": "Attributes of a netCDF or Zarr variable.",
+      "type": "object",
+      "properties": {
+        "uncertainty_variables": {
+          "title": "Uncertainty variables",
+          "description": "Blank-separated names of the uncertainty variables of this data variable, in any order. Each describes a component of its uncertainty. Used on: data variables.",
+          "type": "string",
+          "pattern": "\\S",
+          "examples": [
+            "u_random u_systematic"
+          ]
+        },
+        "coverage_interval": {
+          "title": "Coverage interval",
+          "description": "How the values of the uncertainty variable define, around each data value, the interval that contains the true value with the coverage probability. Required on uncertainty variables. Used on: uncertainty variables.",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "standard_deviation",
+              "title": "Standard deviation",
+              "description": "A symmetric, non-negative half-width equal to one standard deviation of the probability distribution (the standard uncertainty), or that times the coverage factor. No interval dimension; probability_distribution is then required."
+            },
+            {
+              "const": "half_width",
+              "title": "Half-width",
+              "description": "A symmetric, non-negative half-width of the interval, not tied to a standard deviation. No interval dimension."
+            },
+            {
+              "const": "offsets",
+              "title": "Lower and upper offsets",
+              "description": "Offsets to the data value of the lower and upper limits of a possibly asymmetric interval, in a trailing interval dimension of size two."
+            }
+          ]
+        },
+        "coverage_probability": {
+          "title": "Coverage probability",
+          "description": "Probability, from 0 to 1, that the coverage interval contains the true value (0.6827 for one standard deviation of a Gaussian distribution, 0.9545 for two). Required on uncertainty variables. Used on: uncertainty variables.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "coverage_factor": {
+          "title": "Coverage factor",
+          "description": "Positive factor by which the standard deviation was multiplied to give the values (an expanded uncertainty); dividing by it gives the standard uncertainty. Only with a coverage interval of standard_deviation; 1 when absent. Used on: uncertainty variables.",
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "default": 1
+        },
+        "uncertainty_representation": {
+          "title": "Uncertainty representation",
+          "description": "Whether the values are differences to the data values or relative differences; difference when absent. Relative differences have dimensionless units or units of percent, and no standard_name. Used on: uncertainty variables.",
+          "type": "string",
+          "default": "difference",
+          "oneOf": [
+            {
+              "const": "difference",
+              "title": "Difference",
+              "description": "Differences in units physically equivalent to those of the data variable."
+            },
+            {
+              "const": "relative_difference",
+              "title": "Relative difference",
+              "description": "Fractions (dimensionless units) or percentages (units of %) of the data values."
+            }
+          ]
+        },
+        "probability_distribution": {
+          "title": "Probability distribution",
+          "description": "Form of the probability distribution the coverage interval is derived from: a distribution, optionally with parameters that each name a distribution parameter variable, as in skewed_gaussian (skew: s kurtosis: k). Required when the coverage interval is standard_deviation. Used on: uncertainty variables.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "gaussian",
+                  "title": "Gaussian",
+                  "description": "The normal distribution."
+                },
+                {
+                  "const": "uniform",
+                  "title": "Uniform",
+                  "description": "All values within an interval are equally likely."
+                },
+                {
+                  "const": "skewed_gaussian",
+                  "title": "Skewed Gaussian",
+                  "description": "A normal distribution generalised to non-zero skewness."
+                },
+                {
+                  "const": "log_normal",
+                  "title": "Log-normal",
+                  "description": "The distribution of a variable whose logarithm is normally distributed."
+                },
+                {
+                  "const": "chi_squared",
+                  "title": "Chi-squared",
+                  "description": "The distribution of a sum of the squares of independent standard normal variables."
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "pattern": "^\\s*(gaussian|uniform|skewed_gaussian|log_normal|chi_squared)\\s*\\(\\s*(skew|kurtosis|degrees_of_freedom):\\s*[^\\s():]+(\\s+(skew|kurtosis|degrees_of_freedom):\\s*[^\\s():]+)*\\s*\\)\\s*$",
+              "examples": [
+                "skewed_gaussian (skew: skew kurtosis: kurtosis)"
+              ]
+            }
+          ]
+        },
+        "uncertainty_evaluation": {
+          "title": "Uncertainty evaluation",
+          "description": "How the uncertainty was evaluated, in the terms of the GUM (JCGM 100). It says nothing about whether the uncertainty is random or systematic; no value is assumed when absent. Used on: uncertainty variables.",
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "statistical",
+              "title": "Statistical (Type A)",
+              "description": "By statistical analysis of observed values, such as the standard error of the mean of a sample."
+            },
+            {
+              "const": "scientific_judgement",
+              "title": "Scientific judgement (Type B)",
+              "description": "From an assumed distribution, such as one based on a manufacturer's accuracy specification."
+            },
+            {
+              "const": "mixed",
+              "title": "Mixed",
+              "description": "By a combination of statistical analysis and scientific judgement."
+            }
+          ]
+        },
+        "uncertainty_component": {
+          "title": "Uncertainty component",
+          "description": "Which component of the uncertainty the variable represents: free text (such as \"correlated over synoptic scales\"), or combined_uncertainty for the total of all components, at most once per data variable. Without a combined uncertainty, the components are assumed independent. Used on: uncertainty variables.",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "combined_uncertainty",
+                  "title": "Combined uncertainty",
+                  "description": "The total uncertainty of the data variable, from all components."
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "error_correlation": {
+          "title": "Error correlation",
+          "description": "How the errors are correlated along dimensions of the data variable: blank-separated elements, each naming one or more dimensions (\"dim:\") followed by an error-correlation variable holding a correlation matrix, a structural type (independent, common, triangular or exponential) with optional parameters (localization_radius, e_folding_length), or a comment in parentheses. Each dimension appears at most once. Used on: uncertainty variables.",
+          "type": "string",
+          "pattern": "^\\s*(?:(?:[^\\s:()]+:\\s*)+(?:[^\\s:()]+(?:\\s*\\((?:[^()]|\\([^()]*\\))*\\))?|\\((?:[^()]|\\([^()]*\\))*\\))(?:\\s+|$))+$",
+          "examples": [
+            "time: independent lat: lon: common",
+            "lat: correlations time: independent lon: triangular (localization_radius: 15)"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "coverage_interval"
+                ]
+              },
+              {
+                "required": [
+                  "coverage_probability"
+                ]
+              },
+              {
+                "required": [
+                  "coverage_factor"
+                ]
+              },
+              {
+                "required": [
+                  "uncertainty_representation"
+                ]
+              },
+              {
+                "required": [
+                  "probability_distribution"
+                ]
+              },
+              {
+                "required": [
+                  "uncertainty_evaluation"
+                ]
+              },
+              {
+                "required": [
+                  "uncertainty_component"
+                ]
+              },
+              {
+                "required": [
+                  "error_correlation"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "coverage_interval",
+              "coverage_probability"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "coverage_interval"
+            ],
+            "properties": {
+              "coverage_interval": {
+                "const": "standard_deviation"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "probability_distribution"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "coverage_interval"
+            ],
+            "properties": {
+              "coverage_interval": {
+                "not": {
+                  "const": "standard_deviation"
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "coverage_factor"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "uncertainty_representation"
+            ],
+            "properties": {
+              "uncertainty_representation": {
+                "const": "relative_difference"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "standard_name"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "node_type"
+        ],
+        "properties": {
+          "node_type": {
+            "const": "group"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "uncertainty_variables"
+                  ]
+                },
+                {
+                  "required": [
+                    "coverage_interval"
+                  ]
+                },
+                {
+                  "required": [
+                    "coverage_probability"
+                  ]
+                },
+                {
+                  "required": [
+                    "coverage_factor"
+                  ]
+                },
+                {
+                  "required": [
+                    "uncertainty_representation"
+                  ]
+                },
+                {
+                  "required": [
+                    "probability_distribution"
+                  ]
+                },
+                {
+                  "required": [
+                    "uncertainty_evaluation"
+                  ]
+                },
+                {
+                  "required": [
+                    "uncertainty_component"
+                  ]
+                },
+                {
+                  "required": [
+                    "error_correlation"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

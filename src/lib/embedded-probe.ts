@@ -340,13 +340,33 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
         // are kept whatever their order, and a convention that cannot apply here (multiscales in an array) keeps its errors.
         const failures = (candidate: JsonObject) => [validate, formatValidate].reduce((count, v) => count + (v(candidate) ? 0 : v.errors?.length ?? 1), 0);
         const values = new Map<NodeField, Json>();
+        // A field the convention only accepts together with others it then reports missing (UNC's coverage_interval and
+        // coverage_probability, each requiring the other) is added with them, as long as they are its own fields.
+        const withCompanions = (start: JsonObject, field: NodeField, value: Json, before: number): [NodeField, Json][] | undefined => {
+            const added: [NodeField, Json][] = [[field, value]];
+            let trial = set(start, field, value);
+            for (let depth = 0; depth < 4; depth++) {
+                if (failures(trial) <= before) return added;
+                const missing = (validate.errors ?? []).filter((e) => e.keyword === 'required' && e.instancePath === location(field))
+                    .map((e) => fields.find((f) => f.name === (e.params as { missingProperty?: string }).missingProperty && f.container === field.container))
+                    .find((f): f is NodeField => !!f && !values.has(f) && !added.some(([a]) => a === f));
+                const companion = missing ? sample(missing)[0] : undefined;
+                if (!missing || companion === undefined) return undefined;
+                trial = set(trial, missing, companion);
+                added.push([missing, companion]);
+            }
+            return failures(trial) <= before ? added : undefined;
+        };
         for (const field of fields) {
+            if (values.has(field)) continue;
             const before = failures(node);
             for (const value of sample(field)) {
-                const trial = set(node, field, value);
-                if (failures(trial) > before) continue;
-                node = trial;
-                values.set(field, value);
+                const added = withCompanions(node, field, value, before);
+                if (!added) continue;
+                for (const [f, v] of added) {
+                    node = set(node, f, v);
+                    values.set(f, v);
+                }
                 break;
             }
         }

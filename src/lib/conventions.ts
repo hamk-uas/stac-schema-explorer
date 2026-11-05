@@ -54,7 +54,7 @@ export const CROSSWALK = crosswalkDocument.entries as CrosswalkEntry[];
 /** Headings of the convention kinds, in the order the picker lists them. */
 export const CONVENTION_KINDS: { kind: ConventionKind; title: string; hint: string }[] = [
     { kind: 'zarr-convention', title: 'Zarr conventions', hint: 'Declared in a node\'s zarr_conventions attribute (github.com/zarr-conventions).' },
-    { kind: 'attribute-convention', title: 'Attribute conventions', hint: 'Declared in the global Conventions attribute of netCDF and Zarr.' },
+    { kind: 'attribute-convention', title: 'Attribute conventions', hint: 'Attributes of netCDF and Zarr groups and variables: declared in the global Conventions attribute, or recognised from their keys (UNC).' },
     { kind: 'format-extension', title: 'Format extensions', hint: 'Recognised from their tags in TIFF files.' },
     { kind: 'de-facto', title: 'Tool conventions', hint: 'Written by software and recognised from their keys; not declared.' },
 ];

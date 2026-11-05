@@ -1,0 +1,228 @@
+[
+ {
+  "path": "/",
+  "node": {
+   "node_type": "group",
+   "name": "/",
+   "format": "netCDF-4",
+   "dimensions": {
+    "time": {
+     "size": 4
+    },
+    "lat": {
+     "size": 3
+    },
+    "lon": {
+     "size": 5
+    },
+    "lat1": {
+     "size": 3
+    },
+    "interval_offset": {
+     "size": 2
+    }
+   },
+   "attributes": {
+    "Conventions": "CF-1.13",
+    "title": "Synthetic sea surface temperature with UNC draft v0.2 uncertainty metadata"
+   }
+  }
+ },
+ {
+  "path": "sst",
+  "node": {
+   "node_type": "variable",
+   "name": "sst",
+   "data_type": "float",
+   "dimensions": [
+    "time",
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    4,
+    3,
+    5
+   ],
+   "attributes": {
+    "standard_name": "sea_surface_temperature",
+    "units": "K",
+    "units_metadata": "temperature: on_scale",
+    "uncertainty_variables": "u_total u_random u_systematic u_relative"
+   }
+  }
+ },
+ {
+  "path": "u_total",
+  "node": {
+   "node_type": "variable",
+   "name": "u_total",
+   "data_type": "float",
+   "dimensions": [
+    "time",
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    4,
+    3,
+    5
+   ],
+   "attributes": {
+    "standard_name": "sea_surface_temperature",
+    "units": "K",
+    "units_metadata": "temperature: on_scale",
+    "coverage_interval": "standard_deviation",
+    "coverage_probability": 0.6827,
+    "probability_distribution": "gaussian",
+    "uncertainty_component": "combined_uncertainty",
+    "uncertainty_evaluation": "mixed"
+   }
+  }
+ },
+ {
+  "path": "u_random",
+  "node": {
+   "node_type": "variable",
+   "name": "u_random",
+   "data_type": "float",
+   "dimensions": [
+    "time",
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    4,
+    3,
+    5
+   ],
+   "attributes": {
+    "standard_name": "sea_surface_temperature",
+    "units": "K",
+    "units_metadata": "temperature: on_scale",
+    "coverage_interval": "standard_deviation",
+    "coverage_factor": 2,
+    "coverage_probability": 0.9545,
+    "probability_distribution": "gaussian",
+    "uncertainty_component": "Uncorrelated",
+    "uncertainty_evaluation": "statistical",
+    "error_correlation": "time: lat: lon: independent"
+   }
+  }
+ },
+ {
+  "path": "u_systematic",
+  "node": {
+   "node_type": "variable",
+   "name": "u_systematic",
+   "data_type": "float",
+   "dimensions": [
+    "lat",
+    "lon",
+    "interval_offset"
+   ],
+   "shape": [
+    3,
+    5,
+    2
+   ],
+   "attributes": {
+    "standard_name": "sea_surface_temperature",
+    "units": "K",
+    "units_metadata": "temperature: on_scale",
+    "coverage_interval": "offsets",
+    "coverage_probability": 0.9,
+    "probability_distribution": "skewed_gaussian (skew: skew kurtosis: kurtosis)",
+    "uncertainty_component": "Correlated over synoptic scales",
+    "uncertainty_evaluation": "scientific_judgement",
+    "error_correlation": "lat: correlations (length scale = 100 km) time: common lon: exponential (e_folding_length: efl localization_radius: 4 comment: along-track) "
+   }
+  }
+ },
+ {
+  "path": "u_relative",
+  "node": {
+   "node_type": "variable",
+   "name": "u_relative",
+   "data_type": "float",
+   "dimensions": [],
+   "shape": [],
+   "attributes": {
+    "units": "%",
+    "uncertainty_representation": "relative_difference",
+    "coverage_interval": "half_width",
+    "coverage_probability": 0.95
+   }
+  }
+ },
+ {
+  "path": "skew",
+  "node": {
+   "node_type": "variable",
+   "name": "skew",
+   "data_type": "float",
+   "dimensions": [
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    3,
+    5
+   ],
+   "attributes": {
+    "units": "1"
+   }
+  }
+ },
+ {
+  "path": "kurtosis",
+  "node": {
+   "node_type": "variable",
+   "name": "kurtosis",
+   "data_type": "float",
+   "dimensions": [
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    3,
+    5
+   ],
+   "attributes": {
+    "units": "1"
+   }
+  }
+ },
+ {
+  "path": "correlations",
+  "node": {
+   "node_type": "variable",
+   "name": "correlations",
+   "data_type": "float",
+   "dimensions": [
+    "lat",
+    "lat1"
+   ],
+   "shape": [
+    3,
+    3
+   ],
+   "attributes": {
+    "units": "1"
+   }
+  }
+ },
+ {
+  "path": "efl",
+  "node": {
+   "node_type": "variable",
+   "name": "efl",
+   "data_type": "float",
+   "dimensions": [],
+   "shape": [],
+   "attributes": {
+    "units": "km"
+   }
+  }
+ }
+]
