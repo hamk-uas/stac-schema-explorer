@@ -1,4 +1,4 @@
-import { DATA_FORMATS, KNOWN_CONVENTIONS, loadableSchema } from './conventions';
+import { DATA_FORMATS, KNOWN_CONVENTIONS, loadableSchema, versionDetection } from './conventions';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo, NodeTemplate } from './embedded-probe';
 import { CORE, type Json, type JsonObject, type TypeTemplate } from './model';
 import { documentView, templateView, type FieldEdits, type FieldView, type ObjectView } from './tree';
@@ -130,7 +130,7 @@ export function nodeConventions(format: string, node: JsonObject, root: JsonObje
         const pattern = convention.declaration?.conventionsAttribute;
         if (pattern && tokens.some((token) => new RegExp(pattern).test(token))) out.add(convention.versions[0].schema);
         const has = (path: string[]) => path.reduce<Json | undefined>((value, key) => (isObject(value) ? value[key] : undefined), node) !== undefined;
-        if (convention.detection?.some(has)) out.add(convention.versions[0].schema);
+        for (const { schema, paths } of versionDetection(convention)) if (paths.some(has)) out.add(schema);
     }
     return [...out];
 }

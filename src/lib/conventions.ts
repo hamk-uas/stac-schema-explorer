@@ -28,6 +28,7 @@ export interface KnownConvention {
     authored: boolean;
     specification: string;
     declaration?: { zarrConventions?: { uuid: string }; conventionsAttribute?: string };
+    /** Paths into a node whose presence recognises the current (first) version. */
     detection?: string[][];
     versions: {
         version: string;
@@ -35,7 +36,17 @@ export interface KnownConvention {
         specification?: string;
         /** The schema URL data declares for this version (in `zarr_conventions`) where it differs from `schema`: not published yet. */
         declaredSchema?: string;
+        /** Paths recognising this version where they differ from the convention's: an older version with other attributes. */
+        detection?: string[][];
     }[];
+}
+
+/** The node paths that recognise each version of a convention: its own, or the convention's for the current version. */
+export function versionDetection(convention: KnownConvention): { schema: string; paths: string[][] }[] {
+    return convention.versions.flatMap((version, index) => {
+        const paths = version.detection ?? (index === 0 ? convention.detection : undefined);
+        return paths ? [{ schema: version.schema, paths }] : [];
+    });
 }
 
 export interface CrosswalkEntry {

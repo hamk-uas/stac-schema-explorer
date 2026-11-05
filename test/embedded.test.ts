@@ -232,6 +232,37 @@ describe('embedded placement probing', () => {
         }
     });
 
+    it('places UNC v0.1 attributes on variables, and tells v0.1 data from draft v0.2 and from FIDUCEO FCDRs', async () => {
+        const UNC1 = `${B}unc/v0.1/schema.json`;
+        const UNC2 = `${B}unc/draft-v0.2/schema.json`;
+        const store = fixtureStore();
+        const result = await probeEmbedded(store, [UNC1]);
+        for (const n of result.nodes) expect(n.errors, n.key).toEqual([]);
+        const at = (key: string) => new Set(result.nodes.find((n) => n.key === key)!.placements.filter((p) => p.source === UNC1).map((p) => p.field));
+        for (const key of ['netcdf:variable', 'zarr-v3:array', 'zarr-v2:array']) {
+            for (const field of ['unc_comps', 'pdf_shape', 'err_corr_1_dim', 'err_corr_9_units']) expect(at(key).has(field), `${key} ${field}`).toBe(true);
+            expect([...at(key)].some((field) => field.startsWith('err_corr_dim')), key).toBe(false);
+        }
+        for (const key of ['netcdf:group', 'zarr-v3:group']) expect(at(key).size, key).toBe(0);
+
+        const nodes = JSON.parse(readFileSync(new URL('./fixtures/embedded/obsarray-unc-v0.1.netcdf.json', import.meta.url), 'utf8')) as { path: string; node: JsonObject }[];
+        const root = nodes[0].node;
+        const template = result.nodes.find((n) => n.key === 'netcdf:variable')!;
+        for (const { path, node } of nodes.slice(1)) {
+            const conventions = nodeConventions('netcdf', node, root);
+            const hasUnc = ['temperature', 'u_noise', 'u_calibration'].includes(path);
+            expect(conventions.includes(UNC1), path).toBe(hasUnc);
+            expect(conventions.includes(UNC2), path).toBe(false);
+            const view = realNodeView(node, template, result.sources.filter((s) => s.formats.includes('netcdf')), `${B}netcdf/v0.1.0/schema.json`, true);
+            expect([...fieldIndex(view).values()].filter((f) => f.state === 'unexpected').map((f) => f.name), path).toEqual([]);
+        }
+        const sst = JSON.parse(readFileSync(new URL('./fixtures/embedded/unc-sst.netcdf.json', import.meta.url), 'utf8')) as { path: string; node: JsonObject }[];
+        for (const { path, node } of sst.slice(1)) expect(nodeConventions('netcdf', node, sst[0].node).includes(UNC1), path).toBe(false);
+        // FIDUCEO FCDR uncertainty variables also have pdf_shape, with their own correlation attributes.
+        const fiduceo = { node_type: 'variable', name: 'u_prt', attributes: { pdf_shape: 'rectangle', scan_correlation_form: 'rectangle_absolute' } };
+        expect(nodeConventions('netcdf', fiduceo, root)).not.toContain(UNC1);
+    });
+
     it('validates a real node against its format and declared conventions', async () => {
         const store = fixtureStore();
         expect(await validateNode(store, { zarr_format: 3, node_type: 'group', attributes: {} }, `${B}zarr/v3/schema.json`, [])).toEqual([]);

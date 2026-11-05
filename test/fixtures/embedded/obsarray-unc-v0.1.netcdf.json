@@ -1,0 +1,182 @@
+[
+ {
+  "path": "",
+  "node": {
+   "node_type": "group",
+   "name": "/",
+   "format": "netCDF-4",
+   "dimensions": {
+    "time1": {
+     "size": 4
+    },
+    "time": {
+     "size": 4
+    },
+    "lat": {
+     "size": 3
+    },
+    "lon": {
+     "size": 5
+    }
+   },
+   "attributes": {
+    "_NCProperties": "version=2,netcdf=4.10.1,hdf5=2.2.0"
+   }
+  }
+ },
+ {
+  "path": "temperature",
+  "node": {
+   "node_type": "variable",
+   "name": "temperature",
+   "data_type": "double",
+   "dimensions": [
+    "time",
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    4,
+    3,
+    5
+   ],
+   "attributes": {
+    "_FillValue": "NaN",
+    "units": "K",
+    "long_name": "synthetic temperature",
+    "unc_comps": [
+     "u_noise",
+     "u_calibration"
+    ]
+   }
+  }
+ },
+ {
+  "path": "time",
+  "node": {
+   "node_type": "variable",
+   "name": "time",
+   "data_type": "int64",
+   "dimensions": [
+    "time"
+   ],
+   "shape": [
+    4
+   ],
+   "attributes": {}
+  }
+ },
+ {
+  "path": "lat",
+  "node": {
+   "node_type": "variable",
+   "name": "lat",
+   "data_type": "double",
+   "dimensions": [
+    "lat"
+   ],
+   "shape": [
+    3
+   ],
+   "attributes": {
+    "_FillValue": "NaN"
+   }
+  }
+ },
+ {
+  "path": "lon",
+  "node": {
+   "node_type": "variable",
+   "name": "lon",
+   "data_type": "double",
+   "dimensions": [
+    "lon"
+   ],
+   "shape": [
+    5
+   ],
+   "attributes": {
+    "_FillValue": "NaN"
+   }
+  }
+ },
+ {
+  "path": "err_corr_calibration_time",
+  "node": {
+   "node_type": "variable",
+   "name": "err_corr_calibration_time",
+   "data_type": "double",
+   "dimensions": [
+    "time",
+    "time1"
+   ],
+   "shape": [
+    4,
+    4
+   ],
+   "attributes": {
+    "_FillValue": "NaN"
+   }
+  }
+ },
+ {
+  "path": "u_noise",
+  "node": {
+   "node_type": "variable",
+   "name": "u_noise",
+   "data_type": "double",
+   "dimensions": [
+    "time",
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    4,
+    3,
+    5
+   ],
+   "attributes": {
+    "_FillValue": 9.969209968386869e+36,
+    "units": "%",
+    "err_corr_1_dim": "time",
+    "err_corr_1_form": "random",
+    "err_corr_2_dim": "lat",
+    "err_corr_2_form": "random",
+    "err_corr_3_dim": "lon",
+    "err_corr_3_form": "random",
+    "pdf_shape": "gaussian"
+   }
+  }
+ },
+ {
+  "path": "u_calibration",
+  "node": {
+   "node_type": "variable",
+   "name": "u_calibration",
+   "data_type": "double",
+   "dimensions": [
+    "time",
+    "lat",
+    "lon"
+   ],
+   "shape": [
+    4,
+    3,
+    5
+   ],
+   "attributes": {
+    "_FillValue": 9.969209968386869e+36,
+    "units": "K",
+    "pdf_shape": "gaussian",
+    "err_corr_1_dim": [
+     "lat",
+     "lon"
+    ],
+    "err_corr_1_form": "systematic",
+    "err_corr_2_dim": "time",
+    "err_corr_2_form": "err_corr_matrix",
+    "err_corr_2_params": "err_corr_calibration_time"
+   }
+  }
+ }
+]

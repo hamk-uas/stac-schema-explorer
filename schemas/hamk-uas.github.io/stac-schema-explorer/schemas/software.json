@@ -1,5 +1,5 @@
 {
-  "$comment": "Software that reads or writes the fields of STAC and of metadata embedded in data, and which source it trusts when several say the same thing. Each program is in one layer: `driver` (reads and writes one format, inside a library: `partOf`), `library` (the data model and API programs use) or `package` (a package or application built on libraries). `extends`: software built on other software, which interprets what they (and their drivers) interpret; `uses`: software it depends on without taking over its interpretation. `checked`: when the claims were last checked and the latest release then; drivers share their library's. `pypi`: the package name, to look up newer releases. A claim's target is a registry convention (`convention`), a registry format (`format`) or a STAC extension by its stac-extensions.github.io name, or `core` for STAC core (`stac`); `fields` are paths into a node (as in the crosswalk: `[\"attributes\", \"grid_mapping\"]`, `*` matching any key) or STAC field names, all fields when absent; `formats` restricts embedded targets to some formats; `since` is the first version a claim holds for. `read`: `interpret` (the value changes how the data are used: georeferencing, masking, unpacking, dimension names, overviews) or `pass-through` (kept as opaque metadata); `write`: `write` (the software writes the field from its own data model) or `pass-through` (it writes metadata the user gives). `precedence` lists, per topic, the sources used in order of preference, those ignored, and what happens when none is present. Every claim cites its source (documentation or source code); claims that could not be verified are left out.",
+  "$comment": "Software that reads or writes the fields of STAC and of metadata embedded in data, and which source it trusts when several say the same thing. Each program is in one layer: `driver` (reads and writes one format, inside a library: `partOf`), `library` (the data model and API programs use) or `package` (a package or application built on libraries). `extends`: software built on other software, which interprets what they (and their drivers) interpret; `uses`: software it depends on without taking over its interpretation. `checked`: when the claims were last checked and the latest release then; drivers share their library's. `pypi`: the package name, to look up newer releases. A claim's target is a registry convention (`convention`), a registry format (`format`) or a STAC extension by its stac-extensions.github.io name, or `core` for STAC core (`stac`); `fields` are paths into a node (as in the crosswalk: `[\"attributes\", \"grid_mapping\"]`, `*` matching any key) or STAC field names, all fields when absent; `formats` restricts embedded targets to some formats; `versions` restricts a convention target to some of its registry versions; `since` is the first version a claim holds for. `read`: `interpret` (the value changes how the data are used: georeferencing, masking, unpacking, dimension names, overviews) or `pass-through` (kept as opaque metadata); `write`: `write` (the software writes the field from its own data model) or `pass-through` (it writes metadata the user gives). `precedence` lists, per topic, the sources used in order of preference, those ignored, and what happens when none is present. Every claim cites its source (documentation or source code); claims that could not be verified are left out.",
   "software": [
     {
       "id": "gdal",
@@ -733,6 +733,383 @@
           ],
           "note": "Only when zarr_conventions declares the convention, recognised by its name (proj:, spatial:) rather than its UUID.",
           "source": "https://github.com/corteva/rioxarray/blob/master/rioxarray/_convention/zarr.py"
+        }
+      ]
+    },
+    {
+      "id": "obsarray",
+      "title": "obsarray",
+      "layer": "package",
+      "url": "https://obsarray.readthedocs.io",
+      "pypi": "obsarray",
+      "checked": {
+        "date": "2026-11-05",
+        "release": "1.1",
+        "source": "https://github.com/comet-toolkit/obsarray/releases"
+      },
+      "description": "Extension of xarray for measurement uncertainty: reads and writes uncertainty variables of observation variables with their error-correlation structure, following UNC v0.1, and propagates them to totals and error-correlation matrices.",
+      "extends": [
+        "xarray"
+      ],
+      "supports": [
+        {
+          "convention": "unc",
+          "versions": [
+            "v0.1"
+          ],
+          "fields": [
+            [
+              "attributes",
+              "unc_comps"
+            ]
+          ],
+          "read": "interpret",
+          "note": "The uncertainty variables of an observation variable (ds.unc[variable]), a list or one name.",
+          "source": "https://github.com/comet-toolkit/obsarray/blob/v1.1/obsarray/unc_accessor.py#L761-L778"
+        },
+        {
+          "convention": "unc",
+          "versions": [
+            "v0.1"
+          ],
+          "fields": [
+            [
+              "attributes",
+              "unc_comps"
+            ]
+          ],
+          "write": "write",
+          "note": "One uncertainty variable is written as a string, more as a list.",
+          "source": "https://github.com/comet-toolkit/obsarray/blob/v1.1/obsarray/unc_accessor.py#L885-L896"
+        },
+        {
+          "convention": "unc",
+          "versions": [
+            "v0.1"
+          ],
+          "fields": [
+            [
+              "attributes",
+              "err_corr_1_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_1_form"
+            ],
+            [
+              "attributes",
+              "err_corr_1_params"
+            ],
+            [
+              "attributes",
+              "err_corr_1_units"
+            ],
+            [
+              "attributes",
+              "err_corr_2_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_2_form"
+            ],
+            [
+              "attributes",
+              "err_corr_2_params"
+            ],
+            [
+              "attributes",
+              "err_corr_2_units"
+            ],
+            [
+              "attributes",
+              "err_corr_3_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_3_form"
+            ],
+            [
+              "attributes",
+              "err_corr_3_params"
+            ],
+            [
+              "attributes",
+              "err_corr_3_units"
+            ],
+            [
+              "attributes",
+              "err_corr_4_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_4_form"
+            ],
+            [
+              "attributes",
+              "err_corr_4_params"
+            ],
+            [
+              "attributes",
+              "err_corr_4_units"
+            ],
+            [
+              "attributes",
+              "err_corr_5_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_5_form"
+            ],
+            [
+              "attributes",
+              "err_corr_5_params"
+            ],
+            [
+              "attributes",
+              "err_corr_5_units"
+            ],
+            [
+              "attributes",
+              "err_corr_6_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_6_form"
+            ],
+            [
+              "attributes",
+              "err_corr_6_params"
+            ],
+            [
+              "attributes",
+              "err_corr_6_units"
+            ],
+            [
+              "attributes",
+              "err_corr_7_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_7_form"
+            ],
+            [
+              "attributes",
+              "err_corr_7_params"
+            ],
+            [
+              "attributes",
+              "err_corr_7_units"
+            ],
+            [
+              "attributes",
+              "err_corr_8_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_8_form"
+            ],
+            [
+              "attributes",
+              "err_corr_8_params"
+            ],
+            [
+              "attributes",
+              "err_corr_8_units"
+            ],
+            [
+              "attributes",
+              "err_corr_9_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_9_form"
+            ],
+            [
+              "attributes",
+              "err_corr_9_params"
+            ],
+            [
+              "attributes",
+              "err_corr_9_units"
+            ]
+          ],
+          "read": "interpret",
+          "note": "Builds error-correlation matrices from err_corr_<i>_dim, _form, _params and _units (the specification's err_corr_dim<i>_name, _form, … are not read). Indices 1 to 9 only (it reads one character after err_corr_). Forms random, systematic and err_corr_matrix; ensemble is registered without a matrix.",
+          "source": "https://github.com/comet-toolkit/obsarray/blob/v1.1/obsarray/unc_accessor.py#L111-L170"
+        },
+        {
+          "convention": "unc",
+          "versions": [
+            "v0.1"
+          ],
+          "fields": [
+            [
+              "attributes",
+              "pdf_shape"
+            ]
+          ],
+          "read": "pass-through",
+          "note": "Returned by the pdf_shape property; not used in propagation.",
+          "source": "https://github.com/comet-toolkit/obsarray/blob/v1.1/obsarray/unc_accessor.py#L244-L251"
+        },
+        {
+          "convention": "unc",
+          "versions": [
+            "v0.1"
+          ],
+          "fields": [
+            [
+              "attributes",
+              "pdf_shape"
+            ],
+            [
+              "attributes",
+              "err_corr_1_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_1_form"
+            ],
+            [
+              "attributes",
+              "err_corr_1_params"
+            ],
+            [
+              "attributes",
+              "err_corr_1_units"
+            ],
+            [
+              "attributes",
+              "err_corr_2_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_2_form"
+            ],
+            [
+              "attributes",
+              "err_corr_2_params"
+            ],
+            [
+              "attributes",
+              "err_corr_2_units"
+            ],
+            [
+              "attributes",
+              "err_corr_3_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_3_form"
+            ],
+            [
+              "attributes",
+              "err_corr_3_params"
+            ],
+            [
+              "attributes",
+              "err_corr_3_units"
+            ],
+            [
+              "attributes",
+              "err_corr_4_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_4_form"
+            ],
+            [
+              "attributes",
+              "err_corr_4_params"
+            ],
+            [
+              "attributes",
+              "err_corr_4_units"
+            ],
+            [
+              "attributes",
+              "err_corr_5_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_5_form"
+            ],
+            [
+              "attributes",
+              "err_corr_5_params"
+            ],
+            [
+              "attributes",
+              "err_corr_5_units"
+            ],
+            [
+              "attributes",
+              "err_corr_6_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_6_form"
+            ],
+            [
+              "attributes",
+              "err_corr_6_params"
+            ],
+            [
+              "attributes",
+              "err_corr_6_units"
+            ],
+            [
+              "attributes",
+              "err_corr_7_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_7_form"
+            ],
+            [
+              "attributes",
+              "err_corr_7_params"
+            ],
+            [
+              "attributes",
+              "err_corr_7_units"
+            ],
+            [
+              "attributes",
+              "err_corr_8_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_8_form"
+            ],
+            [
+              "attributes",
+              "err_corr_8_params"
+            ],
+            [
+              "attributes",
+              "err_corr_8_units"
+            ],
+            [
+              "attributes",
+              "err_corr_9_dim"
+            ],
+            [
+              "attributes",
+              "err_corr_9_form"
+            ],
+            [
+              "attributes",
+              "err_corr_9_params"
+            ],
+            [
+              "attributes",
+              "err_corr_9_units"
+            ]
+          ],
+          "write": "write",
+          "note": "Writes all four error-correlation attributes per parameterisation, empty lists for absent parameters and units, random along dimensions not listed, and pdf_shape from its argument: adding a variable as (dims, data, attrs) writes gaussian even when attrs give another shape (observed with 1.1).",
+          "source": "https://github.com/comet-toolkit/obsarray/blob/v1.1/obsarray/templater/dataset_util.py#L110-L236"
         }
       ]
     },

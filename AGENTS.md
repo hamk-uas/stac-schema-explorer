@@ -143,7 +143,12 @@ in their description and are published at their `$id` by `vite.config.ts`.
 - UNC (`unc/draft-v0.2`) is its own authored convention while CF's proposed
   chapter 10 (cf-conventions#661) is unreleased; once a CF release includes the
   uncertainty attributes, add them to that CF version's schema and note it in
-  UNC's registry entry rather than merging the two.
+  UNC's registry entry rather than merging the two. `unc/v0.1` is the
+  incompatible version obsarray reads and writes; it follows obsarray's
+  `err_corr_<i>_*` spelling, not the specification's `err_corr_dim<i>_*`,
+  which no known software uses. A version whose fields differ from the
+  current one's carries its own `detection` in the registry; software claims
+  holding for some versions only list them in `versions` (both optional).
 - `test/authored.test.ts` checks documentation, registry/crosswalk/software targets and
   that the lab catalogs' metadata in `test/fixtures/embedded` validates. Fixtures
   must not contain personal data from source files (names, emails, user names).

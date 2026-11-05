@@ -16,6 +16,8 @@ export interface SoftwareTarget {
     stac?: string;
     fields?: string[][];
     formats?: string[];
+    /** Versions of a convention the claim holds for (all when it lists none). */
+    versions?: string[];
 }
 
 export interface SoftwareSupport extends SoftwareTarget {
@@ -74,7 +76,7 @@ export function schemaTarget(source: string): SoftwareTarget | undefined {
     const format = formatOfSchema(source);
     if (format) return { format: format.id };
     const known = conventionOfSchema(source);
-    if (known) return { convention: known.convention.id };
+    if (known) return { convention: known.convention.id, versions: [known.version] };
     const short = toShortId(source);
     return { stac: short.includes('@') ? short.slice(0, short.indexOf('@')) : normalizeSchemaUrl(source) };
 }
@@ -82,12 +84,16 @@ export function schemaTarget(source: string): SoftwareTarget | undefined {
 const pathMatches = (pattern: readonly string[], path: readonly string[]) =>
     pattern.length === path.length && pattern.every((segment, i) => segment === '*' || segment === path[i]);
 
-/** True when `target` names the schema of `of` and, given a field path, one of its fields (all when it lists none). */
+/**
+ * True when `target` names the schema of `of` and, given a field path, one of its fields (all when it lists none). A
+ * claim limited to versions holds only for a schema of one of them.
+ */
 function targets(target: SoftwareTarget, of: SoftwareTarget, path?: readonly string[]): boolean {
     const same = (target.convention !== undefined && target.convention === of.convention)
         || (target.format !== undefined && target.format === of.format)
         || (target.stac !== undefined && target.stac === of.stac);
-    return same && (!path || !target.fields || target.fields.some((f) => pathMatches(f, path)));
+    const version = !target.versions || !of.versions || of.versions.some((v) => target.versions!.includes(v));
+    return same && version && (!path || !target.fields || target.fields.some((f) => pathMatches(f, path)));
 }
 
 /**

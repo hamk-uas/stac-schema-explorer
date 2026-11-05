@@ -25,7 +25,7 @@ interface Registry {
         id: string; kind: string; formats: string[]; authored: boolean;
         declaration?: { zarrConventions?: { uuid: string }; conventionsAttribute?: string };
         detection?: string[][];
-        versions: { version: string; schema: string; declaredSchema?: string }[];
+        versions: { version: string; schema: string; declaredSchema?: string; detection?: string[][] }[];
     }[];
 }
 interface CrosswalkEntry {
@@ -136,10 +136,14 @@ describe('registry', () => {
             expect(convention.formats.every((format) => formatIds.includes(format)), convention.id).toBe(true);
             expect(Boolean(convention.declaration) !== Boolean(convention.detection), convention.id).toBe(true);
             if (convention.declaration?.conventionsAttribute) expect(() => new RegExp(convention.declaration!.conventionsAttribute!)).not.toThrow();
-            for (const path of convention.detection ?? []) {
-                const schema = read(convention.versions[0]!.schema);
-                expect(nodesAt(schema, path).length, `${convention.id}: ${path.join('/')}`).toBeGreaterThan(0);
-            }
+            // The convention's detection recognises its current version; an older version with other fields has its own.
+            convention.versions.forEach((version, index) => {
+                const paths = version.detection ?? (index === 0 ? convention.detection ?? [] : []);
+                if (version.detection) expect(convention.detection, `${convention.id} ${version.version}`).toBeDefined();
+                for (const path of paths) {
+                    expect(nodesAt(read(version.schema), path).length, `${convention.id} ${version.version}: ${path.join('/')}`).toBeGreaterThan(0);
+                }
+            });
         }
     });
 
@@ -210,7 +214,7 @@ describe('STAC crosswalk', () => {
     });
 });
 
-interface Target { convention?: string; format?: string; stac?: string; fields?: string[][]; formats?: string[] }
+interface Target { convention?: string; format?: string; stac?: string; fields?: string[][]; formats?: string[]; versions?: string[] }
 interface SoftwareEntry {
     id: string; title: string; layer: string; url: string; description: string; partOf?: string; extends?: string[]; uses?: string[];
     pypi?: string; checked?: { date: string; release?: string; source?: string };
@@ -278,11 +282,19 @@ describe('software list', () => {
             for (const [field] of target.fields ?? []) expect(fields.has(field) || prefixes.has(field.split(':')[0]), field).toBe(true);
             return;
         }
-        const schema = target.format
-            ? registry.formats.find((format) => format.id === target.format)?.schema
-            : registry.conventions.find((convention) => convention.id === target.convention)?.versions[0]?.schema;
-        expect(schema, target.format ?? target.convention).toBeDefined();
-        for (const path of target.fields ?? []) expect(nodesAt(read(schema!), path).length, path.join('/')).toBeGreaterThan(0);
+        const convention = registry.conventions.find((c) => c.id === target.convention);
+        if (target.versions) {
+            expect(convention, 'versions are of conventions').toBeDefined();
+            for (const version of target.versions) expect(convention!.versions.map((v) => v.version)).toContain(version);
+        }
+        // A claim's fields exist in the versions it names, or in the current version.
+        const schemas = target.format
+            ? [registry.formats.find((format) => format.id === target.format)?.schema]
+            : (target.versions ?? [convention?.versions[0]?.version]).map((v) => convention?.versions.find((cv) => cv.version === v)?.schema);
+        for (const schema of schemas) {
+            expect(schema, target.format ?? target.convention).toBeDefined();
+            for (const path of target.fields ?? []) expect(nodesAt(read(schema!), path).length, path.join('/')).toBeGreaterThan(0);
+        }
     });
 });
 
@@ -365,6 +377,27 @@ describe('embedded metadata of the lab catalogs', () => {
             'lon: triangular (localization_radius: 15)', 'time: (time scale = 1 day)\n  lat: lon: (length scale = 100 km)']) {
             expect(await valid(UNC, variable({ ...uncertainty, error_correlation: form })), form).toEqual([]);
         }
+    });
+
+    it('obsarray UNC v0.1 nodes are valid netCDF and Zarr v3 with UNC v0.1 attributes, and UNC v0.1 rules are checked', async () => {
+        const UNC = `${AUTHORED_BASE}unc/v0.1/schema.json`;
+        for (const { node } of fixture('obsarray-unc-v0.1.netcdf.json')) {
+            for (const url of [`${AUTHORED_BASE}netcdf/v0.1.0/schema.json`, UNC]) expect(await valid(url, node), `${url} ${node.name}`).toEqual([]);
+        }
+        for (const node of zarrNodes(fixture('obsarray-unc-v0.1.zarr.json'))) {
+            for (const url of [`${AUTHORED_BASE}zarr/v3/schema.json`, UNC]) expect(await valid(url, node), url).toEqual([]);
+        }
+        const variable = (attributes: Record<string, unknown>) => ({ node_type: 'variable', name: 'u', attributes });
+        const rejects = async (node: unknown, why: string) => expect(await valid(UNC, node), why).not.toEqual([]);
+        await rejects(variable({ err_corr_1_form: 'random' }), 'a form needs its dimensions');
+        await rejects(variable({ err_corr_2_dim: 'time' }), 'dimensions need their form');
+        await rejects(variable({ err_corr_1_dim: 'time', err_corr_1_form: 'systematic', err_corr_2_params: ['m'] }), 'parameters belong to a form');
+        await rejects(variable({ unc_comps: [] }), 'at least one component');
+        await rejects(variable({ pdf_shape: 1 }), 'pdf_shape is a name');
+        await rejects({ node_type: 'group', name: '/', attributes: { unc_comps: 'u' } }, 'not on groups');
+        // A user-defined form with parameters, and an open PDF shape.
+        expect(await valid(UNC, variable({ pdf_shape: 'triangular', err_corr_1_dim: ['lat', 'lon'], err_corr_1_form: 'gaussian_kernel',
+            err_corr_1_params: [100], err_corr_1_units: ['km'] }))).toEqual([]);
     });
 
     it('rejects a Zarr v3 array without its required metadata', async () => {

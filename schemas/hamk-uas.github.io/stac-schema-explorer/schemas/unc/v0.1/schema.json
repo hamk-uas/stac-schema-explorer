@@ -1,0 +1,922 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://hamk-uas.github.io/stac-schema-explorer/schemas/unc/v0.1/schema.json",
+  "title": "UNC v0.1 uncertainty attributes",
+  "description": "Unofficial JSON Schema of the Uncertainty Metadata Naming Conventions (UNC) v0.1 (https://comet-toolkit.github.io/unc_website/specification/v0.1/unc_specification.html), as written and read by obsarray: an observation variable lists its uncertainty variables in unc_comps; each uncertainty variable has a PDF shape and per dimension, or set of dimensions, an error-correlation parameterisation. An uncertainty variable without units is a fractional uncertainty, and obsarray reads units of % as percent. The numbered error-correlation attributes are err_corr_<i>_dim, _form, _params and _units (parameterisations 1 to 9), the spelling obsarray and the software built on it (punpy, the HYPERNETS processor) write and read. The specification names them err_corr_dim<i>_name, _form, _params and _units, which no known software reads, so they are not fields of this schema. Superseded by the incompatible draft v0.2. Rules spanning variables (named variables exist, equal dimensions) are not checked.",
+  "type": "object",
+  "definitions": {
+    "dims": {
+      "description": "The dimension, or list of dimensions, of the observation variable this error-correlation parameterisation applies to.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      ],
+      "examples": [
+        "time"
+      ]
+    },
+    "form": {
+      "description": "The error-correlation form along these dimensions. Forms beyond the standard ones may be defined.",
+      "anyOf": [
+        {
+          "oneOf": [
+            {
+              "const": "random",
+              "title": "Random",
+              "description": "No error correlation between elements: an identity matrix."
+            },
+            {
+              "const": "systematic",
+              "title": "Systematic",
+              "description": "Full error correlation between elements: a matrix of ones."
+            },
+            {
+              "const": "err_corr_matrix",
+              "title": "Error-correlation matrix",
+              "description": "An explicit error-correlation matrix, in the variable the parameters name."
+            },
+            {
+              "const": "ensemble",
+              "title": "Ensemble",
+              "description": "Registered by obsarray, which cannot build its matrix yet."
+            }
+          ]
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "params": {
+      "description": "Parameters of the form, such as the name of the error-correlation matrix variable for err_corr_matrix; empty or absent when the form takes none. A single parameter may be stored as a scalar.",
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        }
+      ],
+      "examples": [
+        []
+      ]
+    },
+    "units": {
+      "description": "Units of the parameters, in their order; empty or absent when there are none.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "number"
+            ]
+          }
+        }
+      ],
+      "examples": [
+        []
+      ]
+    }
+  },
+  "properties": {
+    "attributes": {
+      "title": "Attributes",
+      "description": "Attributes of a netCDF or Zarr variable.",
+      "type": "object",
+      "properties": {
+        "unc_comps": {
+          "title": "Uncertainty components",
+          "description": "Names of the uncertainty variables of this observation variable: a list, or one name. Used on: observation variables.",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          ],
+          "examples": [
+            [
+              "u_calibration",
+              "u_noise"
+            ]
+          ]
+        },
+        "pdf_shape": {
+          "title": "PDF shape",
+          "description": "Shape of the probability density function the uncertainty values describe; gaussian when absent. Used on: uncertainty variables.",
+          "default": "gaussian",
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "const": "gaussian",
+                  "title": "Gaussian",
+                  "description": "A normal distribution."
+                },
+                {
+                  "const": "rectangular",
+                  "title": "Rectangular",
+                  "description": "A uniform distribution."
+                }
+              ]
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "err_corr_1_dim": {
+          "title": "Error-correlation 1: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_1_form": {
+          "title": "Error-correlation 1: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_1_params": {
+          "title": "Error-correlation 1: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_1_units": {
+          "title": "Error-correlation 1: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_2_dim": {
+          "title": "Error-correlation 2: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_2_form": {
+          "title": "Error-correlation 2: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_2_params": {
+          "title": "Error-correlation 2: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_2_units": {
+          "title": "Error-correlation 2: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_3_dim": {
+          "title": "Error-correlation 3: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_3_form": {
+          "title": "Error-correlation 3: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_3_params": {
+          "title": "Error-correlation 3: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_3_units": {
+          "title": "Error-correlation 3: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_4_dim": {
+          "title": "Error-correlation 4: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_4_form": {
+          "title": "Error-correlation 4: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_4_params": {
+          "title": "Error-correlation 4: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_4_units": {
+          "title": "Error-correlation 4: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_5_dim": {
+          "title": "Error-correlation 5: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_5_form": {
+          "title": "Error-correlation 5: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_5_params": {
+          "title": "Error-correlation 5: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_5_units": {
+          "title": "Error-correlation 5: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_6_dim": {
+          "title": "Error-correlation 6: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_6_form": {
+          "title": "Error-correlation 6: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_6_params": {
+          "title": "Error-correlation 6: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_6_units": {
+          "title": "Error-correlation 6: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_7_dim": {
+          "title": "Error-correlation 7: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_7_form": {
+          "title": "Error-correlation 7: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_7_params": {
+          "title": "Error-correlation 7: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_7_units": {
+          "title": "Error-correlation 7: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_8_dim": {
+          "title": "Error-correlation 8: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_8_form": {
+          "title": "Error-correlation 8: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_8_params": {
+          "title": "Error-correlation 8: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_8_units": {
+          "title": "Error-correlation 8: parameter units",
+          "$ref": "#/definitions/units"
+        },
+        "err_corr_9_dim": {
+          "title": "Error-correlation 9: dimensions",
+          "$ref": "#/definitions/dims"
+        },
+        "err_corr_9_form": {
+          "title": "Error-correlation 9: form",
+          "$ref": "#/definitions/form"
+        },
+        "err_corr_9_params": {
+          "title": "Error-correlation 9: parameters",
+          "$ref": "#/definitions/params"
+        },
+        "err_corr_9_units": {
+          "title": "Error-correlation 9: parameter units",
+          "$ref": "#/definitions/units"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "err_corr_1_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_1_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_1_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_1_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_1_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_1_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_1_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_2_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_2_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_2_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_2_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_2_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_2_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_2_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_3_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_3_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_3_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_3_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_3_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_3_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_3_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_4_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_4_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_4_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_4_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_4_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_4_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_4_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_5_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_5_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_5_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_5_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_5_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_5_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_5_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_6_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_6_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_6_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_6_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_6_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_6_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_6_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_7_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_7_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_7_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_7_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_7_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_7_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_7_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_8_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_8_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_8_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_8_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_8_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_8_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_8_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_9_form"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_9_dim"
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "err_corr_9_dim"
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_9_form"
+            ]
+          }
+        },
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "err_corr_9_params"
+                ]
+              },
+              {
+                "required": [
+                  "err_corr_9_units"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "err_corr_9_form"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "node_type"
+        ],
+        "properties": {
+          "node_type": {
+            "const": "group"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "unc_comps"
+                  ]
+                },
+                {
+                  "required": [
+                    "pdf_shape"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_1_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_1_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_1_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_1_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_2_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_2_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_2_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_2_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_3_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_3_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_3_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_3_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_4_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_4_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_4_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_4_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_5_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_5_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_5_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_5_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_6_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_6_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_6_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_6_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_7_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_7_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_7_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_7_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_8_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_8_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_8_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_8_units"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_9_dim"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_9_form"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_9_params"
+                  ]
+                },
+                {
+                  "required": [
+                    "err_corr_9_units"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

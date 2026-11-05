@@ -14,7 +14,7 @@ describe('software', () => {
     it('names schemas as the software list does', () => {
         expect(schemaTarget(CORE)).toEqual({ stac: 'core' });
         expect(schemaTarget(PROJECTION_V1)).toEqual({ stac: 'projection' });
-        expect(schemaTarget(schemaOf('cf'))).toEqual({ convention: 'cf' });
+        expect(schemaTarget(schemaOf('cf'))).toEqual({ convention: 'cf', versions: [KNOWN_CONVENTIONS.find((c) => c.id === 'cf')!.versions[0].version] });
         expect(schemaTarget(DATA_FORMATS.find((f) => f.id === 'netcdf')!.schema)).toEqual({ format: 'netcdf' });
         expect(schemaTarget('?foo')).toBeUndefined();
     });
@@ -39,6 +39,14 @@ describe('software', () => {
     it('finds STAC fields of older extension versions by name', () => {
         expect(ids(softwareFor(PROJECTION_V1, ['proj:epsg']))).toEqual(expect.arrayContaining(['stackstac', 'odc-stac', 'gdal-stacit']));
         expect(ids(softwareFor(CORE, ['nodata']))).toContain('odc-stac');
+    });
+
+    it('limits claims to the convention versions they name', () => {
+        const unc = KNOWN_CONVENTIONS.find((c) => c.id === 'unc')!;
+        const schema = (version: string) => unc.versions.find((v) => v.version === version)!.schema;
+        expect(ids(softwareFor(schema('v0.1'), ['attributes', 'unc_comps']))).toContain('obsarray');
+        expect(ids(softwareFor(schema('v0.1')))).toContain('obsarray');
+        expect(ids(softwareFor(schema('draft-v0.2')))).not.toContain('obsarray');
     });
 
     it('tells which source a program prefers, and which it ignores', () => {

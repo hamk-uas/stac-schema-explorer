@@ -284,7 +284,7 @@ They have no upstream copy; the build publishes them at their `$id`,
   reads pixels by the files' own. Conventions say who defines fields; software says who uses them, so software
   overlaps where conventions do not. Each program is in a layer: 🔌 a driver of one format inside a library (GDAL's
   GTiff, netCDF, Zarr, STACIT and STACTA drivers), 🧰 a library (GDAL, rasterio, xarray, netCDF4-python) or 🖥️ a
-  package or application (rioxarray, stackstac, odc-stac, rio-tiler/TiTiler); a library takes its drivers' claims over,
+  package or application (rioxarray, obsarray, stackstac, odc-stac, rio-tiler/TiTiler); a library takes its drivers' claims over,
   and software built on other software (`extends`: rasterio on GDAL) theirs. Every claim cites documentation or source
   code, and every program records when it was checked and its latest release then; what could not be verified is left
   out. Field and schema information show it.
@@ -309,6 +309,15 @@ but are in no released CF version yet. When a CF release includes them, that CF 
 `Conventions` token, so it is recognised from its attributes; it applies to netCDF variables and Zarr arrays, not
 groups. Its schema checks what one variable's attributes show (vocabularies, which attributes require or exclude
 others); rules spanning variables (named variables exist, interval dimensions, equivalent units) are described only.
+
+UNC v0.1 (`unc@v0.1`), the incompatible earlier version, is what [obsarray](https://obsarray.readthedocs.io) 1.1 reads
+and writes, and with it punpy and the HYPERNETS processor: `unc_comps` on observation variables, and on uncertainty
+variables `pdf_shape` and numbered error-correlation attributes `err_corr_<i>_dim`, `_form`, `_params` and `_units`
+(indices 1 to 9). The specification names these `err_corr_dim<i>_name`, `_form`, …, but no known software writes or
+reads that spelling, so the schema follows the implementations. Each version is recognised from its own attributes (a
+registry version can carry its own `detection`); v0.1 not by `pdf_shape`, which FIDUCEO FCDRs also write. Claims in the
+software list can be limited to convention `versions`, so obsarray is listed for v0.1 only. The fixtures
+`obsarray-unc-v0.1.*` were written by obsarray 1.1 itself.
 
 The tests
 ([test/authored.test.ts](test/authored.test.ts)) check that every authored schema compiles, documents every field and
