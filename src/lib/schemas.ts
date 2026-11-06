@@ -60,6 +60,12 @@ export class SchemaStore {
         if (known !== undefined) return known;
         let pending = this.pending.get(key);
         if (!pending) {
+            // A relative or non-HTTP value (a mistyped share link) would otherwise be fetched relative to the app.
+            if (!/^https?:\/\/[^/]/i.test(key)) {
+                const invalid = Promise.reject(new Error(`not a schema URL or name@version: ${url}`));
+                invalid.catch(() => undefined);
+                return invalid;
+            }
             pending = this.fetchJson(key).then((schema) => {
                 if (typeof schema !== 'object' || schema === null || Array.isArray(schema)) throw new Error(`not a JSON Schema object: ${key}`);
                 this.documents.set(key, schema);
@@ -78,6 +84,11 @@ export class SchemaStore {
 
     getDocument(url: string): unknown {
         return this.documents.get(normalizeSchemaUrl(url));
+    }
+
+    /** URLs of the loaded documents (and their `$id`s). */
+    documentUrls(): string[] {
+        return [...this.documents.keys()];
     }
 
     /** The `$id` of a loaded schema (normalized), or the URL it was loaded from. */

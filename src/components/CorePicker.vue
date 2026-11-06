@@ -196,7 +196,7 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   border-radius: 999px;
   border: 0;
   background: var(--field);
-  color: var(--slate-700);
+  color: var(--slate-600);
   cursor: pointer;
 }
 .q:hover {
@@ -208,8 +208,8 @@ function links(core: Core): { label: string; href: string; title: string }[] {
 /* Selected: tinted and bold, so that the state does not rest on colour alone. */
 .q.on {
   font-weight: 600;
-  background: color-mix(in srgb, var(--c) 22%, transparent);
-  color: color-mix(in srgb, var(--c) 75%, var(--ink));
+  background: color-mix(in srgb, var(--c) var(--pick-fill), transparent);
+  color: color-mix(in srgb, var(--c) var(--pick-text), var(--ink));
 }
 .q .ver {
   font-size: 10px;

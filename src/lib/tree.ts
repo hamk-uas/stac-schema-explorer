@@ -1,6 +1,6 @@
 import { isProbeableLocation } from './base-docs';
 import { CORE_KEYS, prefixOf } from './fields';
-import { CORE, type Json, type JsonObject, type PlacementKind, type SourceInfo, type SourceKey, type TypeTemplate } from './model';
+import { CORE, type Json, type JsonObject, type PlacementKind, type Requirement, type SourceInfo, type SourceKey, type TypeTemplate } from './model';
 import { getAt, joinPointer, objectLocations, splitPointer } from './pointer';
 
 export type ObjectKind =
@@ -30,6 +30,8 @@ export interface FieldView {
     source: SourceKey;
     state: FieldState;
     kind?: PlacementKind;
+    /** Required where the field is placed: always, or when a condition holds. */
+    required?: Requirement;
     edit?: FieldEdit;
 }
 
@@ -177,7 +179,7 @@ export function templateView(template: TypeTemplate, showCore: boolean): ObjectV
     const visible = template.placements.filter((p) => showCore || p.source !== CORE);
     const locations = [...new Set([...visible.map((p) => p.location), ...objectLocations(template.doc).filter((l) => ALWAYS_SHOWN.includes(kindOf(l)))])];
     const tree = buildTree(template.doc, locations, (pointer) =>
-        visible.filter((p) => p.location === pointer).map((p) => ({ name: p.field, source: p.source, state: 'populated' as const, kind: p.kind })));
+        visible.filter((p) => p.location === pointer).map((p) => ({ name: p.field, source: p.source, state: 'populated' as const, kind: p.kind, required: p.required })));
     return pruneEmpty(tree, (n) => ALWAYS_SHOWN.includes(n.kind));
 }
 
@@ -194,7 +196,7 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
     for (const source of sources) for (const field of source.fields) if (knownPrefixes.get(prefixOf(field) ?? '') === source.key) ownerByField.set(field, source.key);
     for (const source of sources) for (const field of source.fields) if (!ownerByField.has(field)) ownerByField.set(field, source.key);
 
-    const possibleByShape = new Map<string, Map<string, { source: SourceKey; kind: PlacementKind }>>();
+    const possibleByShape = new Map<string, Map<string, { source: SourceKey; kind: PlacementKind; required?: Requirement }>>();
     for (const p of template?.placements ?? []) {
         if (!showCore && p.source === CORE) continue;
         const shape = shapeOf(p.location);
@@ -203,7 +205,7 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
         const better = !current
             || (current.source !== ownerByField.get(p.field) && p.source === ownerByField.get(p.field))
             || (current.source === p.source && p.kind === 'validated');
-        if (better) map.set(p.field, { source: p.source, kind: p.kind });
+        if (better) map.set(p.field, { source: p.source, kind: p.kind, required: p.required ?? (current?.source === p.source ? current.required : undefined) });
         possibleByShape.set(shape, map);
     }
 
@@ -220,7 +222,7 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
             const edit = edits?.at(pointer, field.name);
             return edit ? { ...field, edit } : field;
         };
-        for (const [name, { source, kind }] of possible) out.push(mark({ name, source, kind, state: present.has(name) ? 'populated' : 'possible' }));
+        for (const [name, { source, kind, required }] of possible) out.push(mark({ name, source, kind, required, state: present.has(name) ? 'populated' : 'possible' }));
         for (const name of [...present, ...removed]) {
             if (possible.has(name)) continue;
             // A removed field that no schema places here is shown as it was, but absent.

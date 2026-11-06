@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { fromShortId, repoUrl, toShortId } from '../src/lib/extensions';
+import { describeUrl, fromShortId, repoUrl, toShortId } from '../src/lib/extensions';
 import { buildMatrix, stacMatrixGroups } from '../src/lib/matrix';
 import { CORE, type ProbeResult, type StacType } from '../src/lib/model';
 import { probe } from '../src/lib/probe';
+import { requirementOf, requirementText } from '../src/lib/requirement';
 import { stringFromRegex } from '../src/lib/sampler';
-import { formatErrors } from '../src/lib/schemas';
+import { formatErrors, SchemaStore } from '../src/lib/schemas';
 import { documentView, groupFields, shapeOf, templateView, type ObjectView } from '../src/lib/tree';
 import { readState, writeState } from '../src/lib/url-state';
 import { EXTENSIONS, fixtureStore } from './helpers';
@@ -39,6 +40,14 @@ describe('extension ids', () => {
         expect(repoUrl('https://sklvarjo.github.io/observatory-stac-extension/schema.json')).toBe('https://github.com/sklvarjo/observatory-stac-extension');
         expect(repoUrl('https://raw.githubusercontent.com/owner/repo/main/schema.json')).toBe('https://github.com/owner/repo');
         expect(repoUrl('https://example.com/ext/v1.0.0/schema.json')).toBeUndefined();
+    });
+
+    it('names a mistyped share-link entry by its text and reports it instead of fetching it relative to the app', async () => {
+        expect(describeUrl('projection')).toEqual({ name: 'projection', known: false });
+        const fetched: string[] = [];
+        const store = new SchemaStore(async (url) => { fetched.push(url); return {}; });
+        await expect(store.load(fromShortId('projection'))).rejects.toThrow('not a schema URL or name@version: projection');
+        expect(fetched).toEqual([]);
     });
 });
 
@@ -138,6 +147,36 @@ describe('probe with the default extensions', () => {
     it('does not treat map entries such as item_assets as fields', async () => {
         const result = await defaultProbe();
         expect(result.templates.Collection.placements.some((p) => p.location === '/item_assets')).toBe(false);
+    });
+
+    it('tells which fields are required where they are placed, and on what condition', async () => {
+        const result = await defaultProbe();
+        const required = (type: StacType, location: string, field: string) =>
+            result.templates[type].placements.find((p) => p.source === CORE && p.location === location && p.field === field)?.required;
+        // Every alternative of the Item's anyOf requires datetime (null or not).
+        expect(required('Feature', '/properties', 'datetime')).toEqual({});
+        expect(required('Feature', '/properties', 'end_datetime')).toEqual({ when: 'start_datetime is present' });
+        expect(required('Collection', '', 'license')).toEqual({});
+        expect(required('Feature', '/properties', 'title')).toBeUndefined();
+    });
+
+    it('words the conditions of required fields and leaves the example as it was', async () => {
+        const url = 'https://example.org/node.json';
+        const schema = {
+            $schema: 'http://json-schema.org/draft-07/schema#', type: 'object', required: ['kind'],
+            properties: { kind: { type: 'string' }, size: { type: 'number' }, start: { type: 'number' }, end: { type: 'number' }, note: { type: 'string' } },
+            allOf: [{ if: { properties: { kind: { const: 'array' } }, required: ['kind'] }, then: { required: ['size'] } }],
+            dependencies: { start: ['end'] },
+        };
+        const store = new SchemaStore(async () => schema);
+        const validate = await store.validator(url);
+        const doc = { kind: 'array', size: 2, start: 0, end: 1, note: 'x' };
+        expect(requirementOf(store, url, validate, doc, '', 'kind')).toEqual({});
+        expect(requirementOf(store, url, validate, doc, '', 'size')).toEqual({ when: 'kind is "array"' });
+        expect(requirementOf(store, url, validate, doc, '', 'end')).toEqual({ when: 'start is present' });
+        expect(requirementOf(store, url, validate, doc, '', 'note')).toBeUndefined();
+        expect(Object.keys(doc)).toEqual(['kind', 'size', 'start', 'end', 'note']);
+        expect(requirementText({ when: 'kind is "array"' }, true)).toBe('required here when kind is "array"');
     });
 });
 

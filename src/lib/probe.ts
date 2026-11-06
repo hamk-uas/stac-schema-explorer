@@ -10,6 +10,7 @@ import {
 } from './model';
 import { CORE_FIELD_SAMPLES, CORE_FIELDS_BY_VERSION, FIELD_HINTS, Sampler } from './sampler';
 import { getAt, joinPointer, objectLocations } from './pointer';
+import { requirementOf } from './requirement';
 import { coreSchemaUrl, formatErrors, type SchemaStore } from './schemas';
 
 interface Source {
@@ -19,6 +20,8 @@ interface Source {
     fields: string[];
     samples: Map<string, Json[]>;
     validators: Partial<Record<StacType, ValidateFunction>>;
+    /** The schema each validator was compiled from, against which its error paths resolve. */
+    urls: Partial<Record<StacType, string>>;
 }
 
 const INVALID_VALUES: Json[] = ['\u00a7invalid\u00a7', -1234.5, true, null, [], {}, ['\u00a7'], { '\u00a7': '\u00a7' }];
@@ -68,13 +71,18 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
     const infos: SourceInfo[] = [];
 
     const coreValidators: Partial<Record<StacType, ValidateFunction>> = {};
-    for (const type of STAC_TYPES) coreValidators[type] = await store.validator(coreSchemaUrl(type, stacVersion));
+    const coreUrls: Partial<Record<StacType, string>> = {};
+    for (const type of STAC_TYPES) {
+        coreUrls[type] = coreSchemaUrl(type, stacVersion);
+        coreValidators[type] = await store.validator(coreUrls[type]);
+    }
     const coreFields = CORE_FIELDS_BY_VERSION[stacVersion] ?? CORE_FIELDS_BY_VERSION['1.1.0'];
     sources.push({
         key: CORE,
         fields: coreFields,
         samples: new Map(coreFields.map((f) => [f, CORE_FIELD_SAMPLES[f]])),
         validators: coreValidators,
+        urls: coreUrls,
     });
     const coreRefs = new Map<string, FieldSchemaRef[]>();
     for (const type of ['Feature', 'Collection', 'Catalog'] as const) {
@@ -122,8 +130,12 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
         }
         const declaration = findDeclaration(schema) ?? entry.url;
         const validators: Partial<Record<StacType, ValidateFunction>> = {};
-        for (const type of STAC_TYPES) validators[type] = entry.validator;
-        sources.push({ key: entry.url, declaration, fields: [...fields.keys()], samples, validators });
+        const sourceUrls: Partial<Record<StacType, string>> = {};
+        for (const type of STAC_TYPES) {
+            validators[type] = entry.validator;
+            sourceUrls[type] = entry.url;
+        }
+        sources.push({ key: entry.url, declaration, fields: [...fields.keys()], samples, validators, urls: sourceUrls });
         infos.push({ key: entry.url, url: entry.url, title, prefixes, version, description, fields: [...fields.keys()], unsampled, docs: documentFields(store, fields) });
     }
     return { sources, infos };
@@ -357,7 +369,7 @@ class TypeProbe {
         }
     }
 
-    finish(stacVersion: string): TypeTemplate {
+    finish(stacVersion: string, store: SchemaStore): TypeTemplate {
         const used = new Set(this.placements.map((p) => p.source));
         const applicable = this.sources.filter((s) => s.key === CORE || used.has(s.key));
         this.doc.stac_extensions = applicable.filter((s) => s.declaration).map((s) => s.declaration!);
@@ -365,6 +377,14 @@ class TypeProbe {
         for (const source of applicable) {
             const validator = source.validators[this.type]!;
             if (validator(this.doc) !== true) errors.push(...formatErrors(validator.errors, source.key));
+        }
+        // A field is required where removing it makes its schema, which accepts the example, report it missing.
+        const accepting = new Set(applicable.filter((s) => s.validators[this.type]!(this.doc) === true).map((s) => s.key));
+        for (const placement of this.placements) {
+            if (!accepting.has(placement.source)) continue;
+            const source = this.sources.find((s) => s.key === placement.source)!;
+            const required = requirementOf(store, source.urls[this.type]!, source.validators[this.type]!, this.doc, placement.location, placement.field);
+            if (required) placement.required = required;
         }
         return {
             type: this.type,
@@ -407,7 +427,7 @@ export async function probe(
                 typeProbe.probeLocation(source, location);
             }
         }
-        templates[type] = typeProbe.finish(stacVersion);
+        templates[type] = typeProbe.finish(stacVersion, store);
     }
     onProgress?.({ done: 1, total: 1, label: 'Done' });
     return { stacVersion, sources: infos, templates };

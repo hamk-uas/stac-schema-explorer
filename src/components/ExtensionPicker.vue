@@ -65,7 +65,7 @@ function add() {
           :title="`Open the GitHub repository (README)\n${repoUrl(url)}`"
           :aria-label="`GitHub repository of ${label(url).title}`"
         >site ↗</a>
-        <a :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
+        <a v-if="/^https?:\/\//i.test(url)" :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
         <button type="button" class="icon" :title="`Remove ${toShortId(url)}`" @click="toggle(url)">×</button>
         <div v-if="info(url)?.error" class="error">{{ info(url)?.error }}</div>
         <div v-else-if="info(url)?.unsampled.length" class="warn" title="No example value valid against the schema could be generated, so these fields may be missing from the results.">
@@ -248,7 +248,7 @@ function add() {
   border-radius: 999px;
   border: 0;
   background: var(--field);
-  color: var(--slate-700);
+  color: var(--slate-600);
   cursor: pointer;
 }
 .q:hover {
@@ -257,8 +257,8 @@ function add() {
 /* Selected: tinted and bold, so that the state does not rest on colour alone. */
 .q.on {
   font-weight: 600;
-  background: color-mix(in srgb, var(--c) 22%, transparent);
-  color: color-mix(in srgb, var(--c) 75%, var(--ink));
+  background: color-mix(in srgb, var(--c) var(--pick-fill), transparent);
+  color: color-mix(in srgb, var(--c) var(--pick-text), var(--ink));
 }
 .q .ver {
   font-size: 10px;

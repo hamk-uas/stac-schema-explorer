@@ -23,12 +23,21 @@ export const CORE: SourceKey = 'core';
  */
 export type PlacementKind = 'validated' | 'presence';
 
+/**
+ * A field required where it is placed: always (`{}`), or when a condition of the schema holds, which the example
+ * meets (`when`: the condition in words, `''` when it has a form not described). Optional fields have none.
+ */
+export interface Requirement {
+    when?: string;
+}
+
 export interface Placement {
     source: SourceKey;
     field: string;
     /** JSON Pointer of the object that holds the field. */
     location: string;
     kind: PlacementKind;
+    required?: Requirement;
 }
 
 export interface Conflict {

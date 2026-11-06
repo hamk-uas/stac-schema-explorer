@@ -53,7 +53,8 @@ asking the schemas themselves.
   “✎ rewritten”, with a banner while any rewrite applies; the originals are kept and the rewrites are part of the share
   link. Fields of merged objects (`Asset data, metadata`) change in all of them.
 - **Field information**: click any field (a chip, or a row of the matrix) to see what it means: its title, description
-  and type, the allowed values with their meanings, and every place it can go. The text comes from the schemas; see
+  and type, the allowed values with their meanings, and every place it can go, each saying whether the field is
+  required or optional there. The text comes from the schemas; see
   [Vendored schemas](#vendored-schemas). Where a field has a counterpart on the other side of the
   [STAC crosswalk](#embedded-metadata-schemas), it is listed too: the STAC field of an embedded field (`proj:code` of
   the Zarr `proj` convention is `proj:code` of the Projection extension), or the embedded fields of a STAC field. So is
@@ -151,6 +152,12 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
      Item `properties` only when an asset has `bands`.
    - Before a placement is accepted, every other schema must still accept the document; otherwise it is reported as a
      conflict.
+   - A placed field is **required** there if removing it from the finished example makes its schema report it missing
+     ([src/lib/requirement.ts](src/lib/requirement.ts)): always (`*` on its chip: Zarr `node_type`, a Collection's
+     `license`), or when a condition holds (`(*)`), which the field information puts in words from the schema's `if`
+     or dependency: Zarr v3 `shape` when `node_type` is `"array"`, STAC `end_datetime` when `start_datetime` is present.
+     A field every alternative of an `anyOf` requires (STAC `datetime`, null or not) is always required. Fields without
+     a mark are optional.
 4. **Field documentation** ([src/lib/field-docs.ts](src/lib/field-docs.ts)). Title and description are the nearest ones
    along the field's `$ref` chain; the type is computed from the schema (`array of (string or null)`,
    `object: name → Variable Object`); allowed values come from `oneOf` lists of titled constants (or `enum`).

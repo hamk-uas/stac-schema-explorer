@@ -654,6 +654,7 @@ const fieldPanel = computed(() => {
                 const place = byLabel.get(label) ?? { label, type, locations: [], kind: p.kind };
                 place.locations.push(p.location);
                 if (p.kind === 'validated') place.kind = 'validated';
+                if (p.required && !place.required) place.required = p.required;
                 byLabel.set(label, place);
             }
             places.push(...byLabel.values());
@@ -663,7 +664,7 @@ const fieldPanel = computed(() => {
     for (const template of embeddedResult.value?.nodes ?? []) {
         for (const p of template.placements) {
             if (p.source !== source || p.field !== name) continue;
-            places.push({ label: [template.formatTitle, template.nodeType, ...(p.location ? [p.location.slice(1)] : [])].join(' › '), type: `node:${template.key}`, locations: [p.location], kind: p.kind });
+            places.push({ label: [template.formatTitle, template.nodeType, ...(p.location ? [p.location.slice(1)] : [])].join(' › '), type: `node:${template.key}`, locations: [p.location], kind: p.kind, required: p.required });
         }
     }
     const counterparts: FieldCounterpart[] = [];

@@ -263,6 +263,21 @@ describe('embedded placement probing', () => {
         expect(nodeConventions('netcdf', fiduceo, root)).not.toContain(UNC1);
     });
 
+    it('tells which fields of a node are required: always, for its node type, or with another field', async () => {
+        const UNC1 = `${B}unc/v0.1/schema.json`;
+        const ZARR = `${B}zarr/v3/schema.json`;
+        const result = await probeEmbedded(fixtureStore(), [UNC1], ['zarr-v3']);
+        const required = (key: string, source: string, field: string) =>
+            result.nodes.find((n) => n.key === key)!.placements.find((p) => p.source === source && p.field === field)?.required;
+        for (const key of ['zarr-v3:group', 'zarr-v3:array']) expect(required(key, ZARR, 'node_type'), key).toEqual({});
+        expect(required('zarr-v3:array', ZARR, 'shape')).toEqual({ when: 'node_type is "array"' });
+        expect(required('zarr-v3:array', ZARR, 'dimension_names')).toBeUndefined();
+        expect(required('zarr-v3:array', UNC1, 'unc_comps')).toBeUndefined();
+        expect(required('zarr-v3:array', UNC1, 'err_corr_1_dim')).toEqual({ when: 'err_corr_1_form is present' });
+        // The field itself is left out of the alternatives that require it.
+        expect(required('zarr-v3:array', UNC1, 'err_corr_1_form')).toEqual({ when: 'any of err_corr_1_dim, err_corr_1_params, err_corr_1_units is present' });
+    });
+
     it('validates a real node against its format and declared conventions', async () => {
         const store = fixtureStore();
         expect(await validateNode(store, { zarr_format: 3, node_type: 'group', attributes: {} }, `${B}zarr/v3/schema.json`, [])).toEqual([]);

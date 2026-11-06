@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 
 import { colorOf, sourceLabel, versionLabel } from '../lib/colors';
 import type { SourceInfo } from '../lib/model';
+import { requirementText } from '../lib/requirement';
 import { groupFields, type FieldGroup, type FieldView } from '../lib/tree';
 
 const props = defineProps<{
@@ -44,12 +45,25 @@ function fieldTitle(field: FieldView): string {
     const how = field.kind === 'presence'
         ? 'the schema does not validate the value here, but its presence satisfies the extension\'s "at least one field" requirement'
         : field.kind === 'validated' ? 'validated here by the schema' : '';
+    // Placed fields (with a kind) are required or optional where they are placed.
+    const need = field.kind ? requirementText(field.required, true) : '';
     const doc = docOf(field);
     const about = doc ? [`${doc.title ?? ''}${doc.title ? ' — ' : ''}${doc.type}`, firstSentence(doc.description)] : [];
     const state = field.edit ? EDIT_TEXT[field.edit] : STATE_TEXT[field.state];
-    return [field.name, ...about, '', sourceLabel(field.source, props.sources), state, how, '', 'Click for details.']
+    return [field.name, ...about, '', sourceLabel(field.source, props.sources), state, ...(need ? [need] : []), how, '', 'Click for details.']
         .filter((line, i, all) => line !== undefined && !(line === '' && all[i - 1] === ''))
         .join('\n');
+}
+
+/** The marker of a required field: `*` always, `(*)` when a condition holds. */
+function requiredMark(field: FieldView): string {
+    if (!field.required) return '';
+    return field.required.when === undefined ? '*' : '(*)';
+}
+
+/** A field button's name for assistive technology, which does not hear the marker. */
+function pickLabel(field: FieldView): string {
+    return field.required ? `${field.name}, ${requirementText(field.required, true)}` : field.name;
 }
 
 const EDIT_TEXT = { added: 'added by a rewrite (example value)', removed: 'removed by a rewrite' };
@@ -84,7 +98,7 @@ function groupTitle(group: FieldGroup): string {
     if (group.fields.length === 1) return fieldTitle(group.fields[0]);
     const lines = group.fields.map((f) => {
         const title = docOf(f)?.title;
-        return `• ${f.name}${title ? ` (${title})` : ''}${f.kind === 'presence' ? ', presence only' : ''} — ${f.edit ? EDIT_TEXT[f.edit] : STATE_TEXT[f.state]}`;
+        return `• ${f.name}${title ? ` (${title})` : ''}${f.kind === 'presence' ? ', presence only' : ''}${f.required ? `, ${requirementText(f.required)}` : ''} — ${f.edit ? EDIT_TEXT[f.edit] : STATE_TEXT[f.state]}`;
     });
     return `${sourceLabel(group.source, props.sources)}\n${lines.join('\n')}\n\nClick to ${expanded.value.has(group.source) ? 'collapse' : 'list the fields'}.`;
 }
@@ -129,7 +143,7 @@ function dimmed(source: string): boolean {
             :class="[`state-${f.state}`, f.edit ? `edit-${f.edit}` : '', { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
             :style="{ '--c': colorOf(f.source) }"
           >
-            <button type="button" class="pick" :title="fieldTitle(f)" @click.stop="emit('field', f.source, f.name)">{{ f.name }}</button>
+            <button type="button" class="pick" :title="fieldTitle(f)" :aria-label="pickLabel(f)" @click.stop="emit('field', f.source, f.name)">{{ f.name }}<span v-if="requiredMark(f)" class="req" aria-hidden="true">{{ requiredMark(f) }}</span></button>
             <button v-if="editable" type="button" class="edit" :title="editAction(f).label" :aria-label="editAction(f).label" @click.stop="emit('edit', f)">{{ editAction(f).symbol }}</button>
           </span>
         </template>
@@ -143,8 +157,9 @@ function dimmed(source: string): boolean {
         :class="[`state-${f.state}`, f.edit ? `edit-${f.edit}` : '', { presence: f.kind === 'presence', dimmed: dimmed(f.source) }]"
         :style="{ '--c': colorOf(f.source) }"
       >
-        <button type="button" class="pick" :title="fieldTitle(f)" @click.stop="emit('field', f.source, f.name)">
+        <button type="button" class="pick" :title="fieldTitle(f)" :aria-label="pickLabel(f)" @click.stop="emit('field', f.source, f.name)">
           <span class="name">{{ f.name }}</span>
+          <span v-if="requiredMark(f)" class="req" aria-hidden="true">{{ requiredMark(f) }}</span>
           <span v-if="version(f.source)" class="ver">{{ version(f.source) }}</span>
         </button>
         <button v-if="editable" type="button" class="edit" :title="editAction(f).label" :aria-label="editAction(f).label" @click.stop="emit('edit', f)">{{ editAction(f).symbol }}</button>
@@ -256,6 +271,11 @@ button.chip.open {
   font-size: 10px;
   font-weight: 400;
   opacity: 0.75;
+}
+/* Required here: `*` always, `(*)` when a condition holds. */
+.req {
+  margin-left: 1px;
+  font-weight: 700;
 }
 .count {
   font-size: 10px;

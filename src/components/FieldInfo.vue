@@ -5,7 +5,8 @@ import { colorOf, sourceLabel } from '../lib/colors';
 import { PREFIXES_WITHOUT_SCHEMA } from '../lib/extensions';
 import type { SchemaLayer } from '../lib/layers';
 import { inlineMarkdown } from '../lib/markdown';
-import type { FieldDoc, SourceInfo } from '../lib/model';
+import type { FieldDoc, Requirement, SourceInfo } from '../lib/model';
+import { requirementText } from '../lib/requirement';
 import type { PrecedenceUse, SoftwareUse } from '../lib/software';
 import Checked from './Checked.vue';
 import LayerBadge from './LayerBadge.vue';
@@ -16,6 +17,8 @@ export interface FieldPlace {
     type: string;
     locations: string[];
     kind: 'validated' | 'presence';
+    /** Required there: always, or when a condition holds. */
+    required?: Requirement;
 }
 
 /** A field on the other side of the STAC/embedded-metadata crosswalk. */
@@ -114,6 +117,7 @@ const vendoredLink = computed(() => {
       <ul>
         <li v-for="place in places" :key="`${place.type} ${place.label}`">
           <button type="button" :class="place.kind" :title="place.locations.join('\n')" @click="emit('place', place)">{{ place.label }}</button>
+          <span class="need" :class="{ required: place.required }">{{ requirementText(place.required) }}</span>
         </li>
       </ul>
     </div>
@@ -245,9 +249,22 @@ header {
   list-style: none;
   padding: 0;
   margin: 4px 0 0;
+  display: grid;
+  gap: 4px;
+}
+.places li {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  align-items: baseline;
+  gap: 6px;
+}
+.places .need {
+  font: 400 11px var(--sans);
+  color: var(--slate-500);
+}
+.places .need.required {
+  font-weight: 600;
+  color: var(--slate-700);
 }
 .places button {
   font: 500 11px var(--sans);

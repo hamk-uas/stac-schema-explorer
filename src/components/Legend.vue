@@ -13,6 +13,7 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
     <li><span class="chip possible">cf:*</span> allowed, not populated (explored URLs)</li>
     <li><span class="chip unexpected">foo:bar</span> populated, but no selected or declared schema places it there (declared: in <code>stac_extensions</code>, <code>zarr_conventions</code> or <code>Conventions</code>)</li>
     <li><span class="chip added">cube:dimensions ×</span> <span class="chip possible removed">sci:doi +</span> added or removed by a rewrite (explored URLs: + adds, − removes, × undoes)</li>
+    <li><span class="chip">node_type*</span> <span class="chip">shape(*)</span> required where it is placed: <strong>*</strong> always, <strong>(*)</strong> when a condition holds (for example on Zarr arrays, not groups); the field's tooltip and information say which. Fields without a mark are optional.</li>
   </ul>
   <h3 class="layers-title">Layers</h3>
   <p class="note">Field and schema information say in which layer something is defined, contained, read or written:</p>

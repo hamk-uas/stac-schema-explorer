@@ -41,7 +41,10 @@ technical visual language; it need not adopt Observatory instance branding.
   caching and JSON Schema draft 7/2019/2020 handling.
 - Placement is derived from schemas and probing, not an ever-growing manually
   maintained field-location matrix. Distinguish valid placement, observed
-  presence, unprobed state and validation failure.
+  presence, unprobed state and validation failure. Whether a placed field is
+  required is probed too (removed from the example, its schema reports it
+  missing), always or under a condition worded from the schema; never mark it
+  by hand.
 - Preserve shareable URL state: selected schemas, STAC version, document/pointer,
   view, focus and embedding. Use [url-state.ts](src/lib/url-state.ts), not a
   second query grammar. Keep remote CORS/load failures visible.
@@ -190,7 +193,10 @@ components rather than introducing another design library.
   (translucent card/panel fill, so nested cards deepen per level), `--field`
   (control fill) and `--hover`. Use these tokens in component styles, not hex
   literals, and check both schemes. Identity mid-tones (`colorOf`, document
-  accents) work in both.
+  accents) work in both. A selected quick-select pill must read as more
+  prominent than an unselected one in both schemes, also in the cores' shared
+  slate: its tint and text use `--pick-fill`/`--pick-text`, whose dark values
+  lean the text to the light ink.
 - **Identity colors:** document accents distinguish Catalog (indigo), Collection
   (teal) and Item/Feature (amber) through the card's icon and type name (and
   the tint of a selected card's heading). Extension identity comes from `colorOf` in

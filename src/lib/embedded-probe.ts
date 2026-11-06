@@ -5,6 +5,7 @@ import { fieldDoc } from './field-docs';
 import type { FieldSchemaRef } from './fields';
 import type { Json, JsonObject, Placement, PlacementKind, SourceInfo } from './model';
 import { getAt, joinPointer } from './pointer';
+import { requirementOf } from './requirement';
 import { Sampler } from './sampler';
 import { formatErrors, type SchemaStore } from './schemas';
 
@@ -449,6 +450,18 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
         }
     }
     combined = docs[0];
+    // A field is required where removing it makes its schema, which accepts the example, report it missing.
+    const validatorOf = async (url: string) => (url === format.schema ? formatValidate : store.validator(url));
+    for (const placement of placements) {
+        const validate = await validatorOf(placement.source);
+        const doc = docs.find((d) => {
+            const holder = getAt(d, placement.location);
+            return isSchema(holder) && placement.field in holder && validate(d);
+        });
+        if (!doc) continue;
+        const required = requirementOf(store, placement.source, validate, doc, placement.location, placement.field);
+        if (required) placement.required = required;
+    }
     const errors: string[] = [];
     if (!formatValidate(combined)) errors.push(...formatErrors(formatValidate.errors, format.title));
     for (const { url } of conventions) {

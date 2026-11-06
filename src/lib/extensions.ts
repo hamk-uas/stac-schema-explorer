@@ -139,6 +139,13 @@ export function describeUrl(url: string): { name: string; version?: string; know
     }
     const match = /\/([a-z0-9_-]+)\/v?(\d+\.\d+\.\d+[^/]*)\/[^/]*$/i.exec(normalized);
     if (match) return { name: match[1], version: match[2], known: false };
-    const parts = new URL(normalized).pathname.split('/').filter(Boolean);
-    return { name: parts.length > 1 ? parts[parts.length - 2] : new URL(normalized).hostname, known: false };
+    let parsed: URL;
+    try {
+        parsed = new URL(normalized);
+    } catch {
+        // Not a URL (a mistyped share link): shown as it is, and reported as failing to load.
+        return { name: url, known: false };
+    }
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    return { name: parts.length > 1 ? parts[parts.length - 2] : parsed.hostname, known: false };
 }

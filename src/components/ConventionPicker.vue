@@ -59,7 +59,7 @@ function add() {
           <span v-if="label(url).authored" class="unofficial" title="No official JSON Schema exists; this app's schema describes the convention">unofficial schema</span>
         </button>
         <a v-if="repoUrl(url)" :href="repoUrl(url)" target="_blank" rel="noopener" class="icon text" :title="`Open the repository (README)\n${repoUrl(url)}`" :aria-label="`Repository of ${label(url).title}`">site ↗</a>
-        <a :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
+        <a v-if="/^https?:\/\//i.test(url)" :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
         <button type="button" class="icon" :title="`Remove ${toConventionShortId(url)}`" :aria-label="`Remove ${label(url).title}`" @click="toggle(url)">×</button>
         <div v-if="info(url)?.error" class="error">{{ info(url)?.error }}</div>
       </li>
@@ -240,7 +240,7 @@ function add() {
   border-radius: 4px;
   border: 0;
   background: var(--field);
-  color: var(--slate-700);
+  color: var(--slate-600);
   cursor: pointer;
 }
 .q:hover {
@@ -249,8 +249,8 @@ function add() {
 /* Selected: tinted and bold, so that the state does not rest on colour alone. */
 .q.on {
   font-weight: 600;
-  background: color-mix(in srgb, var(--c) 22%, transparent);
-  color: color-mix(in srgb, var(--c) 75%, var(--ink));
+  background: color-mix(in srgb, var(--c) var(--pick-fill), transparent);
+  color: color-mix(in srgb, var(--c) var(--pick-text), var(--ink));
 }
 .q .ver {
   font-size: 10px;

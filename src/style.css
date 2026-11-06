@@ -62,6 +62,13 @@
   --hover: rgb(15 23 42 / 0.05);
   /* How strongly identity colours (`--c`) outline chips: softer in dark mode, where full mid-tones glare. */
   --edge: 85%;
+  /*
+   * Selected quick-select pills: how much of their identity colour tints the fill and colours the text (the rest of
+   * the text is `--ink`). In dark mode the text leans to the light ink, so a selected pill is brighter than an
+   * unselected one even in the shared slate of the cores.
+   */
+  --pick-fill: 22%;
+  --pick-text: 75%;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -116,6 +123,8 @@
     --field: rgb(255 255 255 / 0.06);
     --hover: rgb(255 255 255 / 0.045);
     --edge: 55%;
+    --pick-fill: 32%;
+    --pick-text: 40%;
   }
 }
 
