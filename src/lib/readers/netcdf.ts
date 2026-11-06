@@ -1,17 +1,13 @@
 /**
  * Reads the netCDF data model of a file (groups, dimensions, variables, attributes), without its data, as the nodes the
- * netCDF format schema describes. A port of the Observatory's `readNetCDFMetadata` (`@observatory/data`): keep the two
- * projections alike; the format schema is their contract.
+ * netCDF format schema describes. Owned here, beside that schema, and imported by other applications (the Observatory)
+ * through `stac-schema-explorer/readers`.
  */
-import type { JsonObject } from '../model';
+import type { JsonObject, MetadataNode } from './types';
 
-/** A node of embedded metadata read from a file: its path (`''` for the root) and the node as JSON. */
-export interface MetadataNode {
-    path: string;
-    node: JsonObject;
-}
+export type { MetadataNode } from './types';
 
-interface H5Attribute { value: unknown }
+export interface H5Attribute { value: unknown; shape?: number[] | null; metadata?: { type?: number } }
 interface H5Dataset {
     shape: number[] | null;
     dtype: string;
@@ -59,7 +55,7 @@ const CACHED_BLOCKS = 32;
 let scratchCounter = 0;
 let defaultH5: Promise<H5Module> | undefined;
 
-type AttributeValue = string | number | boolean | string[] | number[];
+export type AttributeValue = string | number | boolean | string[] | number[];
 
 function decodeAttributeValue(value: unknown): AttributeValue | undefined {
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value;
@@ -76,10 +72,16 @@ function decodeAttributeValue(value: unknown): AttributeValue | undefined {
     return undefined;
 }
 
-function decodeAttributes(attrs: Record<string, H5Attribute>): Record<string, AttributeValue> {
+/** HDF5 type class of strings, in h5wasm's metadata. */
+const H5T_STRING = 3;
+
+/** Decodes the attributes of an HDF5 object, as h5wasm gives them, into netCDF attribute values. */
+export function decodeAttributes(attrs: Record<string, H5Attribute>): Record<string, AttributeValue> {
     const result: Record<string, AttributeValue> = {};
     for (const [key, attribute] of Object.entries(attrs)) {
-        const decoded = decodeAttributeValue(attribute.value);
+        // netCDF-4 stores an empty attribute (obsarray's `[]`) with a null dataspace, which h5wasm reads as no value.
+        const empty = attribute.value === null && attribute.shape === null;
+        const decoded = empty ? (attribute.metadata?.type === H5T_STRING ? '' : []) : decodeAttributeValue(attribute.value);
         if (decoded !== undefined) result[key] = decoded;
     }
     return result;
@@ -318,13 +320,14 @@ async function mapRemoteFile(url: string, path: string, FS: H5FS, fetchImpl: typ
  * what `ncdump -h` shows. With `rangeRequests` (in a worker) a netCDF-4 file is read by HTTP range requests; otherwise it is
  * downloaded, at most `maxDownloadBytes` of it.
  */
-export async function readNetCDF(source: string | Uint8Array, options: ReadNetCDFOptions = {}): Promise<MetadataNode[]> {
+export async function readNetCDF(source: string | Uint8Array | ArrayBuffer, options: ReadNetCDFOptions = {}): Promise<MetadataNode[]> {
     const fetchImpl = options.fetch ?? fetch;
     const { signal } = options;
     const ranged = typeof source === 'string' && !!options.rangeRequests && !/\.gz(?:[?#]|$)/i.test(source);
     let bytes: Uint8Array | undefined;
     if (!ranged) {
-        bytes = typeof source === 'string' ? await download(source, fetchImpl, options.maxDownloadBytes ?? 64 * 1024 * 1024, signal) : source;
+        bytes = typeof source === 'string' ? await download(source, fetchImpl, options.maxDownloadBytes ?? 64 * 1024 * 1024, signal)
+            : source instanceof Uint8Array ? source : new Uint8Array(source);
         if (bytes[0] === 0x43 && bytes[1] === 0x44 && bytes[2] === 0x46) return describeClassic(bytes);
     }
     const h5 = options.h5 ?? (await (defaultH5 ??= import('h5wasm').then((module) => module.default as unknown as H5Module)));

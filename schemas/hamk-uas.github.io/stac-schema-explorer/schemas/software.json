@@ -949,7 +949,7 @@
             ]
           ],
           "read": "pass-through",
-          "note": "Returned by the pdf_shape property; not used in propagation.",
+          "note": "Returned by the pdf_shape property; not used in propagation: totals and error-covariance matrices treat every value as a standard uncertainty, whatever the shape.",
           "source": "https://github.com/comet-toolkit/obsarray/blob/v1.1/obsarray/unc_accessor.py#L244-L251"
         },
         {

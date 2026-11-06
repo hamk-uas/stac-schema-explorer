@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -7,8 +7,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { dataFiles, mediaTypeName, otherAssets, readableAssets, readerKind, realNodeView, zarrMetadataUrls } from '../src/lib/embedded-docs';
 import { validateNode } from '../src/lib/embedded-probe';
-import { readNetCDF, type H5Module } from '../src/lib/readers/netcdf';
-import { parseGDALMetadata, readTiff } from '../src/lib/readers/tiff';
+import { decodeAttributes, parseGDALMetadata, readNetCDF, readTiff, type H5Module } from '../src/lib/readers';
 import { fixtureStore } from './helpers';
 
 const B = 'https://hamk-uas.github.io/stac-schema-explorer/schemas/';
@@ -98,6 +97,20 @@ function classicNetCDF(): Uint8Array {
     return new Uint8Array(out);
 }
 
+describe('readers module', () => {
+    it('is exported as stac-schema-explorer/readers and imports only its own files and the packages its users provide', async () => {
+        const root = new URL('../', import.meta.url);
+        const manifest = JSON.parse(await readFile(new URL('package.json', root), 'utf8')) as { name: string; exports: Record<string, string> };
+        expect(manifest.exports['./readers']).toBe('./src/lib/readers/index.ts');
+        const folder = new URL('src/lib/readers/', root);
+        for (const file of (await readdir(folder)).filter((name) => name.endsWith('.ts'))) {
+            const source = await readFile(new URL(file, folder), 'utf8');
+            const specifiers = [...source.matchAll(/(?:from|import)\s*\(?\s*'([^']+)'/g)].map((match) => match[1]);
+            for (const specifier of specifiers) expect(specifier.startsWith('./') || ['h5wasm', 'netcdfjs', 'geotiff'].includes(specifier), `${file}: ${specifier}`).toBe(true);
+        }
+    });
+});
+
 describe('netCDF reader', () => {
     it('reads groups, dimensions, variables and attributes of netCDF-4 without HDF5 internals, valid against the format and CF', async () => {
         const nodes = await readNetCDF(await netcdf4(), { h5, scratchDir: dir });
@@ -125,8 +138,21 @@ describe('netCDF reader', () => {
         expect(all(shown).filter((f) => f.source === 'core')).toEqual([]);
     });
 
+    it('keeps empty attributes, which netCDF-4 stores with a null dataspace', () => {
+        // As h5wasm reads the attributes netCDF4-python writes for obsarray's empty err_corr parameters and units.
+        const empty = { value: null, shape: null, metadata: { type: 1 } };
+        expect(decodeAttributes({
+            err_corr_1_form: { value: 'random', shape: [], metadata: { type: 3 } },
+            err_corr_1_params: empty,
+            err_corr_1_units: empty,
+            comment: { value: null, shape: null, metadata: { type: 3 } },
+        })).toEqual({ err_corr_1_form: 'random', err_corr_1_params: [], err_corr_1_units: [], comment: '' });
+    });
+
     it('reads a classic file with its record dimension, also when it is downloaded', async () => {
         const bytes = classicNetCDF();
+        // Bytes may also come as an ArrayBuffer, as from `Response.arrayBuffer()`.
+        expect((await readNetCDF(bytes.slice().buffer, { h5, scratchDir: dir })).map((n) => n.path)).toEqual(['', 'v', 't']);
         const href = 'https://example.org/classic.nc';
         serve({ [href]: bytes });
         const nodes = await readNetCDF(href, { h5, scratchDir: dir });

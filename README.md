@@ -77,8 +77,10 @@ asking the schemas themselves.
   ([src/reader.worker.ts](src/reader.worker.ts)) by HTTP range requests, fetching only their headers: netCDF-4 with
   [h5wasm](https://github.com/usnistgov/h5wasm), TIFF with [geotiff.js](https://geotiffjs.github.io/). Classic netCDF
   files, and netCDF files on servers without range requests, are downloaded instead, up to 64 MiB. The readers
-  ([src/lib/readers](src/lib/readers)) produce the same nodes as the Observatory's: the format schemas below are their
-  contract.
+  ([src/lib/readers](src/lib/readers)) are owned here, beside the format schemas below that describe what they produce,
+  and other applications (the Observatory) import them as `stac-schema-explorer/readers`: `readNetCDF`, `readTiff`, and
+  the decoders `decodeAttributes`, `decodeGeoKeys` and `parseGDALMetadata`. The module is TypeScript source; it imports
+  only `h5wasm`, `netcdfjs` and `geotiff`, which the importing application provides.
 
 Extensions are chosen from quick-select buttons (the extensions discussed in the
 [Observatory](https://github.com/hamk-uas/observatory) project, and those the openEO API recommends or its back-ends use) or added as any JSON Schema URL or `name@version`

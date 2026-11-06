@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 // Reads metadata embedded in binary data files. Kept apart from the schema engine: netCDF range reads are synchronous and
 // would stall probing, and the readers' wasm and decoders are loaded only when a file is opened.
-import type { MetadataNode } from './lib/readers/netcdf';
+import type { MetadataNode, ReaderNote } from './lib/readers';
 
 export type ReaderKind = 'netcdf' | 'tiff';
 export type ReaderRequest = { id: number; kind: ReaderKind; href: string };
@@ -12,10 +12,17 @@ export type ReaderResponse =
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
+/** A reader's note in the app's English. */
+function noteText(note: ReaderNote): string {
+    if (note.code === 'deferred-values') return `Long tag values are shown by their length only: ${note.params.tags}.`;
+    return `Only the first ${note.params.count} of ${note.params.total} images are read.`;
+}
+
 async function read(request: ReaderRequest): Promise<{ nodes: MetadataNode[]; notes: string[] }> {
     if (request.kind === 'tiff') {
         const { readTiff } = await import('./lib/readers/tiff');
-        return readTiff(request.href);
+        const { nodes, notes } = await readTiff(request.href);
+        return { nodes, notes: notes.map(noteText) };
     }
     const { readNetCDF } = await import('./lib/readers/netcdf');
     try {

@@ -389,9 +389,15 @@ describe('embedded metadata of the lab catalogs', () => {
         }
         const variable = (attributes: Record<string, unknown>) => ({ node_type: 'variable', name: 'u', attributes });
         const rejects = async (node: unknown, why: string) => expect(await valid(UNC, node), why).not.toEqual([]);
-        await rejects(variable({ err_corr_1_form: 'random' }), 'a form needs its dimensions');
+        await rejects(variable({ err_corr_1_form: 'random', err_corr_1_params: [], err_corr_1_units: [] }), 'a form needs its dimensions');
         await rejects(variable({ err_corr_2_dim: 'time' }), 'dimensions need their form');
-        await rejects(variable({ err_corr_1_dim: 'time', err_corr_1_form: 'systematic', err_corr_2_params: ['m'] }), 'parameters belong to a form');
+        const systematic = { err_corr_1_dim: 'time', err_corr_1_form: 'systematic', err_corr_1_params: [], err_corr_1_units: [] };
+        expect(await valid(UNC, variable(systematic))).toEqual([]);
+        await rejects(variable({ ...systematic, err_corr_2_params: ['m'] }), 'parameters belong to a form');
+        // obsarray and punpy read all four attributes for every form, so parameters and units are present even when empty.
+        await rejects(variable({ err_corr_1_dim: 'time', err_corr_1_form: 'random' }), 'random still has its (empty) parameters and units');
+        const { err_corr_1_units: _, ...withoutUnits } = systematic;
+        await rejects(variable(withoutUnits), 'units are required with the form');
         await rejects(variable({ unc_comps: [] }), 'at least one component');
         await rejects(variable({ pdf_shape: 1 }), 'pdf_shape is a name');
         await rejects({ node_type: 'group', name: '/', attributes: { unc_comps: 'u' } }, 'not on groups');

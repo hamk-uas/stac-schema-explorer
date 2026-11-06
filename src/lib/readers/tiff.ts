@@ -1,10 +1,9 @@
 /**
  * Reads the structure and tags of a TIFF file (GeoTIFF keys, GDAL metadata, COG ghost header) by HTTP range requests, as
- * the nodes the TIFF format schema describes. A port of the Observatory's `readTiffMetadata` (`@observatory/data`): keep
- * the two projections alike; the format schema is their contract.
+ * the nodes the TIFF format schema describes. Owned here, beside that schema, and imported by other applications (the
+ * Observatory) through `stac-schema-explorer/readers`.
  */
-import type { JsonObject } from '../model';
-import type { MetadataNode } from './netcdf';
+import type { JsonObject, MetadataNode, ReaderNote } from './types';
 
 /** Tags (by id) whose content is decoded into `geo_keys` and `gdal_metadata` instead of being listed raw. */
 const GEO_KEY_DIRECTORY = 34735, GEO_DOUBLE_PARAMS = 34736, GEO_ASCII_PARAMS = 34737, GDAL_METADATA = 42112;
@@ -100,14 +99,14 @@ interface TiffDirectory {
 export interface ReadTiffResult {
     nodes: MetadataNode[];
     /** What was left out: tags summarised by their length, images beyond the first 64. */
-    notes: string[];
+    notes: ReaderNote[];
 }
 
 /** Reads the header, the GDAL structural metadata and the tags of every image of a TIFF file by HTTP range requests. */
 export async function readTiff(href: string, signal?: AbortSignal): Promise<ReadTiffResult> {
     const { fromUrl, globals } = await import('geotiff');
     const tiff = await fromUrl(href, { allowFullFile: false }, signal);
-    const notes: string[] = [];
+    const notes: ReaderNote[] = [];
     const ghost = await tiff.getGhostValues().catch(() => null);
     const total = await tiff.getImageCount();
     const nodes: MetadataNode[] = [{ path: '', node: {
@@ -169,7 +168,7 @@ export async function readTiff(href: string, signal?: AbortSignal): Promise<Read
         }
         nodes.push({ path: String(index), node });
     }
-    if (summarised.size) notes.push(`Long tag values are shown by their length only: ${[...summarised].sort().join(', ')}.`);
-    if (total > MAX_IMAGES) notes.push(`Only the first ${MAX_IMAGES} of ${total} images are read.`);
+    if (summarised.size) notes.push({ code: 'deferred-values', params: { tags: [...summarised].sort().join(', ') } });
+    if (total > MAX_IMAGES) notes.push({ code: 'truncated', params: { count: MAX_IMAGES, total } });
     return { nodes, notes };
 }

@@ -1,5 +1,5 @@
 import type { ReaderKind, ReaderRequest, ReaderResponse } from '../reader.worker';
-import type { MetadataNode } from './readers/netcdf';
+import type { MetadataNode } from './readers';
 
 let worker: Worker | undefined;
 let nextId = 1;

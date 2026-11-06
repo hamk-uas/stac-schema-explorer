@@ -140,10 +140,16 @@
     "units": "%",
     "err_corr_1_dim": "time",
     "err_corr_1_form": "random",
+    "err_corr_1_units": [],
+    "err_corr_1_params": [],
     "err_corr_2_dim": "lat",
     "err_corr_2_form": "random",
+    "err_corr_2_units": [],
+    "err_corr_2_params": [],
     "err_corr_3_dim": "lon",
     "err_corr_3_form": "random",
+    "err_corr_3_units": [],
+    "err_corr_3_params": [],
     "pdf_shape": "gaussian"
    }
   }
@@ -173,8 +179,11 @@
      "lon"
     ],
     "err_corr_1_form": "systematic",
+    "err_corr_1_units": [],
+    "err_corr_1_params": [],
     "err_corr_2_dim": "time",
     "err_corr_2_form": "err_corr_matrix",
+    "err_corr_2_units": [],
     "err_corr_2_params": "err_corr_calibration_time"
    }
   }

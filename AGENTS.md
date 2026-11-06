@@ -29,7 +29,7 @@ technical visual language; it need not adopt Observatory instance branding.
 | --- | --- |
 | [src/App.vue](src/App.vue) | App orchestration, URL state, selection, remote/example flows and layout. |
 | [src/components](src/components) | Document cards, object/JSON trees, field chips/info, extension picker, matrix and legend; `NodeCard` and `ConventionPicker` for embedded metadata. |
-| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, reader kind of assets, Zarr documents), [readers](src/lib/readers) (netCDF and TIFF readers, ports of the Observatory's). [rewrites.ts](src/lib/rewrites.ts): local rewrites of real documents and nodes. [software.ts](src/lib/software.ts): which software reads/writes which fields, and its source precedence. |
+| [src/lib](src/lib) | Schema loading/probing, STAC fetching, documentation, model/tree construction, colors and URL helpers. Embedded metadata: [conventions.ts](src/lib/conventions.ts) (registry, crosswalk, short ids), [embedded-probe.ts](src/lib/embedded-probe.ts) (node placement probing, worker side), [embedded-docs.ts](src/lib/embedded-docs.ts) (node cards, reader kind of assets, Zarr documents), [readers](src/lib/readers) (netCDF and TIFF readers, owned here and exported to other applications as `stac-schema-explorer/readers`). [rewrites.ts](src/lib/rewrites.ts): local rewrites of real documents and nodes. [software.ts](src/lib/software.ts): which software reads/writes which fields, and its source precedence. |
 | [src/engine.worker.ts](src/engine.worker.ts), [src/lib/engine.ts](src/lib/engine.ts) | Worker-backed probing/validation protocol. |
 | [src/reader.worker.ts](src/reader.worker.ts), [src/lib/reader.ts](src/lib/reader.ts) | Separate, lazily created worker reading netCDF/TIFF files. netCDF-4 range reads are synchronous XHR: keep them out of the engine worker and the page. |
 | [schemas](schemas) | Reviewed, documentation-enriched schema source consumed by this app and Observatory: vendored copies, plus authored embedded-metadata schemas under `schemas/hamk-uas.github.io/stac-schema-explorer/schemas/`. |
@@ -124,6 +124,12 @@ in their description and are published at their `$id` by `vite.config.ts`.
   conventions at a release tag; one without a release yet (NZ, cs) is pinned to a
   commit, and its version records the URL its schema declares for itself as
   `declaredSchema` (an optional field), so declaring data loads the vendored copy.
+- The readers in `src/lib/readers` are a contract too: exported as
+  `stac-schema-explorer/readers` (`package.json` `exports`, TypeScript source),
+  they produce the nodes the format schemas describe. They import only their own
+  folder and `h5wasm`, `netcdfjs` and `geotiff`, which importing applications
+  provide (checked by `test/readers.test.ts`); changing their exported functions
+  or node shapes needs coordinated Observatory changes once it imports them.
 - `software.json` is published beside them and names conventions and formats by
   their registry ids and STAC extensions by name. Conventions say who *defines*
   fields (never overlapping); software says who *uses* them (overlapping freely).
@@ -255,9 +261,11 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
   distinguish app support from downstream integration still to be done.
 - [ ] Establish an explicit software license; attribution of Apache-licensed
   source documentation in the README is not a repository-wide license.
-- [ ] Embedded metadata: the netCDF/TIFF readers duplicate the Observatory's
-  (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`); until one
-  shared package exists, change both together.
+- [ ] Embedded metadata: this repository owns the netCDF/TIFF readers
+  (`stac-schema-explorer/readers`); the Observatory still has its own copies
+  (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`, and the shared
+  `decodeAttributes` of its netCDF data loader) until it imports this module.
+  Until then, port reader fixes there too.
 - [ ] Software and standards, after the layers and versions slice: a software
   picker that marks which fields a program interprets, writes or ignores; 📜 standards
   as presets of conventions with requirement levels (GeoZarr, still a draft over the

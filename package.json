@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "A web app for understanding SpatioTemporal Asset Catalog (STAC) core spec and STAC extensions",
+  "exports": {
+    "./readers": "./src/lib/readers/index.ts"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",

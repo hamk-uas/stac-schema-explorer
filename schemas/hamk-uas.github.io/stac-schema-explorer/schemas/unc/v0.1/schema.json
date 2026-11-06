@@ -24,7 +24,7 @@
       ]
     },
     "form": {
-      "description": "The error-correlation form along these dimensions. Forms beyond the standard ones may be defined.",
+      "description": "The error-correlation form along these dimensions. Forms beyond the standard ones may be defined. Requires the dimensions, parameters and units of the same parameterisation.",
       "anyOf": [
         {
           "oneOf": [
@@ -56,7 +56,7 @@
       ]
     },
     "params": {
-      "description": "Parameters of the form, such as the name of the error-correlation matrix variable for err_corr_matrix; empty or absent when the form takes none. A single parameter may be stored as a scalar.",
+      "description": "Parameters of the form, such as the name of the error-correlation matrix variable for err_corr_matrix; an empty list when the form takes none, as for random and systematic. Required with the form: obsarray and punpy read it for every form and fail without it. A single parameter may be stored as a scalar (netCDF files written by xarray do).",
       "anyOf": [
         {
           "type": [
@@ -79,7 +79,7 @@
       ]
     },
     "units": {
-      "description": "Units of the parameters, in their order; empty or absent when there are none.",
+      "description": "Units of the parameters, in their order: whether a length is counted in elements or in the units of the dimension, for instance. An empty list when there are none; no implemented form uses units, but obsarray and punpy read the attribute for every form and fail without it.",
       "anyOf": [
         {
           "type": "string"
@@ -129,7 +129,7 @@
         },
         "pdf_shape": {
           "title": "PDF shape",
-          "description": "Shape of the probability density function the uncertainty values describe; gaussian when absent. Used on: uncertainty variables.",
+          "description": "Shape of the probability density function the uncertainty values describe; gaussian when absent. v0.1 does not say what a value means for shapes other than gaussian. Read with the GUM, which it follows, and with how error-covariance matrices are built from the values, every value is a standard uncertainty: for rectangular, the half-width divided by the square root of 3. obsarray treats all values so, and ignores the shape. comet_maths (used by punpy) instead samples its tophat distribution with the value as the half-width. Say on the variable which is meant; draft v0.2 makes it explicit with coverage_interval. Used on: uncertainty variables.",
           "default": "gaussian",
           "anyOf": [
             {
@@ -142,7 +142,7 @@
                 {
                   "const": "rectangular",
                   "title": "Rectangular",
-                  "description": "A uniform distribution."
+                  "description": "A uniform distribution; the value is taken to be its standard deviation (half-width / √3), which v0.1 does not state."
                 }
               ]
             },
@@ -305,25 +305,20 @@
           },
           "then": {
             "required": [
-              "err_corr_1_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_1_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_1_form"
+              "err_corr_1_dim",
+              "err_corr_1_params",
+              "err_corr_1_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_1_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_1_params"
@@ -350,25 +345,20 @@
           },
           "then": {
             "required": [
-              "err_corr_2_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_2_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_2_form"
+              "err_corr_2_dim",
+              "err_corr_2_params",
+              "err_corr_2_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_2_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_2_params"
@@ -395,25 +385,20 @@
           },
           "then": {
             "required": [
-              "err_corr_3_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_3_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_3_form"
+              "err_corr_3_dim",
+              "err_corr_3_params",
+              "err_corr_3_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_3_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_3_params"
@@ -440,25 +425,20 @@
           },
           "then": {
             "required": [
-              "err_corr_4_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_4_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_4_form"
+              "err_corr_4_dim",
+              "err_corr_4_params",
+              "err_corr_4_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_4_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_4_params"
@@ -485,25 +465,20 @@
           },
           "then": {
             "required": [
-              "err_corr_5_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_5_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_5_form"
+              "err_corr_5_dim",
+              "err_corr_5_params",
+              "err_corr_5_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_5_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_5_params"
@@ -530,25 +505,20 @@
           },
           "then": {
             "required": [
-              "err_corr_6_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_6_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_6_form"
+              "err_corr_6_dim",
+              "err_corr_6_params",
+              "err_corr_6_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_6_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_6_params"
@@ -575,25 +545,20 @@
           },
           "then": {
             "required": [
-              "err_corr_7_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_7_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_7_form"
+              "err_corr_7_dim",
+              "err_corr_7_params",
+              "err_corr_7_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_7_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_7_params"
@@ -620,25 +585,20 @@
           },
           "then": {
             "required": [
-              "err_corr_8_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_8_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_8_form"
+              "err_corr_8_dim",
+              "err_corr_8_params",
+              "err_corr_8_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_8_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_8_params"
@@ -665,25 +625,20 @@
           },
           "then": {
             "required": [
-              "err_corr_9_dim"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "err_corr_9_dim"
-            ]
-          },
-          "then": {
-            "required": [
-              "err_corr_9_form"
+              "err_corr_9_dim",
+              "err_corr_9_params",
+              "err_corr_9_units"
             ]
           }
         },
         {
           "if": {
             "anyOf": [
+              {
+                "required": [
+                  "err_corr_9_dim"
+                ]
+              },
               {
                 "required": [
                   "err_corr_9_params"
