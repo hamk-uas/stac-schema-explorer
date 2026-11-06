@@ -122,18 +122,18 @@ async function readZarr(href: string, json?: unknown): Promise<{ format: string;
 }
 
 /** Opens a data file given as the URL: its embedded metadata, each node checked against its format and conventions. */
-async function openEmbedded(href: string, label: string, kind: ReaderKind, json?: unknown) {
+async function openEmbedded(href: string, label: string, kind: ReaderKind, json?: unknown, zarr?: Awaited<ReturnType<typeof readZarr>>) {
     const view: DataView = reactive({ label, href, kind, assets: [], expanded: true, status: 'idle', nodes: [], notes: [] });
     embeddedView.value = view;
-    await readData(view, json);
+    await readData(view, json, zarr);
 }
 
-/** Reads the embedded metadata of a data file into its view. */
-async function readData(view: DataView, json?: unknown) {
+/** Reads the embedded metadata of a data file into its view; `zarr`: a Zarr document already read. */
+async function readData(view: DataView, json?: unknown, zarr?: Awaited<ReturnType<typeof readZarr>>) {
     view.status = 'loading';
     try {
         let document: { format: string; nodes: { path: string; node: JsonObject }[]; read?: string };
-        if (view.kind === 'zarr') document = await readZarr(view.href, json);
+        if (view.kind === 'zarr') document = zarr ?? await readZarr(view.href, json);
         else {
             const read = await readEmbeddedFile(view.kind, view.href);
             document = { format: view.kind, nodes: read.nodes };
@@ -336,12 +336,18 @@ async function openHref(href: string, keepSelection = false) {
     // Data files (a Zarr store or its zarr.json or .zmetadata, a netCDF or TIFF file) are explored as embedded metadata, not as STAC.
     const kind = readerKind(trimmed);
     let json: unknown;
+    let zarr: Awaited<ReturnType<typeof readZarr>> | undefined;
     if (!kind) {
-        try { json = await fetchJson(trimmed); } catch { /* reported by the STAC loader below */ }
+        try {
+            json = await fetchJson(trimmed);
+        } catch {
+            // A Zarr store or node whose URL does not end in .zarr has its metadata document below it.
+            zarr = await readZarr(trimmed).catch(() => undefined);
+        }
     }
-    if (kind || zarrDocument(json as never)) {
+    if (kind || zarr || zarrDocument(json as never)) {
         hrefRoot.value = undefined;
-        await openEmbedded(trimmed, trimmed, kind ?? 'zarr', json);
+        await openEmbedded(trimmed, trimmed, kind ?? 'zarr', json, zarr);
         const opened = embeddedView.value as DataView | undefined;
         if (!keepSelection && opened?.nodes[0]) state.selected = opened.nodes[0].key;
         return;

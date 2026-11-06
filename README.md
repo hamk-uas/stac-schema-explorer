@@ -64,7 +64,8 @@ asking the schemas themselves.
   from extensions, with their own quick-select list grouped by kind: Zarr conventions, attribute conventions (CF,
   ACDD, UNC), format extensions (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). A format's own fields, the counterparts
   of STAC core, are shown when its core is selected.
-- **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
+- **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`; a store, group or array whose
+  URL does not end in `.zarr` is found by its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
   file directly, or open a STAC document with such assets: their data files appear inside the document's card, in
   dashed “embedded in the data, not STAC” sections apart from its STAC objects. Assets naming the same Zarr store
   (a `data` store and its `metadata` zarr.json) are one file. Zarr stores are read as soon as their document loads;
