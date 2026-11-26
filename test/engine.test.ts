@@ -7,7 +7,7 @@ import { probe } from '../src/lib/probe';
 import { requirementOf, requirementText } from '../src/lib/requirement';
 import { stringFromRegex } from '../src/lib/sampler';
 import { formatErrors, SchemaStore } from '../src/lib/schemas';
-import { documentView, groupFields, shapeOf, templateView, type ObjectView } from '../src/lib/tree';
+import { documentView, groupFields, mapKeysOf, shapeOf, templateView, type ObjectView } from '../src/lib/tree';
 import { readState, writeState } from '../src/lib/url-state';
 import { EXTENSIONS, fixtureStore } from './helpers';
 
@@ -259,7 +259,7 @@ describe('field documentation', () => {
 describe('views', () => {
     it('merges identical siblings in the template view', async () => {
         const result = await defaultProbe();
-        const view = templateView(result.templates.Feature, false);
+        const view = templateView(result.templates.Feature, false, result.sources);
         const properties = view.children.find((c) => c.kind === 'properties')!;
         const dimensions = properties.children.filter((c) => c.kind === 'dimension');
         expect(dimensions).toHaveLength(1);
@@ -267,9 +267,13 @@ describe('views', () => {
         expect(dimensions[0].label).toBe('cube:dimensions › x, y, time');
     });
 
-    it('normalizes asset keys and array indices into shapes', () => {
+    it('normalizes asset keys, array indices and schema-defined map keys into shapes', async () => {
+        const result = await defaultProbe();
+        const mapKeys = mapKeysOf(result.sources);
         expect(shapeOf('/assets/thumbnail/bands/3')).toBe('/assets/*/bands/*');
-        expect(shapeOf('/properties/cube:variables/CH4')).toBe('/properties/cube:variables/*');
+        expect(shapeOf('/properties/cube:variables/CH4', mapKeys)).toBe('/properties/cube:variables/*');
+        expect(mapKeys.has('cube:dimensions')).toBe(true);
+        expect(mapKeys.has('cube:variables')).toBe(true);
     });
 
     it('classifies fields of a real document as populated, possible or unexpected', async () => {
@@ -290,6 +294,44 @@ describe('views', () => {
         expect(asset.find((f) => f.name === 'themes')).toMatchObject({ state: 'unexpected', source: THEMES });
         const groups = groupFields(props, result.sources);
         expect(groups.find((g) => g.source === CF)?.label).toBe('cf:*');
+    });
+
+    it('does not flag unprefixed sub-properties inside field values as unexpected core fields', async () => {
+        const result = await defaultProbe();
+        const doc = {
+            type: 'Feature', stac_version: '1.1.0', id: 'x', geometry: null, links: [],
+            properties: {
+                datetime: '2024-01-01T00:00:00Z',
+                themes: [{ scheme: 'https://example.com/scheme', concepts: [{ id: 'c1', title: 'Temp', description: 'Air temp' }] }],
+            },
+            assets: {
+                data: {
+                    href: 'a.zarr',
+                    'cube:dimensions': {
+                        time: { type: 'temporal', description: 'UTC day', extent: ['2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z'], step: 'P1D' },
+                    },
+                    'cube:variables': {
+                        ch4: {
+                            type: 'data',
+                            description: 'Methane',
+                            dimensions: ['time'],
+                            unit: 'ppbv',
+                            data_type: 'float32',
+                            nodata: 'nan',
+                            'cf:standard_name': 'dry_atmosphere_mole_fraction_of_methane',
+                            'foo:bar': 1,
+                        },
+                    },
+                },
+            },
+        };
+        const view = documentView(doc, result.templates.Feature, result.sources, true);
+        const allFields = (node: ObjectView): { pointer: string; name: string; state: string; source: string }[] => [
+            ...node.fields.map((f) => ({ pointer: node.pointers[0], name: f.name, state: f.state, source: f.source })),
+            ...node.children.flatMap(allFields),
+        ];
+        const unexpected = allFields(view).filter((f) => f.state === 'unexpected');
+        expect(unexpected).toEqual([{ pointer: '/assets/data/cube:variables/ch4', name: 'foo:bar', state: 'unexpected', source: '?foo' }]);
     });
 
     it('builds a placement matrix with conceptual columns', async () => {

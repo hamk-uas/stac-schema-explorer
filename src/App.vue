@@ -170,7 +170,7 @@ async function buildNodes(view: DataView) {
         const own = rewritesOf(keyOf(path));
         if (!own.length) return { path, node, rewrites: own };
         const template = templateOf(node);
-        const rewritten = applyRewrites(node, own, (r) => templateValue(template, r));
+        const rewritten = applyRewrites(node, own, (r) => templateValue(template, r, probed.sources));
         return { path, node: declareZarrConventions(rewritten, addedSchemas(own, [format.schema]), template?.doc), rewrites: own };
     });
     // Attribute conventions (CF, ACDD) of added fields are declared in the root's global `Conventions` attribute.
@@ -205,7 +205,7 @@ const exampleRoot = computed<DocEntry | undefined>(() => {
     const make = (key: string, type: StacType, title: string, extra: Partial<DocEntry> = {}): DocEntry => {
         const template = probed.templates[type];
         return {
-            key, type, title, doc: template.doc, template, sources: probed.sources, view: templateView(template, showsCore('stac')),
+            key, type, title, doc: template.doc, template, sources: probed.sources, view: templateView(template, showsCore('stac'), probed.sources),
             valid: template.valid, errors: template.errors, status: 'ready', expanded: exampleExpanded[key] ?? false,
             children: [], remaining: [], ...extra,
         };
@@ -257,7 +257,7 @@ async function analyze(entry: DocEntry) {
     if (analyses.get(entry) !== run) return;
     const template = probed.templates[entry.type];
     const doc = rewrites.length
-        ? declareStacExtensions(applyRewrites(original, rewrites, (r) => templateValue(template, r)), addedSchemas(rewrites))
+        ? declareStacExtensions(applyRewrites(original, rewrites, (r) => templateValue(template, r, probed.sources)), addedSchemas(rewrites))
         : original;
     entry.doc = markRaw(doc);
     entry.rewrites = rewrites.length;

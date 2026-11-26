@@ -1,6 +1,6 @@
 import { DATA_FORMATS, KNOWN_CONVENTIONS, loadableSchema, versionDetection } from './conventions';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo, NodeTemplate } from './embedded-probe';
-import { CORE, type Json, type JsonObject, type TypeTemplate } from './model';
+import { CORE, EMBEDDED_CONTAINERS, type Json, type JsonObject, type TypeTemplate } from './model';
 import { documentView, templateView, type FieldEdits, type FieldView, type ObjectView } from './tree';
 
 /** A node of embedded metadata shown as a card: a node template of the example, or a node read from a data asset. */
@@ -26,8 +26,7 @@ export interface NodeEntry {
 }
 
 const isObject = (value: unknown): value is JsonObject => typeof value === 'object' && value !== null && !Array.isArray(value);
-/** Members whose entries are fields of their own (as `CONTAINERS` of the probe, not imported to keep the probe off this thread). */
-const CONTAINER_KEYS = ['attributes', 'tags', 'geo_keys'];
+const CONTAINER_KEYS: readonly string[] = EMBEDDED_CONTAINERS;
 const STRUCTURE = [...CONTAINER_KEYS, 'zarr_conventions'];
 
 /** A node template as a {@link TypeTemplate}, so that the STAC tree views can show it; format fields only when its core is shown. */
@@ -47,7 +46,7 @@ export function templateEntries(result: EmbeddedProbeResult, showFormat: (format
         const sources = result.sources.filter((s) => s.formats.includes(template.format));
         return {
             key: `node:${template.key}`, format: template.format, formatTitle: template.formatTitle, nodeType: template.nodeType,
-            title: `example ${template.nodeType}`, doc: template.doc, view: templateView(asTemplate(template, schema, showFormat(template.format)), true), sources,
+            title: `example ${template.nodeType}`, doc: template.doc, view: templateView(asTemplate(template, schema, showFormat(template.format)), true, sources), sources,
             conventions: sources.filter((s) => s.kind !== 'format').map((s) => s.key), notApplicable: template.notApplicable,
             valid: template.valid, errors: template.errors,
         };

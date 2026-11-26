@@ -1,6 +1,6 @@
 import { isProbeableLocation } from './base-docs';
 import { CORE_KEYS, prefixOf } from './fields';
-import { CORE, type Json, type JsonObject, type PlacementKind, type Requirement, type SourceInfo, type SourceKey, type TypeTemplate } from './model';
+import { CORE, EMBEDDED_CONTAINERS, type Json, type JsonObject, type ObjectDoc, type PlacementKind, type Requirement, type SourceInfo, type SourceKey, type TypeTemplate } from './model';
 import { getAt, joinPointer, objectLocations, splitPointer } from './pointer';
 
 export type ObjectKind =
@@ -46,14 +46,52 @@ export interface ObjectView {
     children: ObjectView[];
 }
 
-/** Keys whose objects are maps keyed by name: STAC's, and the coordinate set convention's (`crs` of a group, `axes`, `terms`). */
-export const MAP_KEYS = new Set(['assets', 'item_assets', 'cube:dimensions', 'cube:variables', 'table:tables', 'storage:schemes', 'renders', 'crs', 'axes', 'terms']);
+/** Structural STAC core maps whose keys are arbitrary names rather than fields. */
+export const CORE_MAP_KEYS: ReadonlySet<string> = new Set(['assets', 'item_assets']);
+
+/** Structural object containers whose unprefixed keys are document/node fields rather than a field's own nested properties. */
+const CONTAINER_SEGMENTS = new Set<string>([
+    'properties', 'summaries', 'assets', 'item_assets', 'links', 'providers', 'bands',
+    ...EMBEDDED_CONTAINERS,
+]);
+
+/** Keys whose objects are maps keyed by arbitrary names: STAC core's maps plus every map-valued field in `sources`. */
+export function mapKeysOf(sources: readonly SourceInfo[]): ReadonlySet<string> {
+    const keys = new Set(CORE_MAP_KEYS);
+    const visitObjects = (objects?: ObjectDoc[]) => {
+        for (const obj of objects ?? []) {
+            for (const prop of obj.properties) {
+                if (prop.isMap) keys.add(prop.name);
+                visitObjects(prop.objects);
+            }
+        }
+    };
+    for (const source of sources) {
+        for (const [name, doc] of Object.entries(source.docs)) {
+            if (doc.isMap) keys.add(name);
+            visitObjects(doc.objects);
+        }
+    }
+    return keys;
+}
+
+/** True when `pointer` lies inside the value of a field (e.g. a `cube:variables` entry, `themes` item, or `storage:schemes` object). */
+function isInsideFieldValue(pointer: string, mapKeys: ReadonlySet<string>): boolean {
+    const segments = splitPointer(pointer);
+    for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        if (/^\d+$/.test(segment)) continue;
+        if (i > 0 && mapKeys.has(segments[i - 1])) continue;
+        if (!CONTAINER_SEGMENTS.has(segment)) return true;
+    }
+    return false;
+}
 
 /** Replaces array indices and keys of known maps with `*`, so equivalent objects of different documents match. */
-export function shapeOf(pointer: string): string {
+export function shapeOf(pointer: string, mapKeys: ReadonlySet<string> = CORE_MAP_KEYS): string {
     const segments = splitPointer(pointer);
     return segments
-        .map((segment, i) => (/^\d+$/.test(segment) || (i > 0 && MAP_KEYS.has(segments[i - 1])) ? '*' : segment))
+        .map((segment, i) => (/^\d+$/.test(segment) || (i > 0 && mapKeys.has(segments[i - 1])) ? '*' : segment))
         .reduce((acc, s) => joinPointer(acc, s), '');
 }
 
@@ -146,13 +184,13 @@ function mergeSiblings(nodes: ObjectView[]): ObjectView[] {
     return out.sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
 }
 
-function buildTree(doc: JsonObject, locations: string[], fieldsAt: (pointer: string) => FieldView[]): ObjectView {
+function buildTree(doc: JsonObject, locations: string[], mapKeys: ReadonlySet<string>, fieldsAt: (pointer: string) => FieldView[]): ObjectView {
     const nodes = new Map<string, ObjectView>();
     const sorted = [...new Set(['', ...locations])].sort((a, b) => splitPointer(a).length - splitPointer(b).length);
     for (const pointer of sorted) {
         const kind = kindOf(pointer);
         const name = nameOf(pointer, getAt(doc, pointer));
-        nodes.set(pointer, { pointers: [pointer], shape: shapeOf(pointer), kind, label: '', names: name ? [name] : [], fields: fieldsAt(pointer), children: [] });
+        nodes.set(pointer, { pointers: [pointer], shape: shapeOf(pointer, mapKeys), kind, label: '', names: name ? [name] : [], fields: fieldsAt(pointer), children: [] });
     }
     for (const pointer of sorted) {
         if (pointer === '') continue;
@@ -175,10 +213,11 @@ function pruneEmpty(node: ObjectView, keep: (node: ObjectView) => boolean): Obje
 const ALWAYS_SHOWN: ObjectKind[] = ['properties', 'asset', 'item-asset'];
 
 /** The conceptual view of a template: every placement, all populated. */
-export function templateView(template: TypeTemplate, showCore: boolean): ObjectView {
+export function templateView(template: TypeTemplate, showCore: boolean, sources: readonly SourceInfo[] = []): ObjectView {
+    const mapKeys = mapKeysOf(sources);
     const visible = template.placements.filter((p) => showCore || p.source !== CORE);
     const locations = [...new Set([...visible.map((p) => p.location), ...objectLocations(template.doc).filter((l) => ALWAYS_SHOWN.includes(kindOf(l)))])];
-    const tree = buildTree(template.doc, locations, (pointer) =>
+    const tree = buildTree(template.doc, locations, mapKeys, (pointer) =>
         visible.filter((p) => p.location === pointer).map((p) => ({ name: p.field, source: p.source, state: 'populated' as const, kind: p.kind, required: p.required })));
     return pruneEmpty(tree, (n) => ALWAYS_SHOWN.includes(n.kind));
 }
@@ -188,6 +227,7 @@ export function templateView(template: TypeTemplate, showCore: boolean): ObjectV
  * the schemas would allow at the same place. `edits` marks the fields rewritten in `doc`; removed ones are kept as chips.
  */
 export function documentView(doc: JsonObject, template: TypeTemplate | undefined, sources: SourceInfo[], showCore: boolean, edits?: FieldEdits): ObjectView {
+    const mapKeys = mapKeysOf(sources);
     // When several schemas claim a prefix, the most specific one (fewest prefixes) owns it.
     const bySpecificity = [...sources].sort((a, b) => a.prefixes.length - b.prefixes.length);
     const knownPrefixes = new Map<string, SourceKey>();
@@ -199,7 +239,7 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
     const possibleByShape = new Map<string, Map<string, { source: SourceKey; kind: PlacementKind; required?: Requirement }>>();
     for (const p of template?.placements ?? []) {
         if (!showCore && p.source === CORE) continue;
-        const shape = shapeOf(p.location);
+        const shape = shapeOf(p.location, mapKeys);
         const map = possibleByShape.get(shape) ?? new Map();
         const current = map.get(p.field);
         const better = !current
@@ -213,18 +253,22 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
         const node = getAt(doc, pointer);
         if (!node || typeof node !== 'object' || Array.isArray(node)) return [];
         // The keys of a map are names of its entries (an asset named `title`, an axis named `time`), not fields.
-        if (MAP_KEYS.has(splitPointer(pointer).at(-1) ?? '')) return [];
+        if (mapKeys.has(splitPointer(pointer).at(-1) ?? '')) return [];
         const present = new Set(Object.keys(node));
         const removed = edits?.removedAt(pointer).filter((name) => !present.has(name)) ?? [];
-        const possible = possibleByShape.get(shapeOf(pointer)) ?? new Map();
+        const possible = possibleByShape.get(shapeOf(pointer, mapKeys)) ?? new Map();
         const out: FieldView[] = [];
         const mark = (field: FieldView): FieldView => {
             const edit = edits?.at(pointer, field.name);
             return edit ? { ...field, edit } : field;
         };
         for (const [name, { source, kind, required }] of possible) out.push(mark({ name, source, kind, required, state: present.has(name) ? 'populated' : 'possible' }));
+        const insideField = isInsideFieldValue(pointer, mapKeys);
         for (const name of [...present, ...removed]) {
             if (possible.has(name)) continue;
+            // Inside a field's own value, unprefixed keys belong to that field's schema rather than STAC core or
+            // another unprefixed schema, so only prefixed extension fields can be unexpected there.
+            if (insideField && !prefixOf(name)) continue;
             // A removed field that no schema places here is shown as it was, but absent.
             const state = present.has(name) ? 'unexpected' : 'possible';
             const owner = ownerByField.get(name);
@@ -232,7 +276,7 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
             // Summaries may summarize any field of the Items, so known fields there are never out of place.
             if (owner) out.push(mark({ name, source: owner, state: pointer === '/summaries' && state === 'unexpected' ? 'populated' : state }));
             else if (prefixOf(name)) out.push(mark({ name, source: knownPrefixes.get(prefixOf(name)!) ?? `?${prefixOf(name)}`, state }));
-            else if (!CORE_KEYS.has(name) && pointer !== '/summaries' && kindOf(pointer) !== 'dimension' && kindOf(pointer) !== 'variable' && kindOf(pointer) !== 'column') {
+            else if (!CORE_KEYS.has(name) && pointer !== '/summaries') {
                 out.push(mark({ name, source: '?', state }));
             }
         }
@@ -240,8 +284,8 @@ export function documentView(doc: JsonObject, template: TypeTemplate | undefined
     };
 
     const shapes = new Set(possibleByShape.keys());
-    const locations = objectLocations(doc).filter((l) => isProbeableLocation(l) && (shapes.has(shapeOf(l)) || ALWAYS_SHOWN.includes(kindOf(l)) || fieldsAt(l).some((f) => (f.state === 'unexpected' && f.source !== '?') || f.edit)));
-    const tree = buildTree(doc, locations, fieldsAt);
+    const locations = objectLocations(doc).filter((l) => isProbeableLocation(l) && (shapes.has(shapeOf(l, mapKeys)) || ALWAYS_SHOWN.includes(kindOf(l)) || fieldsAt(l).some((f) => (f.state === 'unexpected' && f.source !== '?') || f.edit)));
+    const tree = buildTree(doc, locations, mapKeys, fieldsAt);
     return pruneEmpty(tree, (n) => ALWAYS_SHOWN.includes(n.kind));
 }
 

@@ -13,13 +13,6 @@ export const CORE_KEYS = new Set([
 /** Keys that are never fields, not even of extensions that were later merged into core. */
 const STRUCTURAL_KEYS = new Set(['type', 'stac_version', 'stac_extensions', 'id', 'links', 'assets', 'properties', 'geometry', 'bbox', 'href', 'rel']);
 
-/** Keys whose value is a map of objects that can carry fields of other schemas. */
-export const MAP_CONTAINERS = new Set(['assets', 'item_assets', 'assetTemplates', 'cube:dimensions', 'cube:variables']);
-/** Keys whose value is an array of objects that can carry fields of other schemas. */
-export const ARRAY_CONTAINERS = new Set(['bands', 'links', 'linkTemplates', 'providers', 'table:columns', 'raster:bands', 'eo:bands']);
-
-const FOREIGN_CONTAINER_HINTS = new Set(['cube:dimensions', 'cube:variables', 'table:columns', 'raster:bands', 'eo:bands']);
-
 export interface FieldSchemaRef {
     schemaUrl: string;
     pointer: string;
@@ -42,6 +35,82 @@ interface WalkOptions {
     /** Return true to descend into a map/array container key instead of treating it as a field. */
     isContainer: (key: string) => boolean;
     onKey: (key: string, ref: FieldSchemaRef) => void;
+}
+
+function followRef(store: SchemaStore, schemaUrl: string, ref: string): { schemaUrl: string; pointer: string } | undefined {
+    const target = new URL(ref, store.baseOf(schemaUrl));
+    const pointer = decodeURIComponent(target.hash.slice(1));
+    target.hash = '';
+    const url = target.toString();
+    return store.getDocument(url) !== undefined ? { schemaUrl: url, pointer } : undefined;
+}
+
+/** True when the subschema at `pointer` validates objects with named `properties` (directly or via composition). */
+function hasObjectProperties(store: SchemaStore, schemaUrl: string, pointer: string, visited: Set<string>): boolean {
+    const visitKey = `${schemaUrl}#${pointer}`;
+    if (visited.has(visitKey)) return false;
+    visited.add(visitKey);
+    const node = store.resolveAt(schemaUrl, pointer);
+    if (node === null || typeof node !== 'object' || Array.isArray(node)) return false;
+    const schema = node as Record<string, unknown>;
+    if (schema.properties && typeof schema.properties === 'object' && Object.keys(schema.properties as object).length > 0) return true;
+    if (typeof schema.$ref === 'string') {
+        const target = followRef(store, schemaUrl, schema.$ref);
+        if (target && hasObjectProperties(store, target.schemaUrl, target.pointer, visited)) return true;
+    }
+    for (const keyword of ['allOf', 'anyOf', 'oneOf'] as const) {
+        const list = schema[keyword];
+        if (Array.isArray(list) && list.some((_, i) => hasObjectProperties(store, schemaUrl, joinPointer(pointer, keyword, i), visited))) return true;
+    }
+    for (const keyword of ['if', 'then', 'else', 'not'] as const) {
+        if (schema[keyword] && typeof schema[keyword] === 'object' && hasObjectProperties(store, schemaUrl, joinPointer(pointer, keyword), visited)) return true;
+    }
+    return false;
+}
+
+/** Whether a property's schema is a map or array of objects that can carry nested fields of other schemas. */
+function containerMode(store: SchemaStore, schemaUrl: string, pointer: string, visited = new Set<string>()): 'map' | 'array' | undefined {
+    const visitKey = `${schemaUrl}#${pointer}`;
+    if (visited.has(visitKey)) return undefined;
+    visited.add(visitKey);
+    const node = store.resolveAt(schemaUrl, pointer);
+    if (node === null || typeof node !== 'object' || Array.isArray(node)) return undefined;
+    const schema = node as Record<string, unknown>;
+    if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+        if (hasObjectProperties(store, schemaUrl, joinPointer(pointer, 'additionalProperties'), new Set())) return 'map';
+    }
+    if (schema.patternProperties && typeof schema.patternProperties === 'object') {
+        for (const key of Object.keys(schema.patternProperties as object)) {
+            if (!key.startsWith('^(?!') && hasObjectProperties(store, schemaUrl, joinPointer(pointer, 'patternProperties', key), new Set())) return 'map';
+        }
+    }
+    if (Array.isArray(schema.items)) {
+        if (schema.items.some((_, i) => hasObjectProperties(store, schemaUrl, joinPointer(pointer, 'items', i), new Set()))) return 'array';
+    } else if (schema.items && typeof schema.items === 'object') {
+        if (hasObjectProperties(store, schemaUrl, joinPointer(pointer, 'items'), new Set())) return 'array';
+    }
+    if (typeof schema.$ref === 'string') {
+        const target = followRef(store, schemaUrl, schema.$ref);
+        if (target) {
+            const found = containerMode(store, target.schemaUrl, target.pointer, visited);
+            if (found) return found;
+        }
+    }
+    for (const keyword of ['allOf', 'anyOf', 'oneOf'] as const) {
+        const list = schema[keyword];
+        if (!Array.isArray(list)) continue;
+        for (let i = 0; i < list.length; i++) {
+            const found = containerMode(store, schemaUrl, joinPointer(pointer, keyword, i), visited);
+            if (found) return found;
+        }
+    }
+    for (const keyword of ['if', 'then', 'else', 'not'] as const) {
+        if (schema[keyword] && typeof schema[keyword] === 'object') {
+            const found = containerMode(store, schemaUrl, joinPointer(pointer, keyword), visited);
+            if (found) return found;
+        }
+    }
+    return undefined;
 }
 
 function walk(store: SchemaStore, schemaUrl: string, pointer: string, mode: Mode, options: WalkOptions, visited: Set<string>): void {
@@ -70,10 +139,13 @@ function walk(store: SchemaStore, schemaUrl: string, pointer: string, mode: Mode
     if (mode === 'container' && schema.properties && typeof schema.properties === 'object') {
         for (const key of Object.keys(schema.properties as object)) {
             const sub = joinPointer(pointer, 'properties', key);
-            if (key === 'properties') walk(store, schemaUrl, sub, 'container', options, visited);
-            else if (MAP_CONTAINERS.has(key) && options.isContainer(key)) walk(store, schemaUrl, sub, 'map', options, visited);
-            else if (ARRAY_CONTAINERS.has(key) && options.isContainer(key)) walk(store, schemaUrl, sub, 'array', options, visited);
-            else options.onKey(key, { schemaUrl, pointer: sub });
+            if (key === 'properties') {
+                walk(store, schemaUrl, sub, 'container', options, visited);
+            } else {
+                const subMode = options.isContainer(key) ? containerMode(store, schemaUrl, sub) : undefined;
+                if (subMode) walk(store, schemaUrl, sub, subMode, options, visited);
+                else options.onKey(key, { schemaUrl, pointer: sub });
+            }
         }
     }
     if (mode === 'map') {
@@ -106,7 +178,7 @@ export function collectFields(store: SchemaStore, schemaUrl: string): CollectedF
         const prefix = prefixOf(key);
         return prefixes.length > 0 ? prefix !== undefined && prefixes.includes(prefix) : prefix === undefined && !CORE_KEYS.has(key);
     };
-    const isForeignField = (key: string) => prefixOf(key) !== undefined && !isOwn(key) && !MAP_CONTAINERS.has(key) && !ARRAY_CONTAINERS.has(key);
+    const isForeignField = (key: string) => prefixOf(key) !== undefined && !isOwn(key);
 
     const fields = new Map<string, FieldSchemaRef[]>();
     const collect = (own: (key: string) => boolean, accept: (key: string) => boolean) => walk(store, schemaUrl, '', 'container', {
@@ -172,14 +244,16 @@ function declaredPrefixes(schema: unknown): string[] | undefined {
 
 /** The most frequent prefix among field-like keys, for schemas that do not declare their prefixes. */
 function guessPrefix(store: SchemaStore, schemaUrl: string): string[] {
-    const seen = new Set<string>();
-    // Descend core containers (assets, bands, …) but treat prefixed ones (`cube:variables`, `raster:bands`) as keys.
-    walk(store, schemaUrl, '', 'container', { isContainer: (key) => prefixOf(key) === undefined, onKey: (key) => seen.add(key) }, new Set());
-    walk(store, schemaUrl, '', 'container', { isContainer: () => true, onKey: (key) => seen.add(key) }, new Set());
+    const all = new Set<string>();
+    const leaves = new Set<string>();
+    // First pass keeps prefixed containers (`cube:variables`, `raster:bands`) as keys; second descends into them
+    // so fields inside foreign containers (e.g. `cf:cell_methods` in `cube:variables`) outweigh the container's prefix.
+    walk(store, schemaUrl, '', 'container', { isContainer: (key) => prefixOf(key) === undefined, onKey: (key) => all.add(key) }, new Set());
+    walk(store, schemaUrl, '', 'container', { isContainer: () => true, onKey: (key) => leaves.add(key) }, new Set());
     const counts = new Map<string, number>();
-    const prefixed = [...seen].filter((key) => prefixOf(key) !== undefined);
-    const candidates = prefixed.filter((key) => !FOREIGN_CONTAINER_HINTS.has(key));
-    for (const key of candidates.length > 0 ? candidates : prefixed) {
+    const leafPrefixed = [...leaves].filter((key) => prefixOf(key) !== undefined);
+    const allPrefixed = [...all].filter((key) => prefixOf(key) !== undefined);
+    for (const key of leafPrefixed.length > 0 ? leafPrefixed : allPrefixed) {
         const prefix = prefixOf(key)!;
         counts.set(prefix, (counts.get(prefix) ?? 0) + 1);
     }

@@ -1,7 +1,7 @@
 import { isProbeableLocation } from './base-docs';
 import { STAC_TYPES, type JsonObject, type Placement, type PlacementKind, type SourceInfo, type SourceKey, type StacType, type TypeTemplate } from './model';
 import { joinPointer, objectLocations, splitPointer } from './pointer';
-import { kindOf, MAP_KEYS } from './tree';
+import { CORE_MAP_KEYS, kindOf, mapKeysOf } from './tree';
 
 /**
  * The columns of one kind of document or node in a matrix: a STAC object type, or a node type of a data format
@@ -61,12 +61,12 @@ const KIND_LABEL: Record<string, string> = {
     column: 'table:column',
 };
 
-export function conceptPath(pointer: string, locations: Set<string>): string[] {
+export function conceptPath(pointer: string, locations: Set<string>, mapKeys: ReadonlySet<string> = CORE_MAP_KEYS): string[] {
     const segments = splitPointer(pointer);
     const path: string[] = [];
     for (let n = 1; n <= segments.length; n++) {
         const prefix = segments.slice(0, n).reduce((acc, s) => joinPointer(acc, s), '');
-        if (!locations.has(prefix) || MAP_KEYS.has(segments[n - 1])) continue;
+        if (!locations.has(prefix) || mapKeys.has(segments[n - 1])) continue;
         const kind = kindOf(prefix);
         path.push(KIND_LABEL[kind] ?? (/^\d+$/.test(segments[n - 1]) ? `${segments[n - 2]}[]` : segments[n - 1]));
     }
@@ -82,6 +82,7 @@ export function stacMatrixGroups(templates: Record<StacType, TypeTemplate>): Mat
 
 /** Where each field of `sources` is placed in each group; fields of `hidden` sources (core, unless shown) are left out. */
 export function buildMatrix(groups: MatrixGroup[], sources: SourceInfo[], hidden: ReadonlySet<SourceKey> = new Set()): PlacementMatrix {
+    const mapKeys = mapKeysOf(sources);
     const columns = new Map<string, MatrixColumn>();
     const cells = new Map<string, MatrixCell>();
     const rowKeys = new Set<string>();
@@ -90,8 +91,8 @@ export function buildMatrix(groups: MatrixGroup[], sources: SourceInfo[], hidden
         const locations = new Set(objectLocations(group.doc).filter(group.isPlace ?? (() => true)));
         for (const location of locations) {
             // Maps such as `assets` or `cube:dimensions` are structure, not places for fields.
-            if (MAP_KEYS.has(splitPointer(location).at(-1) ?? '')) continue;
-            const path = conceptPath(location, locations);
+            if (mapKeys.has(splitPointer(location).at(-1) ?? '')) continue;
+            const path = conceptPath(location, locations, mapKeys);
             const key = `${group.type} ${path.join(' › ')}`;
             const column = columns.get(key) ?? { key, type: group.type, tone: group.tone, path, locations: [] };
             column.locations.push(location);
@@ -99,7 +100,7 @@ export function buildMatrix(groups: MatrixGroup[], sources: SourceInfo[], hidden
         }
         for (const p of group.placements) {
             if (hidden.has(p.source)) continue;
-            const key = `${group.type} ${conceptPath(p.location, locations).join(' › ')}`;
+            const key = `${group.type} ${conceptPath(p.location, locations, mapKeys).join(' › ')}`;
             const cellKey = `${p.source}|${p.field}|${key}`;
             rowKeys.add(`${p.source}|${p.field}`);
             const cell = cells.get(cellKey) ?? { kind: p.kind, locations: [], partial: false };

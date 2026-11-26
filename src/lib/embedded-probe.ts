@@ -3,14 +3,14 @@
 import { CONVENTION_KINDS, conventionOfSchema, DATA_FORMATS, type DataFormat } from './conventions';
 import { fieldDoc } from './field-docs';
 import type { FieldSchemaRef } from './fields';
-import type { Json, JsonObject, Placement, PlacementKind, SourceInfo } from './model';
+import { EMBEDDED_CONTAINERS, type Json, type JsonObject, type Placement, type PlacementKind, type SourceInfo } from './model';
 import { getAt, joinPointer } from './pointer';
 import { requirementOf } from './requirement';
 import { Sampler } from './sampler';
 import { formatErrors, type SchemaStore } from './schemas';
 
 /** Members of a node whose entries are fields of their own: attributes (Zarr, netCDF), TIFF tags and GeoKeys. */
-export const CONTAINERS = ['attributes', 'tags', 'geo_keys'] as const;
+export const CONTAINERS = EMBEDDED_CONTAINERS;
 
 /** One node type of one format, with every field of the selected schemas placed where they allow it. */
 export interface NodeTemplate {

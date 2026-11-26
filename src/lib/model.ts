@@ -5,6 +5,9 @@ export const STAC_TYPES: readonly StacType[] = ['Catalog', 'Collection', 'Featur
 export const STAC_VERSIONS = ['1.1.0', '1.0.0'] as const;
 export type StacVersion = (typeof STAC_VERSIONS)[number];
 
+/** Top-level metadata containers on embedded-metadata nodes (Zarr/netCDF `attributes`, TIFF `tags` and `geo_keys`). */
+export const EMBEDDED_CONTAINERS = ['attributes', 'tags', 'geo_keys'] as const;
+
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type JsonObject = { [key: string]: Json };
 

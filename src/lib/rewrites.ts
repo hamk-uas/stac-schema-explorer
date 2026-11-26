@@ -1,7 +1,7 @@
 import { conventionOfSchema } from './conventions';
-import { CORE, type Json, type JsonObject, type Placement } from './model';
+import { CORE, type Json, type JsonObject, type Placement, type SourceInfo } from './model';
 import { getAt, joinPointer } from './pointer';
-import { shapeOf, type FieldEdit, type FieldEdits } from './tree';
+import { mapKeysOf, shapeOf, type FieldEdit, type FieldEdits } from './tree';
 
 /**
  * A local change to a real document (a STAC document or a node of embedded metadata): a field added with the example
@@ -28,10 +28,11 @@ export function addedSchemas(rewrites: readonly Rewrite[], exclude: readonly str
 }
 
 /** The template's example value of a field at the place of `pointer` (same shape), preferring the field's own schema. */
-export function templateValue(template: { doc: JsonObject; placements: Placement[] } | undefined, rewrite: Rewrite): Json | undefined {
+export function templateValue(template: { doc: JsonObject; placements: Placement[] } | undefined, rewrite: Rewrite, sources: readonly SourceInfo[] = []): Json | undefined {
     if (!template) return undefined;
-    const shape = shapeOf(rewrite.pointer);
-    const candidates = template.placements.filter((p) => p.field === rewrite.field && shapeOf(p.location) === shape);
+    const mapKeys = mapKeysOf(sources);
+    const shape = shapeOf(rewrite.pointer, mapKeys);
+    const candidates = template.placements.filter((p) => p.field === rewrite.field && shapeOf(p.location, mapKeys) === shape);
     const placement = candidates.find((p) => p.source === rewrite.source) ?? candidates[0];
     return placement ? getAt(template.doc, joinPointer(placement.location, rewrite.field)) : undefined;
 }

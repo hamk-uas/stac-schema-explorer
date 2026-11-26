@@ -14,6 +14,8 @@ export interface PropertyDoc {
     description?: string;
     type: string;
     required?: boolean;
+    /** True when the property's schema is a map of arbitrary keys to values (`additionalProperties`/`patternProperties` without `properties`). */
+    isMap?: boolean;
     /** Nested object shapes when this property itself holds an object, map of objects, or array of objects. */
     objects?: ObjectDoc[];
 }
@@ -30,6 +32,8 @@ export interface FieldDoc {
     description?: string;
     /** Readable type computed from the schema, e.g. `array of (string or null)`. */
     type: string;
+    /** True when the field's schema is a map of arbitrary keys to values (`additionalProperties`/`patternProperties` without `properties`). */
+    isMap?: boolean;
     /** Allowed values, when the schema lists them. */
     values?: ValueDoc[];
     /** Object shapes and their properties, when the field's value is an object, map of objects, or array of objects. */
@@ -152,6 +156,19 @@ export function typeText(store: SchemaStore, located: Located, depth = 0): strin
 
 const MAX_OBJECT_DEPTH = 2;
 
+function isMapSchema(store: SchemaStore, located: Located, depth = 0): boolean {
+    if (depth > 4) return false;
+    const links = chain(store, located);
+    const { node, url } = links[links.length - 1];
+    if (isSchema(node.properties)) return false;
+    if (isSchema(node.additionalProperties) && Object.keys(node.additionalProperties).length > 0) return true;
+    if (isSchema(node.patternProperties)) {
+        if (Object.entries(node.patternProperties).some(([p, sub]) => !p.startsWith('^(?!') && isSchema(sub) && Object.keys(sub).length > 0)) return true;
+    }
+    const branches = (['oneOf', 'anyOf'] as const).flatMap((k) => (Array.isArray(node[k]) ? (node[k] as unknown[]) : []));
+    return branches.some((b) => isSchema(b) && isMapSchema(store, { node: b, url }, depth + 1));
+}
+
 function sameHost(a: string, b: string): boolean {
     try {
         return new URL(a).host === new URL(b).host;
@@ -253,6 +270,7 @@ function objectsOf(
                 title: propLinks.map((l) => l.node.title).find((t): t is string => typeof t === 'string'),
                 description: propLinks.map((l) => l.node.description).find((d): d is string => typeof d === 'string'),
                 type: typeText(store, propLoc),
+                ...(isMapSchema(store, propLoc) ? { isMap: true } : {}),
                 ...(required.has(name) ? { required: true } : {}),
                 ...(nested.length ? { objects: nested } : {}),
             });
@@ -304,10 +322,12 @@ export function fieldDoc(store: SchemaStore, refs: readonly FieldSchemaRef[]): F
         const links = chain(store, start);
         const end = links[links.length - 1];
         const objects = objectsOf(store, start, ref.schemaUrl, new Set([`${ref.schemaUrl}#${ref.pointer}`]), 0);
+        const isMap = isMapSchema(store, start);
         const candidate: FieldDoc = {
             title: links.map((l) => l.node.title).find((t): t is string => typeof t === 'string'),
             description: links.map((l) => l.node.description).find((t): t is string => typeof t === 'string'),
             type: typeText(store, start),
+            ...(isMap ? { isMap: true } : {}),
             values: valuesOf(end.node),
             ...(objects.length ? { objects } : {}),
             definedAt: `${ref.schemaUrl}#${ref.pointer}`,
@@ -316,6 +336,7 @@ export function fieldDoc(store: SchemaStore, refs: readonly FieldSchemaRef[]): F
         else {
             doc.title ??= candidate.title;
             doc.description ??= candidate.description;
+            doc.isMap ??= candidate.isMap;
             doc.values ??= candidate.values;
             doc.objects ??= candidate.objects;
         }
