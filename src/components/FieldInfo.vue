@@ -105,6 +105,48 @@ const vendoredLink = computed(() => {
           </tr>
         </tbody>
       </table>
+      <div v-if="doc.objects?.length" class="objects">
+        <span class="label">Properties</span>
+        <details
+          v-for="(obj, i) in doc.objects"
+          :key="obj.title ?? i"
+          class="object-shape"
+          :open="doc.objects.length === 1"
+        >
+          <summary>
+            <span class="object-title">{{ obj.title ?? 'Object' }}</span>
+            <span class="object-count">{{ obj.properties.length }}</span>
+          </summary>
+          <table class="values props">
+            <thead><tr><th>Property</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr v-for="p in obj.properties" :key="p.name">
+                <td class="prop-name">
+                  <code>{{ p.name }}</code>
+                  <span v-if="p.required" class="req" title="Required property">*</span>
+                </td>
+                <td class="prop-type"><code>{{ p.type }}</code></td>
+                <td>
+                  <span v-if="p.description" v-html="inlineMarkdown(p.description)" />
+                  <span v-else-if="p.title">{{ p.title }}</span>
+                  <div v-if="p.objects?.length" class="nested-objects">
+                    <div v-for="(nested, j) in p.objects" :key="nested.title ?? j" class="nested-shape">
+                      <span v-if="nested.title" class="nested-title">{{ nested.title }}:</span>
+                      <ul class="nested-props">
+                        <li v-for="np in nested.properties" :key="np.name">
+                          <code>{{ np.name }}</code><span v-if="np.required" class="req" title="Required property">*</span>
+                          <code class="nested-type">{{ np.type }}</code>
+                          <span v-if="np.description"> — <span v-html="inlineMarkdown(np.description)" /></span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+      </div>
     </template>
     <template v-else-if="withoutSchema">
       <!-- v-html is safe: inlineMarkdown escapes everything except the code spans and links it creates. -->
@@ -244,6 +286,74 @@ header {
 }
 .values tbody tr:nth-child(odd) td {
   background: var(--layer);
+}
+.objects {
+  margin-bottom: 8px;
+}
+.object-shape {
+  margin-top: 4px;
+}
+.object-shape > summary {
+  cursor: pointer;
+  font: 500 12px var(--sans);
+  color: var(--slate-700);
+  padding: 2px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.object-shape > summary::before {
+  content: '▸';
+  font-size: 10px;
+  color: var(--slate-400);
+  display: inline-block;
+  width: 10px;
+}
+.object-shape[open] > summary::before {
+  content: '▾';
+}
+.object-shape > summary::-webkit-details-marker {
+  display: none;
+}
+.object-count {
+  font: 400 11px var(--sans);
+  color: var(--slate-400);
+}
+.props {
+  margin: 2px 0 4px;
+}
+.prop-name,
+.prop-type {
+  white-space: nowrap;
+}
+.prop-type code {
+  color: var(--slate-600);
+}
+.req {
+  color: var(--amber-700);
+  font-weight: 700;
+  margin-left: 2px;
+}
+.nested-objects {
+  margin-top: 4px;
+  padding-left: 8px;
+  border-left: 2px solid var(--slate-200);
+}
+.nested-title {
+  font: 600 11px var(--sans);
+  color: var(--slate-600);
+}
+.nested-props {
+  list-style: none;
+  padding: 0;
+  margin: 2px 0 0;
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+}
+.nested-type {
+  color: var(--slate-500);
+  margin-left: 4px;
 }
 .places ul {
   list-style: none;

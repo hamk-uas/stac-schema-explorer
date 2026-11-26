@@ -217,6 +217,30 @@ describe('field documentation', () => {
         expect(core.docs.nodata.values?.map((v) => v.title)).toEqual(['NaN (not a number)', 'Positive infinity', 'Negative infinity']);
     });
 
+    it('documents nested object properties and variants without expanding external recursive schemas', async () => {
+        const result = await defaultProbe();
+        const datacube = result.sources.find((s) => s.key === DATACUBE)!;
+        const dims = datacube.docs['cube:dimensions'].objects ?? [];
+        expect(dims.map((d) => d.title)).toContain('Temporal Dimension Object');
+        const temporal = dims.find((d) => d.title === 'Temporal Dimension Object')!;
+        expect(temporal.properties.find((p) => p.name === 'step')).toMatchObject({
+            name: 'step',
+            type: 'string or null',
+        });
+        expect(temporal.properties.find((p) => p.name === 'step')?.description).toMatch(/ISO 8601 duration/);
+        const horizontal = dims.find((d) => d.title === 'Horizontal Spatial Raster Dimension Object')!;
+        expect(horizontal.properties.find((p) => p.name === 'reference_system')?.objects).toBeUndefined();
+
+        const themes = result.sources.find((s) => s.key === THEMES)!;
+        const themeProps = themes.docs.themes.objects?.[0]?.properties ?? [];
+        const concepts = themeProps.find((p) => p.name === 'concepts');
+        expect(concepts?.objects?.[0]?.properties.map((p) => p.name)).toEqual(['id', 'title', 'description', 'url']);
+
+        const featureDims = (result.templates.Feature.doc.properties as Record<string, unknown>)['cube:dimensions'] as Record<string, Record<string, unknown>>;
+        expect(featureDims.time.step).toBe('P1M');
+        expect(featureDims.x.step).toBe(0.1);
+    });
+
     it('reports a failed value list as one error listing the allowed values', async () => {
         const store = fixtureStore();
         const raster = 'https://stac-extensions.github.io/raster/v2.0.0/schema.json';

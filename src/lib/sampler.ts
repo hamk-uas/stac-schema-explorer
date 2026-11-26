@@ -36,9 +36,9 @@ const STRING_GUESSES = [
 /** Readable values for well-known fields; used first and kept only when the schema accepts them. */
 export const FIELD_HINTS: Record<string, Json[]> = {
     'cube:dimensions': [{
-        x: { type: 'spatial', axis: 'x', extent: [19.0, 32.0], reference_system: 4326 },
-        y: { type: 'spatial', axis: 'y', extent: [59.0, 70.0], reference_system: 4326 },
-        time: { type: 'temporal', extent: ['2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z'] },
+        x: { type: 'spatial', axis: 'x', extent: [19.0, 32.0], step: 0.1, reference_system: 4326 },
+        y: { type: 'spatial', axis: 'y', extent: [59.0, 70.0], step: 0.1, reference_system: 4326 },
+        time: { type: 'temporal', extent: ['2024-01-01T00:00:00Z', '2024-12-31T00:00:00Z'], step: 'P1M' },
     }],
     'cube:variables': [
         { tas: { type: 'data', dimensions: ['time', 'y', 'x'], unit: 'K', description: 'Air temperature' } },

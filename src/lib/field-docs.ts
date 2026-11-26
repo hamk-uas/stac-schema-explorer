@@ -8,6 +8,22 @@ export interface ValueDoc {
     description?: string;
 }
 
+export interface PropertyDoc {
+    name: string;
+    title?: string;
+    description?: string;
+    type: string;
+    required?: boolean;
+    /** Nested object shapes when this property itself holds an object, map of objects, or array of objects. */
+    objects?: ObjectDoc[];
+}
+
+export interface ObjectDoc {
+    title?: string;
+    description?: string;
+    properties: PropertyDoc[];
+}
+
 /** What a field means, as documented in its JSON Schema. */
 export interface FieldDoc {
     title?: string;
@@ -16,6 +32,8 @@ export interface FieldDoc {
     type: string;
     /** Allowed values, when the schema lists them. */
     values?: ValueDoc[];
+    /** Object shapes and their properties, when the field's value is an object, map of objects, or array of objects. */
+    objects?: ObjectDoc[];
     /** Where the field is defined: `<schema url>#<pointer>`. */
     definedAt: string;
 }
@@ -132,6 +150,150 @@ export function typeText(store: SchemaStore, located: Located, depth = 0): strin
     return 'any';
 }
 
+const MAX_OBJECT_DEPTH = 2;
+
+function sameHost(a: string, b: string): boolean {
+    try {
+        return new URL(a).host === new URL(b).host;
+    } catch {
+        return false;
+    }
+}
+
+function resolveRef(store: SchemaStore, ref: string, base: string): (Located & { key: string }) | undefined {
+    const target = new URL(ref, store.baseOf(base));
+    const pointer = decodeURIComponent(target.hash.slice(1));
+    target.hash = '';
+    const url = target.toString();
+    const node = store.resolveAt(url, pointer);
+    return isSchema(node) ? { node, url, key: `${url}#${pointer}` } : undefined;
+}
+
+function collectObjectProps(
+    store: SchemaStore,
+    node: Schema,
+    url: string,
+    originUrl: string,
+    visited: Set<string>,
+): { properties: Map<string, Located>; required: Set<string> } {
+    const properties = new Map<string, Located>();
+    const required = new Set<string>();
+    const visit = (cur: Schema, curUrl: string, seen: Set<string>) => {
+        if (typeof cur.$ref === 'string') {
+            const target = resolveRef(store, cur.$ref, curUrl);
+            if (!target || !sameHost(target.url, originUrl) || seen.has(target.key)) return;
+            visit(target.node, target.url, new Set([...seen, target.key]));
+        }
+        if (Array.isArray(cur.required)) {
+            for (const r of cur.required) if (typeof r === 'string') required.add(r);
+        }
+        if (isSchema(cur.properties)) {
+            for (const [key, sub] of Object.entries(cur.properties)) {
+                if (isSchema(sub) && !properties.has(key)) properties.set(key, { node: sub, url: curUrl });
+            }
+        }
+        if (Array.isArray(cur.allOf)) {
+            for (const branch of cur.allOf) {
+                if (isSchema(branch)) visit(branch, curUrl, seen);
+            }
+        }
+    };
+    visit(node, url, visited);
+    return { properties, required };
+}
+
+/**
+ * Extracts object shapes and their documented properties for a field whose value is an object, map of objects,
+ * or array of objects. Stops at external dependency schemas (such as PROJJSON and GeoJSON), `$ref` cycles,
+ * and `MAX_OBJECT_DEPTH` levels so recursive schemas never loop or overwhelm the panel.
+ */
+function objectsOf(
+    store: SchemaStore,
+    located: Located,
+    originUrl: string,
+    visited: Set<string>,
+    depth: number,
+): ObjectDoc[] {
+    if (depth >= MAX_OBJECT_DEPTH) return [];
+    const links: Located[] = [located];
+    let seen = visited;
+    for (let step = 0; step < 8; step++) {
+        const { node, url } = links[links.length - 1];
+        const keys = Object.keys(node).filter((key) => !ANNOTATIONS.has(key));
+        let ref: string | undefined;
+        if (keys.length === 1 && typeof node.$ref === 'string') ref = node.$ref;
+        else if (keys.length === 1 && Array.isArray(node.allOf) && node.allOf.length === 1 && isSchema(node.allOf[0]) && typeof node.allOf[0].$ref === 'string' && Object.keys(node.allOf[0]).length === 1) {
+            ref = node.allOf[0].$ref;
+        }
+        if (!ref) break;
+        const target = resolveRef(store, ref, url);
+        if (!target || !sameHost(target.url, originUrl) || seen.has(target.key)) return [];
+        seen = new Set([...seen, target.key]);
+        links.push({ node: target.node, url: target.url });
+    }
+    const { node, url } = links[links.length - 1];
+
+    // Array of objects (e.g. `bands`, `themes`, `table:columns`, `classification:classes`).
+    const types = Array.isArray(node.type) ? node.type : typeof node.type === 'string' ? [node.type] : [];
+    if ((types.includes('array') || types.length === 0) && isSchema(node.items)) {
+        return objectsOf(store, { node: node.items, url }, originUrl, seen, depth);
+    }
+
+    // Object with properties (directly or via `allOf`).
+    const { properties, required } = collectObjectProps(store, node, url, originUrl, seen);
+    if (properties.size > 0) {
+        const title = links.map((l) => l.node.title).find((t): t is string => typeof t === 'string');
+        const description = links.map((l) => l.node.description).find((d): d is string => typeof d === 'string');
+        const props: PropertyDoc[] = [];
+        for (const [name, propLoc] of properties) {
+            const propLinks = chain(store, propLoc);
+            const nested = objectsOf(store, propLoc, originUrl, seen, depth + 1);
+            props.push({
+                name,
+                title: propLinks.map((l) => l.node.title).find((t): t is string => typeof t === 'string'),
+                description: propLinks.map((l) => l.node.description).find((d): d is string => typeof d === 'string'),
+                type: typeText(store, propLoc),
+                ...(required.has(name) ? { required: true } : {}),
+                ...(nested.length ? { objects: nested } : {}),
+            });
+        }
+        return [{ title, description, properties: props }];
+    }
+
+    // Map of objects (e.g. `cube:dimensions`, `cube:variables`, `storage:schemes`).
+    if (isSchema(node.additionalProperties) && Object.keys(node.additionalProperties).length > 0) {
+        return objectsOf(store, { node: node.additionalProperties, url }, originUrl, seen, depth);
+    }
+    if (isSchema(node.patternProperties)) {
+        for (const [pattern, sub] of Object.entries(node.patternProperties)) {
+            if (!pattern.startsWith('^(?!') && isSchema(sub) && Object.keys(sub).length > 0) {
+                const found = objectsOf(store, { node: sub, url }, originUrl, seen, depth);
+                if (found.length) return found;
+            }
+        }
+    }
+
+    // Union of object variants (e.g. `cube:dimensions`'s five dimension types, or nullable objects).
+    const branches = (['oneOf', 'anyOf'] as const).flatMap((k) => (Array.isArray(node[k]) ? (node[k] as unknown[]) : []));
+    if (branches.length > 0) {
+        const out: ObjectDoc[] = [];
+        const keys = new Set<string>();
+        for (const branch of branches) {
+            if (!isSchema(branch)) continue;
+            for (const obj of objectsOf(store, { node: branch, url }, originUrl, seen, depth)) {
+                const sig = `${obj.title ?? ''}|${obj.properties.map((p) => p.name).join(',')}`;
+                if (!keys.has(sig)) {
+                    keys.add(sig);
+                    out.push(obj);
+                }
+            }
+        }
+        return out;
+    }
+
+    return [];
+}
+
 /** Documentation of a field from the places a schema defines it; the nearest title and description win. */
 export function fieldDoc(store: SchemaStore, refs: readonly FieldSchemaRef[]): FieldDoc | undefined {
     let doc: FieldDoc | undefined;
@@ -141,11 +303,13 @@ export function fieldDoc(store: SchemaStore, refs: readonly FieldSchemaRef[]): F
         const start = { node, url: ref.schemaUrl };
         const links = chain(store, start);
         const end = links[links.length - 1];
+        const objects = objectsOf(store, start, ref.schemaUrl, new Set([`${ref.schemaUrl}#${ref.pointer}`]), 0);
         const candidate: FieldDoc = {
             title: links.map((l) => l.node.title).find((t): t is string => typeof t === 'string'),
             description: links.map((l) => l.node.description).find((t): t is string => typeof t === 'string'),
             type: typeText(store, start),
             values: valuesOf(end.node),
+            ...(objects.length ? { objects } : {}),
             definedAt: `${ref.schemaUrl}#${ref.pointer}`,
         };
         if (!doc) doc = candidate;
@@ -153,8 +317,9 @@ export function fieldDoc(store: SchemaStore, refs: readonly FieldSchemaRef[]): F
             doc.title ??= candidate.title;
             doc.description ??= candidate.description;
             doc.values ??= candidate.values;
+            doc.objects ??= candidate.objects;
         }
-        if (doc.title && doc.description) break;
+        if (doc.title && doc.description && doc.objects) break;
     }
     return doc;
 }

@@ -8,7 +8,7 @@ export type StacVersion = (typeof STAC_VERSIONS)[number];
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type JsonObject = { [key: string]: Json };
 
-export type { FieldDoc, ValueDoc } from './field-docs';
+export type { FieldDoc, ObjectDoc, PropertyDoc, ValueDoc } from './field-docs';
 import type { FieldDoc } from './field-docs';
 
 /** `core` stands for the STAC core schema of the object type; other keys are extension schema URLs. */
