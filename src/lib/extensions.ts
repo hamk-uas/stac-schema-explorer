@@ -1,4 +1,4 @@
-/** Extensions discussed in the Observatory project, offered as quick-select buttons. */
+/** Well-known STAC extensions offered as quick-select buttons. */
 export interface KnownExtension {
     name: string;
     title: string;
@@ -17,18 +17,6 @@ export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     se('datacube', 'Datacube', ['2.3.0', '2.2.0']),
     se('cf', 'CF', ['1.0.0']),
     se('themes', 'Themes', ['1.0.0']),
-    {
-        name: 'semantics',
-        title: 'Semantics',
-        versions: [{ version: '0.1.0', url: 'https://hamk-uas.github.io/stac-semantics/v0.1.0/schema.json' }],
-        note: 'hamk-uas/stac-semantics',
-    },
-    {
-        name: 'observatory',
-        title: 'Observatory',
-        versions: [{ version: 'dev', url: 'https://sklvarjo.github.io/observatory-stac-extension/schema.json' }],
-        note: 'sklvarjo/observatory-stac-extension',
-    },
     se('table', 'Table', ['1.3.0', '1.2.0']),
     se('classification', 'Classification', ['2.0.0']),
     se('eo', 'EO', ['2.0.0']),

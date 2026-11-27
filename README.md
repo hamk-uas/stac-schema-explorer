@@ -84,8 +84,7 @@ asking the schemas themselves.
   the decoders `decodeAttributes`, `decodeGeoKeys` and `parseGDALMetadata`. The module is TypeScript source; it imports
   only `h5wasm`, `netcdfjs` and `geotiff`, which the importing application provides.
 
-Extensions are chosen from quick-select buttons (the extensions discussed in the
-[Observatory](https://github.com/hamk-uas/observatory) project, and those the openEO API recommends or its back-ends use) or added as any JSON Schema URL or `name@version`
+Extensions are chosen from quick-select buttons (published STAC extensions, including those the openEO API recommends or its back-ends use) or added as any JSON Schema URL or `name@version`
 (short for `https://stac-extensions.github.io/<name>/v<version>/schema.json`).
 
 All state is kept in the URL, so any view can be shared by copying the address.
@@ -129,8 +128,8 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
    defines at "container" level (object root, Item `properties`, assets, bands, `cube:variables` entries, Table columns
    and so on), found by following `$ref`, `allOf`/`anyOf`/`oneOf`, `if`/`then`/`else` and `not`. The extension's own
    prefixes come from the conventional `"patternProperties": {"^(?!cube:)": {}}`, or the most frequent prefix. Fields of
-   *other* extensions that a schema validates (for example `cf:cell_methods` in Table columns in the Observatory
-   extension) are reported too, attributed to the schema that validates them.
+   *other* extensions that a schema validates (for example a schema that validates `cf:cell_methods` in Table columns)
+   are reported too, attributed to the schema that validates them.
 2. **Example values** ([src/lib/sampler.ts](src/lib/sampler.ts)). A value valid against each field's subschema is
    generated from the schema (with readable hints for well-known fields) and checked with Ajv. Each `oneOf`/`anyOf`
    branch is sampled without the properties only the other branches require, an `if` that only asks for properties is
@@ -234,9 +233,6 @@ translations of STAC core.
   twice fails the `oneOf`.
 - Fields that only a dependency defines (the GeoJSON `type` of an Item) are documented by an annotation-only property
   in the STAC schema; such a property accepts anything, so the copy still validates exactly like the original.
-- Schemas whose own repositories document every field are not vendored: the Semantics extension
-  ([hamk-uas/stac-semantics](https://github.com/hamk-uas/stac-semantics)) and the Observatory extension
-  ([sklvarjo/observatory-stac-extension](https://github.com/sklvarjo/observatory-stac-extension)).
 - The texts come from the extensions' and the STAC specification's README tables (Apache License 2.0) and, for titles,
   from [stac-utils/stac-fields](https://github.com/stac-utils/stac-fields), with corrections where the READMEs are wrong
   (for example the Raster histogram `max`) and notes where README and schema disagree (Datacube `type` versus
@@ -333,8 +329,8 @@ software list can be limited to convention `versions`, so obsarray is listed for
 The tests
 ([test/authored.test.ts](test/authored.test.ts)) check that every authored schema compiles, documents every field and
 lists allowed values as titled constants, that the registry and crosswalk point to existing schemas and fields, and
-that the embedded metadata of the Observatory lab's catalogs (Arctic CH4, Blue Marble and TESSERA Zarr v3, EOPF Zarr v2,
-a HIKET netCDF-4 file and an Earth Genome COG, in [test/fixtures/embedded](test/fixtures/embedded)) validates. The
+that the embedded metadata of the sample catalogs (Arctic CH4, Blue Marble and TESSERA Zarr v3, EOPF Zarr v2,
+UNC netCDF-4 files and an Earth Genome COG, in [test/fixtures/embedded](test/fixtures/embedded)) validates. The
 reader tests ([test/readers.test.ts](test/readers.test.ts)) check that what the netCDF and TIFF readers produce from
 generated files validates as well.
 
@@ -350,8 +346,8 @@ pnpm build        # type check and production build into dist/
 pnpm explore -- cf@1.0.0   # print placements in the terminal
 ```
 
-Tests and `pnpm explore` read schemas from [schemas/](schemas), then [test/fixtures](test/fixtures) (non-vendored
-schemas such as Semantics); a schema missing from both is downloaded once into `test/fixtures`. Delete a fixture to
+Tests and `pnpm explore` read schemas from [schemas/](schemas), then [test/fixtures](test/fixtures) (for any
+non-vendored schemas); a schema missing from both is downloaded once into `test/fixtures`. Delete a fixture to
 refresh it.
 
 ## Deployment

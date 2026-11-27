@@ -11,11 +11,9 @@ It is not itself an Observatory instance or a data-production pipeline.
 
 Observatory consumes these enriched schemas through its pinned
 `schemas/stac-schema-explorer` submodule and adds Finnish/Swedish STAC field
-translations. The separate `observatory-stac-extension` and `stac-semantics`
-repos own their own documented schemas; this app offers them by URL rather than
-vendoring/redefining their contracts. `cards-zarr-optim` produces STAC/Zarr that
-tools can inspect; `hiket-viz` consumes Observatory, not this app's internal Vue
-components.
+translations. Custom or in-development extensions are not built into this app;
+external sites can link to it with `?ext=<schema-url>` instead. `cards-zarr-optim`
+produces STAC/Zarr that tools can inspect.
 
 All repositories are pre-alpha and APIs can change with coordination. Keep
 changes to query/embedding and schema-copy contracts explicit, but do not require
@@ -164,9 +162,7 @@ in their description and are published at their `$id` by `vite.config.ts`.
 
 Documentation drafting caches remote source material under `.cache`.
 Engine tests first use vendored schemas, then `test/fixtures`, then fetch/cache
-missing schemas. A first run or deliberate fixture refresh can require network,
-especially for Semantics and the mutable Observatory schema; do not describe
-the whole suite as unconditionally offline. Refresh specific caches intentionally.
+missing schemas. Refresh specific caches intentionally.
 
 ## UI style guide
 

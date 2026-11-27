@@ -314,7 +314,7 @@ export function groupFields(fields: FieldView[], sources: SourceInfo[]): FieldGr
 
 /**
  * `cube:*` when every field of an own prefix is here; otherwise the fields by name (shortened when there are many).
- * Other schemas' fields (`cf:cell_methods` validated by the Observatory extension) are always listed by name.
+ * Other schemas' fields (for example `cf:cell_methods` validated by another extension) are always listed by name.
  */
 function prefixedLabel(list: FieldView[], info: SourceInfo): string {
     const parts: string[] = [];

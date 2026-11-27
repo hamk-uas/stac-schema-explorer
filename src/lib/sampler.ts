@@ -48,7 +48,6 @@ export const FIELD_HINTS: Record<string, Json[]> = {
     'cf:standard_name': ['air_temperature'],
     'cf:cell_methods': [['mean', null, null]],
     themes: [[{ scheme: 'https://gcmd.earthdata.nasa.gov/kms/concepts/concept_scheme/sciencekeywords', concepts: [{ id: 'EARTH SCIENCE > ATMOSPHERE > ATMOSPHERIC TEMPERATURE' }] }]],
-    'sem:concepts': [[{ uri: 'http://vocab.nerc.ac.uk/standard_name/air_temperature/', role: 'variable' }]],
     'table:columns': [[{ name: 'TA', type: 'float64', description: 'Air temperature' }]],
     'table:tables': [{ observations: { name: 'observations', description: 'Observations table' } }],
     'eo:common_name': ['red'],

@@ -1,9 +1,6 @@
 // Schemas vendored (and enriched with titles and descriptions) by this repository, with the documents that describe
 // them: STAC core, STAC extensions and Zarr conventions. Schemas that `$ref` other documents pull those in
 // automatically as unmodified dependencies.
-//
-// Not vendored, because their own repositories maintain titles and descriptions: the Semantics extension
-// (hamk-uas/stac-semantics) and the Observatory extension (sklvarjo/observatory-stac-extension).
 
 const SPEC = 'https://raw.githubusercontent.com/radiantearth/stac-spec';
 const EXT = (name, version) => ({

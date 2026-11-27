@@ -9,12 +9,12 @@ import { stringFromRegex } from '../src/lib/sampler';
 import { formatErrors, SchemaStore } from '../src/lib/schemas';
 import { documentView, groupFields, mapKeysOf, shapeOf, templateView, type ObjectView } from '../src/lib/tree';
 import { readState, writeState } from '../src/lib/url-state';
-import { EXTENSIONS, fixtureStore } from './helpers';
+import { EXTENSIONS, fixtureFetch, fixtureStore } from './helpers';
 
 const DATACUBE = 'https://stac-extensions.github.io/datacube/v2.3.0/schema.json';
 const CF = 'https://stac-extensions.github.io/cf/v1.0.0/schema.json';
 const THEMES = 'https://stac-extensions.github.io/themes/v1.0.0/schema.json';
-const SEMANTICS = 'https://hamk-uas.github.io/stac-semantics/v0.1.0/schema.json';
+const EOPF = 'https://cs-si.github.io/eopf-stac-extension/v1.2.0/schema.json';
 
 let cached: Promise<ProbeResult> | undefined;
 function defaultProbe(): Promise<ProbeResult> {
@@ -31,13 +31,13 @@ describe('extension ids', () => {
         expect(toShortId(CF)).toBe('cf@1.0.0');
         expect(fromShortId('cf@1.0.0')).toBe(CF);
         expect(fromShortId('datacube@v2.3.0')).toBe(DATACUBE);
-        expect(toShortId(SEMANTICS)).toBe(SEMANTICS);
+        expect(toShortId(EOPF)).toBe(EOPF);
     });
 
     it('derives GitHub repositories from schema URLs', () => {
         expect(repoUrl(CF)).toBe('https://github.com/stac-extensions/cf');
-        expect(repoUrl(SEMANTICS)).toBe('https://github.com/hamk-uas/stac-semantics');
-        expect(repoUrl('https://sklvarjo.github.io/observatory-stac-extension/schema.json')).toBe('https://github.com/sklvarjo/observatory-stac-extension');
+        expect(repoUrl(EOPF)).toBe('https://github.com/cs-si/eopf-stac-extension');
+        expect(repoUrl('https://example-org.github.io/custom-ext/schema.json')).toBe('https://github.com/example-org/custom-ext');
         expect(repoUrl('https://raw.githubusercontent.com/owner/repo/main/schema.json')).toBe('https://github.com/owner/repo');
         expect(repoUrl('https://example.com/ext/v1.0.0/schema.json')).toBeUndefined();
     });
@@ -54,14 +54,14 @@ describe('extension ids', () => {
 describe('url state', () => {
     it('round-trips through the query string', () => {
         const state = readState('');
-        state.extensions = [CF, SEMANTICS];
+        state.extensions = [CF, EOPF];
         state.mode = 'href';
         state.href = 'https://example.com/catalog.json?x=1&y=2';
         state.selected = 'https://example.com/item.json';
         state.pointer = '/assets/data';
         state.view = 'matrix';
         state.focus = CF;
-        state.schema = SEMANTICS;
+        state.schema = EOPF;
         state.cores = ['stac', 'netcdf'];
         const search = writeState(state);
         expect(search).toContain('ext=cf@1.0.0');
@@ -99,7 +99,7 @@ describe('probe with the default extensions', () => {
             expect(result.templates[type].errors, type).toEqual([]);
             expect(result.templates[type].valid).toBe(true);
         }
-        expect(result.sources.map((s) => s.prefixes)).toEqual([[], ['cube'], ['cf'], [], ['sem']]);
+        expect(result.sources.map((s) => s.prefixes)).toEqual([[], ['cube'], ['cf'], []]);
     });
 
     it('places CF fields on variables, dimensions and bands, but not on Catalogs', async () => {
@@ -128,14 +128,6 @@ describe('probe with the default extensions', () => {
         expect([...placed(result, 'Catalog', THEMES, 'themes').keys()]).toEqual(['']);
         expect([...placed(result, 'Feature', THEMES, 'themes').keys()]).toEqual(['/properties']);
         expect(placed(result, 'Collection', THEMES, 'themes').get('/summaries')).toBe('presence');
-    });
-
-    it('places semantics on variable-like objects but not on Item properties', async () => {
-        const result = await defaultProbe();
-        const item = placed(result, 'Feature', SEMANTICS, 'sem:concepts');
-        expect(item.has('/properties')).toBe(false);
-        expect(item.get('/properties/cube:variables/tas')).toBe('validated');
-        expect(item.get('/assets/data')).toBe('validated');
     });
 
     it('finds core bands in Item properties, which STAC 1.1.0 allows only when an asset has bands', async () => {
@@ -181,22 +173,74 @@ describe('probe with the default extensions', () => {
 });
 
 describe('schemas that validate fields of other extensions', () => {
-    it('reports CF fields that the Observatory extension allows in Table columns', async () => {
-        const observatory = 'https://sklvarjo.github.io/observatory-stac-extension/schema.json';
+    it('reports CF fields that another extension allows in Table columns', async () => {
+        const custom = 'https://example.org/custom-table-cf/v0.1.0/schema.json';
         const table = 'https://stac-extensions.github.io/table/v1.3.0/schema.json';
-        const result = await probe(fixtureStore(), '1.1.0', [observatory, CF, table, DATACUBE]);
-        const info = result.sources.find((s) => s.key === observatory)!;
-        expect(info.prefixes).toEqual(['obs', 'in_situ']);
+        const customSchema = {
+            $schema: 'http://json-schema.org/draft-07/schema#',
+            $id: custom,
+            title: 'Custom Table CF Extension',
+            type: 'object',
+            required: ['stac_extensions', 'type'],
+            properties: {
+                stac_extensions: { type: 'array', contains: { const: custom } },
+                type: { type: 'string', enum: ['Feature', 'Collection'] },
+                properties: { $ref: '#/definitions/container' },
+                assets: { type: 'object', additionalProperties: { $ref: '#/definitions/container' } },
+            },
+            definitions: {
+                container: {
+                    type: 'object',
+                    properties: {
+                        'demo:a': { type: 'string' },
+                        'demo:b': { type: 'string' },
+                        'demo:c': { type: 'string' },
+                        'demo:d': { type: 'string' },
+                        'table:columns': {
+                            type: 'array',
+                            items: {
+                                type: 'object',
+                                properties: {
+                                    'demo:a': { type: 'string' },
+                                    'cf:cell_methods': { $ref: `${CF}#/definitions/cf:cell_methods` },
+                                },
+                                patternProperties: { '^(?!(demo|cf):)': {} },
+                                additionalProperties: false,
+                            },
+                        },
+                        'cube:dimensions': {
+                            type: 'object',
+                            additionalProperties: {
+                                type: 'object',
+                                properties: {
+                                    'demo:a': { type: 'string' },
+                                    'demo:b': { type: 'string' },
+                                    'demo:c': { type: 'string' },
+                                },
+                                patternProperties: { '^(?!demo:)': {} },
+                                additionalProperties: false,
+                            },
+                        },
+                    },
+                    patternProperties: { '^(?!demo:)': {} },
+                    additionalProperties: false,
+                },
+            },
+        };
+        const store = new SchemaStore(async (url) => (url === custom ? customSchema : fixtureFetch(url)));
+        const result = await probe(store, '1.1.0', [custom, CF, table, DATACUBE]);
+        const info = result.sources.find((s) => s.key === custom)!;
+        expect(info.prefixes).toEqual(['demo']);
         expect(info.fields).toContain('cf:cell_methods');
-        expect(placed(result, 'Feature', observatory, 'cf:cell_methods').get('/properties/table:columns/0')).toBe('validated');
+        expect(placed(result, 'Feature', custom, 'cf:cell_methods').get('/properties/table:columns/0')).toBe('validated');
         expect(placed(result, 'Feature', CF, 'cf:cell_methods').has('/properties/table:columns/0')).toBe(false);
 
         const fieldsAt = (location: string) => result.templates.Collection.placements
-            .filter((p) => p.location === location && p.source === observatory)
+            .filter((p) => p.location === location && p.source === custom)
             .map((p) => ({ name: p.field, source: p.source, state: 'populated' as const, kind: p.kind }));
         const dimension = groupFields(fieldsAt('/assets/data/cube:dimensions/time'), result.sources)[0];
-        expect(dimension.label).not.toContain('obs:*');
-        expect(dimension.label).toMatch(/of 11 obs:\)/);
+        expect(dimension.label).not.toContain('demo:*');
+        expect(dimension.label).toMatch(/of 4 demo:\)/);
         const column = groupFields(fieldsAt('/assets/data/table:columns/0'), result.sources)[0];
         expect(column.label).toContain('cf:cell_methods');
     });
@@ -281,7 +325,7 @@ describe('views', () => {
         const doc = {
             type: 'Feature', stac_version: '1.1.0', id: 'x', geometry: null, links: [],
             properties: { datetime: null, 'cf:standard_name': 'air_temperature', 'foo:bar': 1 },
-            assets: { a: { href: 'a.zarr', 'sem:concepts': [{ uri: 'http://example.com/x' }], 'themes': [] } },
+            assets: { a: { href: 'a.zarr', 'cf:standard_name': 'air_temperature', 'themes': [] } },
         };
         const view = documentView(doc, result.templates.Feature, result.sources, false);
         const find = (node: ObjectView, kind: string) => node.children.find((c) => c.kind === kind)!;
@@ -290,7 +334,7 @@ describe('views', () => {
         expect(props.find((f) => f.name === 'cf:cell_methods')?.state).toBe('possible');
         expect(props.find((f) => f.name === 'foo:bar')).toMatchObject({ state: 'unexpected', source: '?foo' });
         const asset = find(view, 'asset').fields;
-        expect(asset.find((f) => f.name === 'sem:concepts')?.state).toBe('populated');
+        expect(asset.find((f) => f.name === 'cf:standard_name')?.state).toBe('populated');
         expect(asset.find((f) => f.name === 'themes')).toMatchObject({ state: 'unexpected', source: THEMES });
         const groups = groupFields(props, result.sources);
         expect(groups.find((g) => g.source === CF)?.label).toBe('cf:*');

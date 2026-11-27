@@ -9,7 +9,7 @@ const fixtures = join(root, 'test', 'fixtures');
 
 /**
  * Vendored schemas (schemas/) first, then test/fixtures; a schema missing from both is downloaded once and saved in
- * test/fixtures (only non-vendored extensions such as Semantics and Observatory live there).
+ * test/fixtures.
  */
 export const fixtureFetch: FetchJson = async (url) => {
     const { host, pathname } = new URL(url);
@@ -34,5 +34,4 @@ export const EXTENSIONS: readonly string[] = [
     'https://stac-extensions.github.io/datacube/v2.3.0/schema.json',
     'https://stac-extensions.github.io/cf/v1.0.0/schema.json',
     'https://stac-extensions.github.io/themes/v1.0.0/schema.json',
-    'https://hamk-uas.github.io/stac-semantics/v0.1.0/schema.json',
 ];

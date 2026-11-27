@@ -336,13 +336,6 @@ describe('embedded metadata of the lab catalogs', () => {
         }
     });
 
-    it('HIKET netCDF nodes are valid netCDF with CF attributes', async () => {
-        for (const { node } of fixture('hiket-co2-flux.netcdf.json')) {
-            expect(await valid(`${AUTHORED_BASE}netcdf/v0.1.0/schema.json`, node)).toEqual([]);
-            expect(await valid(`${AUTHORED_BASE}cf/v1.13/schema.json`, node)).toEqual([]);
-        }
-    });
-
     it('Earth Genome COG nodes are valid TIFF with GeoTIFF and GDAL metadata', async () => {
         for (const { node } of fixture('earth-genome-b04.tiff.json')) {
             for (const schema of ['tiff/v0.1.0', 'geotiff/v1.1', 'gdal/v0.1.0']) {

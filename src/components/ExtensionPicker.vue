@@ -85,7 +85,7 @@ function add() {
       <h3>Quick select</h3>
       <button type="button" class="link" @click="emit('update:modelValue', [])">clear</button>
     </div>
-    <p class="hint">Extensions discussed in the Observatory project, and those the openEO API recommends or its back-ends use.</p>
+    <p class="hint">Published STAC extensions, including those the openEO API recommends or its back-ends use.</p>
     <div class="quick">
       <template v-for="ext in KNOWN_EXTENSIONS" :key="ext.name">
         <button
