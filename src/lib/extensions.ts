@@ -1,21 +1,25 @@
 /** Well-known STAC extensions offered as quick-select buttons. */
 export interface KnownExtension {
     name: string;
+    /** Short label for compact quick-select buttons. */
     title: string;
+    /** Full extension title shown in button tooltips (defaults to `${title} Extension`). */
+    fullTitle?: string;
     versions: { version: string; url: string }[];
     note?: string;
 }
 
-const se = (name: string, title: string, versions: string[], note?: string): KnownExtension => ({
+const se = (name: string, title: string, versions: string[], opts?: { note?: string; fullTitle?: string }): KnownExtension => ({
     name,
     title,
+    fullTitle: opts?.fullTitle,
     versions: versions.map((version) => ({ version, url: `https://stac-extensions.github.io/${name}/v${version}/schema.json` })),
-    note,
+    note: opts?.note,
 });
 
 export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     se('datacube', 'Datacube', ['2.3.0', '2.2.0']),
-    se('cf', 'CF', ['1.0.0']),
+    se('cf', 'CF', ['1.0.0'], { fullTitle: 'Climate and Forecasting Convention Extension' }),
     se('themes', 'Themes', ['1.0.0']),
     se('table', 'Table', ['1.3.0', '1.2.0']),
     se('classification', 'Classification', ['2.0.0']),
@@ -24,18 +28,18 @@ export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     se('projection', 'Projection', ['2.1.0']),
     se('file', 'File Info', ['2.1.0']),
     se('zarr', 'Zarr', ['1.1.0']),
-    se('scientific', 'Scientific', ['1.0.0']),
+    se('scientific', 'Scientific', ['1.0.0'], { fullTitle: 'Scientific Citation Extension' }),
     se('attribution', 'Attribution', ['0.1.0']),
     se('processing', 'Processing', ['1.3.0']),
     se('product', 'Product', ['1.1.0']),
     se('timestamps', 'Timestamps', ['1.1.0']),
-    se('version', 'Version', ['1.2.0']),
-    se('language', 'Language', ['1.0.0']),
+    se('version', 'Version', ['1.2.0'], { fullTitle: 'Versioning Indicators Extension' }),
+    se('language', 'Language', ['1.0.0'], { fullTitle: 'Language (I18N) Extension' }),
     se('contacts', 'Contacts', ['1.0.1']),
-    se('storage', 'Storage', ['2.0.0']),
-    se('render', 'Render', ['2.1.0']),
+    se('storage', 'Storage', ['2.0.0'], { fullTitle: 'STAC Storage Extension' }),
+    se('render', 'Render', ['2.1.0'], { fullTitle: 'Rendering Extension' }),
     se('sat', 'Satellite', ['1.2.0']),
-    se('view', 'View', ['1.1.0']),
+    se('view', 'View', ['1.1.0'], { fullTitle: 'View Geometry Extension' }),
     se('grid', 'Grid', ['1.1.0']),
     se('mgrs', 'MGRS', ['1.0.0']),
     se('ceos-ard', 'CEOS-ARD', ['0.2.0']),
@@ -45,10 +49,11 @@ export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     {
         name: 'eopf',
         title: 'EOPF',
+        fullTitle: 'EOPF STAC Extension',
         versions: [{ version: '1.2.0', url: 'https://cs-si.github.io/eopf-stac-extension/v1.2.0/schema.json' }],
         note: 'cs-si/eopf-stac-extension',
     },
-    se('item-assets', 'Item Assets', ['1.0.0'], 'core in STAC 1.1.0'),
+    se('item-assets', 'Item Assets', ['1.0.0'], { fullTitle: 'Item Assets Definition Extension', note: 'core in STAC 1.1.0' }),
 ];
 
 const STAC_EXTENSIONS_URL = /^https:\/\/stac-extensions\.github\.io\/([a-z0-9-]+)\/v([0-9][^/]*)\/schema\.json$/;

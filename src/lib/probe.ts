@@ -107,9 +107,10 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
     }));
 
     for (const entry of loaded) {
-        const { name, version, known } = describeUrl(entry.url);
+        const { name, version } = describeUrl(entry.url);
         const schema = store.getDocument(entry.url) as { title?: unknown; description?: unknown } | undefined;
-        const title = !known && typeof schema?.title === 'string' ? schema.title.replace(/ Extension$/i, '') : name;
+        const declaration = findDeclaration(schema) ?? entry.url;
+        const title = typeof schema?.title === 'string' && schema.title.trim() ? schema.title.replace(/ Extension$/i, '') : name;
         const description = typeof schema?.description === 'string' ? schema.description : undefined;
         if (!entry.validator) {
             infos.push({ key: entry.url, url: entry.url, title: name, prefixes: [], version, fields: [], unsampled: [], docs: {}, error: entry.error });
@@ -128,7 +129,6 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
             if (unique.length === 0) unsampled.push(field);
             samples.set(field, unique.length > 0 ? unique.slice(0, 4) : candidates.slice(0, 2));
         }
-        const declaration = findDeclaration(schema) ?? entry.url;
         const validators: Partial<Record<StacType, ValidateFunction>> = {};
         const sourceUrls: Partial<Record<StacType, string>> = {};
         for (const type of STAC_TYPES) {

@@ -3,8 +3,9 @@ import type { FetchJson } from './schemas';
 
 // Vendored schemas, loaded on demand: `schemas/<host>/<path>` is the copy of `https://<host>/<path>`. The registry,
 // crosswalk and software list beside the authored schemas are data, imported by conventions.ts and software.ts.
-const loaders = import.meta.glob(['../../schemas/**/*.json', '!../../schemas/hamk-uas.github.io/stac-schema-explorer/schemas/{registry,crosswalk,software}.json'],
-    { import: 'default' }) as Record<string, () => Promise<unknown>>;
+const loaders = (typeof import.meta.glob === 'function'
+    ? import.meta.glob(['../../schemas/**/*.json', '!../../schemas/hamk-uas.github.io/stac-schema-explorer/schemas/{registry,crosswalk,software}.json'], { import: 'default' })
+    : {}) as Record<string, () => Promise<unknown>>;
 
 // The first `schemas/` is this repository's directory; authored schemas have another one in their URL path.
 const BY_URL = new Map(Object.entries(loaders).map(([path, load]) => [`https://${path.replace(/^.*?\/schemas\//, '')}`, load]));

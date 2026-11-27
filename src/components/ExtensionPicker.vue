@@ -103,7 +103,7 @@ function add() {
           :class="{ on: selected.has(v.url) }"
           :aria-pressed="selected.has(v.url)"
           :style="selected.has(v.url) ? { '--c': colorOf(v.url) } : undefined"
-          :title="`${ext.title} ${v.version}${ext.note ? ` (${ext.note})` : ''}\n${v.url}\nClick to ${selected.has(v.url) ? 'remove' : 'add'} this extension.`"
+          :title="`${ext.fullTitle ?? `${ext.title} Extension`} ${v.version}${ext.note ? ` (${ext.note})` : ''}\n${v.url}\nClick to ${selected.has(v.url) ? 'remove' : 'add'} this extension.`"
           @click="toggle(v.url)"
         >
           {{ ext.title }}<span v-if="ext.versions.length > 1 || v.version === 'dev'" class="ver">{{ v.version }}</span>

@@ -481,4 +481,29 @@ describe('security hardening for untrusted external URLs and schemas', () => {
         await store2.load(jsIdUrl);
         expect(store2.baseOf(jsIdUrl)).toBe(jsIdUrl);
     });
+
+    it('isolates a draft fork declaring the same $id as a published extension so both compare cleanly', async () => {
+        const table = 'https://stac-extensions.github.io/table/v1.3.0/schema.json';
+        const draftUrl = 'https://example.org/fork/cf/schema.json';
+        const publishedCf = await fixtureFetch(CF) as Record<string, unknown>;
+        const defs = publishedCf.definitions as Record<string, { allOf?: unknown[] }>;
+        const draftCf = {
+            ...publishedCf,
+            definitions: {
+                ...defs,
+                fieldsAndOtherContainers: {
+                    allOf: [
+                        ...(defs.fieldsAndOtherContainers.allOf ?? []),
+                        { properties: { 'table:columns': { type: 'array', items: { $ref: '#/definitions/fields' } } } },
+                    ],
+                },
+            },
+        };
+        const store = new SchemaStore(async (url) => (url === draftUrl ? draftCf : fixtureFetch(url)));
+        const result = await probe(store, '1.1.0', [table, draftUrl, CF]);
+        expect(result.sources.find((s) => s.key === draftUrl)?.title).toBe('Climate and Forecasting Convention');
+        expect(result.sources.find((s) => s.key === CF)?.title).toBe('Climate and Forecasting Convention');
+        expect(placed(result, 'Feature', draftUrl, 'cf:standard_name').get('/properties/table:columns/0')).toBe('validated');
+        expect(placed(result, 'Feature', CF, 'cf:standard_name').has('/properties/table:columns/0')).toBe(false);
+    });
 });

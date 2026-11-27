@@ -68,24 +68,34 @@ export class SchemaStore {
                 return invalid;
             }
             const keyOrigin = new URL(key).origin;
-            pending = this.fetchJson(key).then((schema) => {
-                if (typeof schema !== 'object' || schema === null || Array.isArray(schema)) throw new Error(`not a JSON Schema object: ${key}`);
-                this.documents.set(key, schema);
-                const id = (schema as { $id?: unknown }).$id;
+            pending = this.fetchJson(key).then((raw) => {
+                if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new Error(`not a JSON Schema object: ${key}`);
+                let schema = raw as Record<string, unknown>;
+                const id = schema.$id;
                 if (typeof id === 'string') {
+                    let safeId: string | undefined;
                     try {
                         const resolved = new URL(id, key);
                         const normalizedId = normalizeSchemaUrl(resolved.toString());
-                        // Only alias $id within the same HTTP(S) origin and never let an external schema shadow a vendored schema.
                         if ((resolved.protocol === 'http:' || resolved.protocol === 'https:')
                             && resolved.origin === keyOrigin
-                            && (!isVendored(normalizedId) || isVendored(key))
-                            && !this.documents.has(normalizedId)) {
-                            this.documents.set(normalizedId, schema);
+                            && (!isVendored(normalizedId) || isVendored(key))) {
+                            safeId = normalizedId;
                         }
                     } catch {
-                        // Ignore malformed $id values from external schemas.
+                        // Malformed $id: rebind to key below.
                     }
+                    if (safeId) {
+                        this.documents.set(key, schema);
+                        if (!this.documents.has(safeId)) this.documents.set(safeId, schema);
+                    } else {
+                        // Cross-origin, non-HTTP(S), or shadowing a vendored schema (e.g. a draft fork of a published
+                        // extension): rebind $id to the loaded URL so Ajv keeps it isolated from the published schema.
+                        schema = { ...schema, $id: key };
+                        this.documents.set(key, schema);
+                    }
+                } else {
+                    this.documents.set(key, schema);
                 }
                 return schema;
             });
