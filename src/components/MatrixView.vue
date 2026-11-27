@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf, sourceLabel } from '../lib/colors';
+import { formatOfSchema } from '../lib/conventions';
 import { buildMatrix, type MatrixCell, type MatrixGroup } from '../lib/matrix';
 import type { SourceInfo } from '../lib/model';
 
@@ -11,6 +12,8 @@ const props = defineProps<{
     /** Sources whose fields are left out (core and format fields unless shown). */
     hidden: string[];
     focus: string;
+    /** Source keys whose row groups are collapsed. */
+    collapsed?: string[];
     /** Label of the top-level column: `top level` of a STAC object, `node` of embedded metadata. */
     topLabel?: string;
     intro?: string;
@@ -21,9 +24,12 @@ const emit = defineEmits<{
     select: [type: string, pointers: string[], field: string];
     field: [source: string, name: string];
     schema: [source: string];
+    toggleGroup: [source: string];
 }>();
 
 const hoveredCol = ref<string | null>(null);
+const collapsedSet = computed(() => new Set(props.collapsed ?? []));
+const isCollapsed = (source: string) => collapsedSet.value.has(source);
 const matrix = computed(() => buildMatrix(props.groups, props.sources, new Set(props.hidden)));
 const typeSpans = computed(() => props.groups
     .map((g) => ({ type: g.type, label: g.label, tone: g.tone, count: matrix.value.columns.filter((c) => c.type === g.type).length }))
@@ -38,10 +44,12 @@ const groupStarts = computed(() => {
     return starts;
 });
 const rows = computed(() => {
-    const out: { header?: string; source: string; field?: string }[] = [];
+    const counts = new Map<string, number>();
+    for (const row of matrix.value.rows) counts.set(row.source, (counts.get(row.source) ?? 0) + 1);
+    const out: { header?: string; count?: number; source: string; field?: string }[] = [];
     let last = '';
     for (const row of matrix.value.rows) {
-        if (row.source !== last) out.push({ header: sourceLabel(row.source, props.sources), source: row.source });
+        if (row.source !== last) out.push({ header: sourceLabel(row.source, props.sources), count: counts.get(row.source) ?? 0, source: row.source });
         out.push(row);
         last = row.source;
     }
@@ -65,6 +73,25 @@ function cellTitle(field: string, c: MatrixCell): string {
 function fieldTitle(source: string, field: string): string {
     const doc = props.sources.find((s) => s.key === source)?.docs[field];
     return [doc?.title, doc?.type, 'Click to open field details.'].filter(Boolean).join('\n');
+}
+
+/** Finds the non-core extension/convention that owns a column path segment (e.g. `table:column`, `cube:variable`, `multiscales`). */
+function segmentColor(segment: string): string | undefined {
+    const clean = segment.replace(/\[\]$/, '');
+    const colon = clean.indexOf(':');
+    const prefix = colon > 0 ? clean.slice(0, colon) : undefined;
+    const isCore = (key: string) => key === 'core' || !!formatOfSchema(key) || props.hidden.includes(key);
+    for (const s of props.sources) {
+        if (isCore(s.key) || s.key.startsWith('?')) continue;
+        if (prefix && s.prefixes.includes(prefix)) return colorOf(s.key);
+        if (s.fields.includes(clean) || s.fields.includes(`${clean}s`)) return colorOf(s.key);
+    }
+    return undefined;
+}
+
+function colSegments(path: string[]): { text: string; color?: string }[] {
+    if (!path.length) return [{ text: props.topLabel ?? 'top level' }];
+    return path.map((text) => ({ text, color: segmentColor(text) }));
 }
 </script>
 
@@ -94,18 +121,27 @@ function fieldTitle(source: string, field: string): string {
               :class="[`type-${col.tone}`, { 'group-start': groupStarts.has(col.key), 'col-hover': hoveredCol === col.key }]"
               @mouseenter="hoveredCol = col.key"
             >
-              <span>{{ col.path.length ? col.path.join(' › ') : (topLabel ?? 'top level') }}</span>
+              <span class="col-label"><template v-for="(seg, si) in colSegments(col.path)" :key="si"><template v-if="si > 0"> › </template><span :class="{ 'ext-seg': seg.color }" :style="seg.color ? { '--c': seg.color } : undefined">{{ seg.text }}</span></template></span>
             </th>
           </tr>
         </thead>
         <tbody>
           <template v-for="(row, i) in rows" :key="i">
-            <tr v-if="row.header" class="source-row" @mouseenter="hoveredCol = null">
+            <tr v-if="row.header" class="source-row" :class="{ collapsed: isCollapsed(row.source) }" @mouseenter="hoveredCol = null">
               <th :colspan="matrix.columns.length + 1" :style="{ '--c': colorOf(row.source) }">
-                <button type="button" :title="`Click to open schema details for ${row.header}`" @click="emit('schema', row.source)">{{ row.header }}</button>
+                <button
+                  type="button"
+                  class="twisty"
+                  :aria-expanded="!isCollapsed(row.source)"
+                  :aria-label="isCollapsed(row.source) ? `Expand ${row.header} rows` : `Collapse ${row.header} rows`"
+                  :title="isCollapsed(row.source) ? `Click to expand ${row.header} (${row.count} fields)` : `Click to collapse ${row.header} (${row.count} fields)`"
+                  @click="emit('toggleGroup', row.source)"
+                >{{ isCollapsed(row.source) ? '▸' : '▾' }}</button>
+                <button type="button" class="source-name" :title="`Click to open schema details for ${row.header}`" @click="emit('schema', row.source)">{{ row.header }}</button>
+                <span v-if="isCollapsed(row.source)" class="collapsed-count">({{ row.count }} hidden)</span>
               </th>
             </tr>
-            <tr v-else class="data-row" :class="{ dimmed: focus && focus !== row.source }">
+            <tr v-else-if="!isCollapsed(row.source)" class="data-row" :class="{ dimmed: focus && focus !== row.source }">
               <th class="field" :style="{ '--c': colorOf(row.source) }" @mouseenter="hoveredCol = null">
                 <button type="button" :title="fieldTitle(row.source, row.field!)" @click="emit('field', row.source, row.field!)">{{ row.field }}</button>
               </th>
@@ -206,10 +242,14 @@ th.col.group-start,
 td.group-start {
   border-left: 2px solid var(--slate-200);
 }
-th.col span {
+th.col > .col-label {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   white-space: nowrap;
+}
+th.col .ext-seg {
+  color: color-mix(in srgb, var(--c) 80%, var(--ink));
+  font-weight: 600;
 }
 .source-row th {
   text-align: left;
@@ -228,8 +268,23 @@ th.col span {
   font: inherit;
   color: inherit;
 }
-.source-row button:hover {
+.source-row .twisty {
+  display: inline-block;
+  width: 14px;
+  margin-right: 4px;
+  color: var(--muted);
+  text-align: center;
+}
+.source-row .twisty:hover {
+  color: var(--text-strong);
+}
+.source-row .source-name:hover {
   text-decoration: underline;
+}
+.source-row .collapsed-count {
+  margin-left: 6px;
+  font: 400 11px var(--sans);
+  color: var(--muted);
 }
 th.field {
   position: sticky;

@@ -534,7 +534,14 @@ const displayModified = computed(() => state.groupFields !== DEFAULTS.groupField
     || (state.mode === 'href' && state.includeDeclared !== DEFAULTS.includeDeclared)
     || state.focus !== DEFAULTS.focus
     || state.theme !== DEFAULTS.theme
+    || state.collapsed.length > 0
     || panesModified.value);
+
+function toggleMatrixGroup(source: string) {
+    state.collapsed = state.collapsed.includes(source)
+        ? state.collapsed.filter((s) => s !== source)
+        : [...state.collapsed, source];
+}
 
 function resetCores() {
     state.cores = [...ALL_CORES];
@@ -549,6 +556,7 @@ function resetDisplay() {
     state.includeDeclared = DEFAULTS.includeDeclared;
     state.focus = DEFAULTS.focus;
     state.theme = DEFAULTS.theme;
+    state.collapsed = [];
     resetPanes();
 }
 
@@ -1009,6 +1017,16 @@ onMounted(() => {
               @click="state.focus = ''"
             >↺</button>
           </div>
+          <div v-if="state.collapsed.length" class="setting-row focus">
+            <span>Collapsed matrix groups: {{ state.collapsed.length }}</span>
+            <button
+              type="button"
+              class="reset"
+              title="Click to expand all collapsed matrix row groups"
+              aria-label="Expand all collapsed matrix row groups"
+              @click="state.collapsed = []"
+            >↺</button>
+          </div>
           <div v-if="panesModified" class="setting-row focus">
             <span>Pane widths: custom</span>
             <button
@@ -1152,9 +1170,11 @@ onMounted(() => {
               :sources="result.sources"
               :hidden="showsCore('stac') ? [] : [CORE]"
               :focus="state.focus"
+              :collapsed="state.collapsed"
               @select="selectFromMatrix"
               @field="(s: string, n: string) => openField(s, n)"
               @schema="(s: string) => openSchema(s)"
+              @toggle-group="toggleMatrixGroup"
             />
           </section>
           <section v-for="m in embeddedMatrices" :key="m.format.id" class="main-panel" :aria-labelledby="`matrix-${m.format.id}`">
@@ -1168,10 +1188,12 @@ onMounted(() => {
               :sources="m.sources"
               :hidden="showsCore(m.format.id) ? [] : [m.format.schema]"
               :focus="state.focus"
+              :collapsed="state.collapsed"
               top-label="node"
               @select="selectFromMatrix"
               @field="(s: string, n: string) => openField(s, n, m.sources)"
               @schema="(s: string) => openSchema(s, [], m.sources)"
+              @toggle-group="toggleMatrixGroup"
             />
           </section>
           <section v-if="state.conventions.length === 0 && formatCores.length === 0" class="main-panel" aria-labelledby="embedded-matrix-empty">

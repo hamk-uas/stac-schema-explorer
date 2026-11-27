@@ -1,6 +1,6 @@
-import { fromConventionShortId, toConventionShortId } from './conventions';
+import { DATA_FORMATS, formatOfSchema, fromConventionShortId, toConventionShortId } from './conventions';
 import { ALL_CORES } from './cores';
-import { fromShortId, isHttpUrl, toShortId } from './extensions';
+import { fromShortId, isHttpUrl, normalizeSchemaUrl, toShortId } from './extensions';
 import { STAC_VERSIONS } from './model';
 import { isSafeKey, splitPointer } from './pointer';
 import type { Rewrite } from './rewrites';
@@ -48,6 +48,27 @@ function writeExample(example: ExampleUrl): string {
     return example.label && example.label !== example.href ? `${example.label}|${example.href}` : example.href;
 }
 
+function collapseId(source: string): string {
+    if (source === 'core') return 'core';
+    const format = formatOfSchema(source);
+    if (format) return format.id;
+    const conv = toConventionShortId(source);
+    if (conv !== normalizeSchemaUrl(source)) return conv;
+    return toShortId(source);
+}
+
+function fromCollapseId(id: string): string | undefined {
+    const trimmed = id.trim();
+    if (!trimmed) return undefined;
+    if (trimmed === 'core') return 'core';
+    const format = DATA_FORMATS.find((f) => f.id === trimmed);
+    if (format) return format.schema;
+    const conv = fromConventionShortId(trimmed);
+    if (conv !== normalizeSchemaUrl(trimmed)) return conv;
+    const ext = fromShortId(trimmed);
+    return isHttpUrl(ext) ? ext : undefined;
+}
+
 export interface AppState {
     mode: Mode;
     stacVersion: string;
@@ -75,6 +96,8 @@ export interface AppState {
     schema: string;
     /** Local changes to real documents, in the order they were made. */
     rewrites: Rewrite[];
+    /** Source keys whose placement-matrix row groups are collapsed (for sharing a focused view). */
+    collapsed: string[];
     /** Embedded in another app (an iframe): no page header. */
     embed: boolean;
     /** Optional colour-scheme override (`light` or `dark`); empty follows the system preference. */
@@ -99,6 +122,7 @@ export function defaultState(): AppState {
         field: '',
         schema: '',
         rewrites: [],
+        collapsed: [],
         embed: false,
         theme: '',
     };
@@ -139,6 +163,7 @@ export function readState(search: string): AppState {
         state.schema = resolved === 'core' || resolved.startsWith('?') || isHttpUrl(resolved) ? resolved : '';
     }
     state.rewrites = params.getAll('rw').map(readRewrite).filter((r): r is Rewrite => !!r);
+    state.collapsed = [...new Set(params.getAll('collapse').flatMap((v) => v.split(' ')).map(fromCollapseId).filter((s): s is string => !!s))];
     state.embed = params.get('embed') === '1';
     const theme = params.get('theme');
     state.theme = theme === 'light' || theme === 'dark' ? theme : '';
@@ -171,6 +196,7 @@ export function writeState(state: AppState): string {
         params.set('schema', state.schema === 'core' || state.schema.startsWith('?') ? state.schema : toShortId(state.schema));
     }
     for (const rewrite of state.rewrites) params.append('rw', writeRewrite(rewrite));
+    for (const source of state.collapsed) params.append('collapse', collapseId(source));
     if (state.embed) params.set('embed', '1');
     if (state.theme) params.set('theme', state.theme);
     return `?${params.toString().replaceAll('%40', '@').replaceAll('%2F', '/').replaceAll('%3A', ':').replaceAll('%7C', '|')}`;

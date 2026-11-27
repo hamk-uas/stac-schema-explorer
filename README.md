@@ -104,6 +104,7 @@ https://hamk-uas.github.io/stac-schema-explorer/?ext=table@1.3.0&ext=https://raw
 | `example` | Additional example URL to list under *Try:* in URL mode, repeatable: `Label\|https://…` or `https://…` |
 | `sel`, `ptr` | Selected document (`catalog`, `subcatalog`, `collection`, `item`, URL, or `node:…`) and JSON Pointer |
 | `view` | `matrix` for the placement matrix (omit for the tree view) |
+| `collapse` | Placement-matrix row group to collapse, repeatable: `core`, format id (`zarr-v3`), `name@version` or schema URL |
 | `focus` | Schema key (`core`, `name@version`, or schema URL) whose fields are highlighted |
 | `field` | Field open in the details panel: `<schema>\|<field>` (e.g. `cf@1.0.0\|cf:cell_methods`, `core\|license`) |
 | `schema` | Schema open in the details panel (`core`, `name@version`, or schema URL) |

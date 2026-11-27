@@ -72,11 +72,18 @@ describe('url state', () => {
             { label: 'Custom Item', href: 'https://example.com/custom-item.json' },
             { label: 'https://example.com/plain.zarr', href: 'https://example.com/plain.zarr' },
         ];
+        state.collapsed = [
+            CORE,
+            CF,
+            'https://hamk-uas.github.io/stac-schema-explorer/schemas/zarr/v3/schema.json',
+            'https://hamk-uas.github.io/stac-schema-explorer/schemas/cf/v1.13/schema.json',
+        ];
         const search = writeState(state);
         expect(search).toContain('ext=cf@1.0.0');
         expect(search).toContain('core=stac&core=netcdf');
         expect(search).toContain('theme=dark');
         expect(search).toContain('example=Custom+Item|https://example.com/custom-item.json');
+        expect(search).toContain('collapse=core&collapse=cf@1.0.0&collapse=zarr-v3&collapse=cf@1.13');
         expect(readState(search)).toEqual(state);
         expect(readState('?theme=invalid').theme).toBe('');
         expect(readState('?example=Bad|javascript:alert(1)&example=Good|https://example.com/a.json').examples)
