@@ -1,5 +1,5 @@
-import { formatOfSchema } from './conventions';
-import { PREFIXES_WITHOUT_SCHEMA } from './extensions';
+import { conventionOfSchema, formatOfSchema } from './conventions';
+import { customOrigin, PREFIXES_WITHOUT_SCHEMA } from './extensions';
 import { CORE, type SourceInfo, type SourceKey } from './model';
 
 const PALETTE = ['#2563eb', '#db2777', '#16a34a', '#9333ea', '#ea580c', '#0891b2', '#b45309', '#4f46e5', '#0d9488', '#7c3aed', '#4d7c0f', '#a16207', '#0369a1', '#c026d3'];
@@ -27,7 +27,10 @@ export function sourceLabel(source: SourceKey, sources: SourceInfo[]): string {
         return spec ? `${spec.title} (${source.slice(1)}:, no STAC extension schema)` : `unknown extension (${source.slice(1)}:)`;
     }
     const info = sources.find((s) => s.key === source);
-    return info ? `${info.title}${info.version ? ` ${versionLabel(info.version)}` : ''}` : source;
+    if (!info) return source;
+    const base = `${info.title}${info.version ? ` ${versionLabel(info.version)}` : ''}`;
+    const origin = !formatOfSchema(source) && !conventionOfSchema(source) ? customOrigin(source) : undefined;
+    return origin ? `${base} (${origin})` : base;
 }
 
 /** `v1.1.0`, `v0.1`; a version that is no number (`draft-v0.2`, `main-33df41a`) as it is. */

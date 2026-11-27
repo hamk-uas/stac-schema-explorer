@@ -129,6 +129,18 @@ export function repoUrl(url: string): string | undefined {
     return undefined;
 }
 
+export function customOrigin(url: string): string | undefined {
+    const normalized = normalizeSchemaUrl(url);
+    if (describeUrl(normalized).known) return undefined;
+    const repo = repoUrl(normalized);
+    if (repo) return repo.replace(/^https:\/\/github\.com\//, '');
+    try {
+        return new URL(normalized).hostname;
+    } catch {
+        return undefined;
+    }
+}
+
 /** Best-effort name and version of an extension from its schema URL; `known` for quick-select extensions. */
 export function describeUrl(url: string): { name: string; version?: string; known: boolean } {
     const normalized = normalizeSchemaUrl(url);

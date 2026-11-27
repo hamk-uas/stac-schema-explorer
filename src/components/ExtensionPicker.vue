@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf } from '../lib/colors';
-import { describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, repoUrl, toShortId } from '../lib/extensions';
+import { customOrigin, describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, repoUrl, toShortId } from '../lib/extensions';
 import type { SourceInfo } from '../lib/model';
 
 const props = defineProps<{ modelValue: string[]; sources: SourceInfo[] }>();
@@ -18,9 +18,10 @@ function info(url: string) {
 
 function label(url: string) {
     const known = info(url);
-    if (known && !known.error) return { title: known.title, version: known.version, prefixes: known.prefixes };
+    const origin = customOrigin(url);
+    if (known && !known.error) return { title: known.title, version: known.version, prefixes: known.prefixes, origin };
     const { name, version } = describeUrl(url);
-    return { title: name, version, prefixes: [] as string[] };
+    return { title: name, version, prefixes: [] as string[], origin };
 }
 
 function toggle(url: string) {
@@ -59,6 +60,7 @@ function add() {
         >
           {{ label(url).title }}
           <span v-if="label(url).version" class="ver">v{{ label(url).version }}</span>
+          <span v-if="label(url).origin" class="origin" title="Custom schema URL (not from the quick-select list)">{{ label(url).origin }}</span>
           <code v-for="p in label(url).prefixes" :key="p" class="prefix">{{ p }}:</code>
         </button>
         <a
@@ -160,13 +162,18 @@ function add() {
   color: var(--slate-500);
   margin-left: 3px;
 }
-.prefix {
+.prefix,
+.origin {
   font-size: 11px;
   color: var(--slate-600);
   background: var(--field);
   border-radius: 3px;
   padding: 0 3px;
   margin-left: 3px;
+}
+.origin {
+  color: var(--warn);
+  background: var(--warn-bg);
 }
 .icon {
   border: 0;
