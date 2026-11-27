@@ -1,0 +1,22 @@
+STAC Schema Explorer
+Copyright 2026 HAMK Häme University of Applied Sciences
+
+This project is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party schemas and documentation notices:
+
+- Vendored originals under upstream/ and documentation-enriched copies under
+  schemas/ incorporate STAC specification schemas and READMEs
+  (https://github.com/radiantearth/stac-spec), STAC community extension schemas
+  and READMEs (https://github.com/stac-extensions,
+  https://github.com/cs-si/eopf-stac-extension), field titles from
+  stac-utils/stac-fields (https://github.com/stac-utils/stac-fields), and Zarr
+  convention schemas and READMEs (https://github.com/zarr-conventions,
+  https://github.com/R-CF, https://github.com/clbarnes), used under their
+  respective open-source licenses (Apache License 2.0 unless otherwise noted by
+  the upstream repository). Enriched copies under schemas/ add titles,
+  descriptions, and titled constant lists without changing validation semantics.
+
+- CF attribute descriptions in the authored CF metadata schema are adapted from
+  the Climate and Forecast (CF) Metadata Conventions v1.13 Appendices A and F
+  (https://cfconventions.org/), released under CC0 1.0 Universal.

@@ -20,6 +20,7 @@ function readRewrite(value: string): Rewrite | undefined {
 }
 
 export type Mode = 'example' | 'href';
+export type Theme = '' | 'light' | 'dark';
 
 export interface AppState {
     mode: Mode;
@@ -48,6 +49,8 @@ export interface AppState {
     rewrites: Rewrite[];
     /** Embedded in another app (an iframe): no page header. */
     embed: boolean;
+    /** Optional colour-scheme override (`light` or `dark`); empty follows the system preference. */
+    theme: Theme;
 }
 
 export function defaultState(): AppState {
@@ -68,6 +71,7 @@ export function defaultState(): AppState {
         schema: '',
         rewrites: [],
         embed: false,
+        theme: '',
     };
 }
 
@@ -99,6 +103,8 @@ export function readState(search: string): AppState {
     if (schema && !state.field) state.schema = schema === 'core' || schema.startsWith('?') ? schema : fromShortId(schema);
     state.rewrites = params.getAll('rw').map(readRewrite).filter((r): r is Rewrite => !!r);
     state.embed = params.get('embed') === '1';
+    const theme = params.get('theme');
+    state.theme = theme === 'light' || theme === 'dark' ? theme : '';
     return state;
 }
 
@@ -128,5 +134,6 @@ export function writeState(state: AppState): string {
     }
     for (const rewrite of state.rewrites) params.append('rw', writeRewrite(rewrite));
     if (state.embed) params.set('embed', '1');
+    if (state.theme) params.set('theme', state.theme);
     return `?${params.toString().replaceAll('%40', '@').replaceAll('%2F', '/').replaceAll('%3A', ':').replaceAll('%7C', '|')}`;
 }

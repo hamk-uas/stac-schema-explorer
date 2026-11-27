@@ -38,6 +38,10 @@ const state = reactive<AppState>(readState(location.search));
 watch(() => writeState(state), (search) => {
     if (search !== location.search) history.replaceState(null, '', search + location.hash);
 });
+watch(() => state.theme, (theme) => {
+    if (theme) document.documentElement.dataset.theme = theme;
+    else delete document.documentElement.dataset.theme;
+}, { immediate: true });
 
 const engine = new Engine();
 const result = shallowRef<ProbeResult>();
@@ -523,6 +527,7 @@ const panesModified = computed(() => sideWidth.value !== undefined || jsonWidth.
 const displayModified = computed(() => state.groupFields !== DEFAULTS.groupFields
     || (state.mode === 'href' && state.includeDeclared !== DEFAULTS.includeDeclared)
     || state.focus !== DEFAULTS.focus
+    || state.theme !== DEFAULTS.theme
     || panesModified.value);
 
 function resetCores() {
@@ -537,6 +542,7 @@ function resetDisplay() {
     state.groupFields = DEFAULTS.groupFields;
     state.includeDeclared = DEFAULTS.includeDeclared;
     state.focus = DEFAULTS.focus;
+    state.theme = DEFAULTS.theme;
     resetPanes();
 }
 
@@ -972,6 +978,22 @@ onMounted(() => {
               title="Click to restore default pane widths"
               aria-label="Restore default pane widths"
               @click="resetPanes"
+            >↺</button>
+          </div>
+          <div class="setting-row theme-row">
+            <label for="theme-select">Theme</label>
+            <select id="theme-select" v-model="state.theme" title="Choose the colour scheme (also controllable via ?theme=light or ?theme=dark)">
+              <option value="">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+            <button
+              v-if="state.theme !== DEFAULTS.theme"
+              type="button"
+              class="reset"
+              title="Click to restore default theme (System)"
+              aria-label="Restore default theme"
+              @click="state.theme = DEFAULTS.theme"
             >↺</button>
           </div>
         </div>
@@ -1444,6 +1466,22 @@ onMounted(() => {
 .setting-row > span {
   flex: 1;
   min-width: 0;
+}
+.theme-row {
+  margin-top: 6px;
+}
+.theme-row > label {
+  flex: none;
+  font-size: 13px;
+  color: var(--text);
+}
+.theme-row > select {
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--field);
+  color: var(--text-strong);
+  font-size: 12px;
+  padding: 2px 6px;
 }
 .side h2 {
   margin: 0;

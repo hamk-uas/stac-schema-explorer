@@ -63,10 +63,13 @@ describe('url state', () => {
         state.focus = CF;
         state.schema = EOPF;
         state.cores = ['stac', 'netcdf'];
+        state.theme = 'dark';
         const search = writeState(state);
         expect(search).toContain('ext=cf@1.0.0');
         expect(search).toContain('core=stac&core=netcdf');
+        expect(search).toContain('theme=dark');
         expect(readState(search)).toEqual(state);
+        expect(readState('?theme=invalid').theme).toBe('');
     });
 
     it('starts with every core and no extensions or conventions, and keeps chosen ones', () => {

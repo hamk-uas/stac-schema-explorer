@@ -87,23 +87,31 @@ const undeclaredTitle = computed(() => [
 
 <template>
   <div class="doc" :class="[`type-${entry.type}`, { selected: isSelected }]">
-    <header :title="`Click to select this ${TYPE_LABEL[entry.type]} and show it in the JSON panel`" @click="emit('select', entry.key, [''])">
+    <header>
       <button
         v-if="hasChildren"
         type="button"
         class="twisty"
         :aria-label="entry.expanded ? 'Collapse child documents' : 'Expand child documents'"
         :title="entry.expanded ? 'Click to hide child documents' : 'Click to show child documents'"
-        @click.stop="emit('toggle', entry)"
+        @click="emit('toggle', entry)"
       >{{ entry.expanded ? '▾' : '▸' }}</button>
       <span v-else class="twisty-space" />
-      <span class="doc-icon" aria-hidden="true">
-        <svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 1.5h6.5L13 5v9.5H3z" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M9.5 1.5V5H13" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
-      </span>
-      <span class="type">{{ TYPE_LABEL[entry.type] }}</span>
-      <span v-if="entry.type === 'Feature'" class="sub">GeoJSON Feature</span>
-      <span v-if="entry.role" class="role">{{ entry.role }}</span>
-      <span class="title" :title="entry.href ?? entry.title">{{ entry.title }}</span>
+      <button
+        type="button"
+        class="select"
+        :aria-pressed="isSelected"
+        :title="`Click to select this ${TYPE_LABEL[entry.type]} and show it in the JSON panel`"
+        @click="emit('select', entry.key, [''])"
+      >
+        <span class="doc-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" width="14" height="14"><path d="M3 1.5h6.5L13 5v9.5H3z" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M9.5 1.5V5H13" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
+        </span>
+        <span class="type">{{ TYPE_LABEL[entry.type] }}</span>
+        <span v-if="entry.type === 'Feature'" class="sub">GeoJSON Feature</span>
+        <span v-if="entry.role" class="role">{{ entry.role }}</span>
+        <span class="title" :title="entry.href ?? entry.title">{{ entry.title }}</span>
+      </button>
       <span v-if="entry.status === 'loading'" class="status">loading…</span>
       <span v-else-if="entry.status === 'error'" class="status error" :title="entry.error">⚠ {{ entry.error }}</span>
       <span v-else-if="entry.view" class="validity" :class="{ ok: entry.valid, bad: entry.valid === false }" :title="validityTitle">
@@ -111,12 +119,20 @@ const undeclaredTitle = computed(() => [
       </span>
       <span v-if="entry.rewrites" class="rewritten" :title="`${entry.rewrites} rewrite(s) applied to this document: it is shown and validated as rewritten`">
         ✎ {{ entry.rewrites }} rewrite{{ entry.rewrites === 1 ? '' : 's' }}
-        <button type="button" :title="`Click to undo all local rewrites on ${entry.title}`" :aria-label="`Undo the rewrites of ${entry.title}`" @click.stop="emit('reset', entry.key)">undo</button>
+        <button type="button" :title="`Click to undo all local rewrites on ${entry.title}`" :aria-label="`Undo the rewrites of ${entry.title}`" @click="emit('reset', entry.key)">undo</button>
       </span>
       <span v-if="entry.undeclared?.length" class="undeclared" :title="undeclaredTitle">
         ⚠ undeclared: {{ entry.undeclared.map((u) => sourceLabel(u.source, docSources)).join(', ') }}
       </span>
-      <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the original JSON in a new tab" @click.stop>↗</a>
+      <a
+        v-if="entry.href"
+        class="open"
+        :href="entry.href"
+        target="_blank"
+        rel="noopener"
+        title="Open the original JSON in a new tab"
+        :aria-label="`Open original JSON of ${entry.title} in a new tab`"
+      >↗</a>
     </header>
     <div v-if="entry.view && !entry.compact" class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" title="Click to highlight the top-level document in the JSON panel" @click.stop="emit('select', entry.key, [''])">
@@ -166,7 +182,14 @@ const undeclaredTitle = computed(() => [
         <span v-if="file.status === 'loading'" class="status">reading…</span>
         <span v-else-if="file.status === 'error'" class="status error" :title="file.error">⚠ {{ file.error }}</span>
         <span v-else-if="file.status === 'ready'" class="status">{{ file.nodes.length }} node{{ file.nodes.length === 1 ? '' : 's' }}</span>
-        <a class="open" :href="file.href" target="_blank" rel="noopener" :title="`Open the ${READER_LABEL[file.kind]} in a new tab\n${file.href}`">↗</a>
+        <a
+          class="open"
+          :href="file.href"
+          target="_blank"
+          rel="noopener"
+          :title="`Open the ${READER_LABEL[file.kind]} in a new tab\n${file.href}`"
+          :aria-label="`Open ${READER_LABEL[file.kind]} of asset ${file.assets.join(', ')} in a new tab`"
+        >↗</a>
       </div>
       <div v-if="file.expanded" class="data-nodes">
         <p v-for="note in file.notes" :key="note" class="note">ⓘ {{ note }}</p>
@@ -277,8 +300,21 @@ header {
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
+  border-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+.select {
+  display: flex;
+  flex: 1 1 8em;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  border-radius: 8px;
   flex-wrap: wrap;
 }
 /* The selected document: its heading takes a tint of its type colour. */

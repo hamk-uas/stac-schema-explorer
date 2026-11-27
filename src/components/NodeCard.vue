@@ -78,7 +78,15 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
         ✎ {{ entry.rewrites }} rewrite{{ entry.rewrites === 1 ? '' : 's' }}
         <button type="button" :title="`Click to undo all local rewrites on node ${entry.title || 'root'}`" :aria-label="`Undo the rewrites of node ${entry.title || 'root'}`" @click="emit('reset', entry.key)">undo</button>
       </span>
-      <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the metadata document in a new tab">↗</a>
+      <a
+        v-if="entry.href"
+        class="open"
+        :href="entry.href"
+        target="_blank"
+        rel="noopener"
+        title="Open the metadata document in a new tab"
+        :aria-label="`Open metadata document of ${entry.title || 'root'} in a new tab`"
+      >↗</a>
     </header>
     <div class="body">
       <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" title="Click to highlight this node in the JSON panel" @click.stop="emit('select', entry.key, [''])">

@@ -108,16 +108,17 @@ https://hamk-uas.github.io/stac-schema-explorer/?ext=table@1.3.0&ext=https://raw
 | `schema` | Schema open in the details panel (`core`, `name@version`, or schema URL) |
 | `rw` | Local rewrite, repeatable in order: `add\|<schema>\|<document>\|<pointer>\|<field>` or `remove\|…` |
 | `group=0`, `declared=0` | Show individual field chips instead of grouped chips; ignore extensions declared by explored documents |
+| `theme` | Colour-scheme override: `light` or `dark` (omitted follows the system preference) |
 | `embed=1` | Embedded layout for `<iframe>` use: hides the top header and shows a compact bar with an *open full app* link |
 
 ### Embedding in an `<iframe>`
 
 ```text
-https://hamk-uas.github.io/stac-schema-explorer/?embed=1&mode=href&href=<URL-encoded STAC or data URL>
+https://hamk-uas.github.io/stac-schema-explorer/?embed=1&theme=light&mode=href&href=<URL-encoded STAC or data URL>
 ```
 
-Add `ext` or `conv` parameters to compare the document against additional schemas. Explored URLs and custom schema
-URLs must allow cross-origin requests (CORS).
+Add `ext` or `conv` parameters to compare the document against additional schemas, and optionally `theme=light` or
+`theme=dark` to match the host page. Explored URLs and custom schema URLs must allow cross-origin requests (CORS).
 
 ## How it works
 
@@ -220,3 +221,8 @@ other fetched schema once under `test/fixtures`.
 
 [.github/workflows/pages.yml](.github/workflows/pages.yml) tests, builds and deploys `dist/` to GitHub Pages on pushes
 to `main`. The build uses relative paths and works at a domain root or any subdirectory.
+
+## License
+
+Copyright 2026 HAMK Häme University of Applied Sciences. Licensed under the [Apache License, Version 2.0](LICENSE); see
+[NOTICE](NOTICE) for third-party schema and documentation attributions.

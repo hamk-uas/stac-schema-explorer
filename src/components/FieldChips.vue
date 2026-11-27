@@ -234,14 +234,14 @@ button.chip.open {
 .chip.state-possible {
   background: transparent;
   border-style: dotted;
-  border-color: color-mix(in srgb, var(--c) calc(var(--edge) * 0.6), transparent);
-  color: color-mix(in srgb, var(--c) 45%, var(--slate-400));
+  border-color: color-mix(in srgb, var(--c) calc(var(--edge) * 0.7), transparent);
+  color: color-mix(in srgb, var(--c) 55%, var(--muted));
 }
 .chip.state-unexpected {
-  border-color: var(--red-600);
-  background: var(--red-50);
-  color: var(--red-700);
-  text-decoration: underline wavy var(--red-600) 1px;
+  border-color: var(--error-accent);
+  background: var(--error-bg);
+  color: var(--error);
+  text-decoration: underline wavy var(--error-accent) 1px;
   text-underline-offset: 3px;
 }
 .chip.dimmed {

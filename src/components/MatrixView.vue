@@ -122,6 +122,7 @@ function fieldTitle(source: string, field: string): string {
                   :class="[cell(row.source, row.field!, col.key)!.kind, { partial: cell(row.source, row.field!, col.key)!.partial }]"
                   :style="{ '--c': colorOf(row.source) }"
                   :title="cellTitle(row.field!, cell(row.source, row.field!, col.key)!)"
+                  :aria-label="`${row.field} in ${col.type} ${col.path.length ? col.path.join(' › ') : (topLabel ?? 'top level')} (${cell(row.source, row.field!, col.key)!.kind})`"
                   @click="emit('select', col.type, cell(row.source, row.field!, col.key)!.locations, row.field!); emit('field', row.source, row.field!)"
                 />
               </td>
@@ -136,22 +137,17 @@ function fieldTitle(source: string, field: string): string {
 <style scoped>
 .matrix-wrap {
   /* Opaque equivalent of `--layer` over `--bg`, so sticky headers and field names stay opaque while blending into the panel. */
-  --surface: color-mix(in srgb, var(--ink) 3.5%, var(--bg));
-}
-@media (prefers-color-scheme: dark) {
-  .matrix-wrap {
-    --surface: color-mix(in srgb, var(--ink) 3%, var(--bg));
-  }
+  --surface: var(--layer-opaque);
 }
 .intro {
   font-size: 12px;
-  color: var(--slate-600);
+  color: var(--muted);
   margin: 0 0 10px;
   line-height: 1.7;
 }
 .scroll {
   overflow: auto;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   max-height: calc(100vh - 230px);
 }
 table {
@@ -179,7 +175,7 @@ thead tr:nth-child(2) th {
 th.type {
   font: 700 12px var(--sans);
   padding: 4px 6px;
-  border-left: 2px solid var(--slate-200);
+  border-left: 2px solid var(--border);
 }
 th.type-Catalog {
   color: var(--indigo-600);

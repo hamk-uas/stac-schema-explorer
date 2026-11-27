@@ -2,6 +2,7 @@
   "name": "stac-schema-explorer",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "description": "A web app for understanding SpatioTemporal Asset Catalog (STAC) core spec and STAC extensions",
   "exports": {

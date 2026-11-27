@@ -2,24 +2,32 @@
 
 ## Purpose and ecosystem role
 
-This is a standalone Vue/TypeScript tool for understanding **where STAC core and
-extension fields are allowed**, inspecting examples/remote catalogs and checking
-their validation. It treats metadata embedded in data assets (Zarr, netCDF, TIFF)
-and its conventions the same way, and relates it to STAC through a crosswalk.
-It also maintains documented copies of published schemas.
-It is not itself an Observatory instance or a data-production pipeline.
+**Primary (public) role:** A standalone Vue/TypeScript tool for **exploring,
+comparing and communicating geospatial metadata schemas** — where STAC core and
+extension fields (published or draft/custom via `?ext=<url>`) are allowed and
+required, inspecting real catalogs/files and testing local rewrites. It treats
+metadata embedded in data assets (Zarr, netCDF, TIFF) and its conventions the
+same way, relates it to STAC through a crosswalk, and documents verified
+software support. Keep the public app, README, quick-select lists and examples
+free of internal or in-development extensions and project-specific branding.
 
-Observatory consumes these enriched schemas through its pinned
-`schemas/stac-schema-explorer` submodule and adds Finnish/Swedish STAC field
-translations. Custom or in-development extensions are not built into this app;
-external sites can link to it with `?ext=<schema-url>` instead. `cards-zarr-optim`
-produces STAC/Zarr that tools can inspect.
+**Secondary role (currently HAMK's internal use in the Observatory technology
+stack):** This repository also supports HAMK's `observatory` repository and its
+companion schema repositories (`observatory-stac-extension`, `stac-semantics`):
+- `observatory` consumes the enriched schemas, `registry.json`, `crosswalk.json`
+  and `stac-schema-explorer/readers` through its pinned
+  `schemas/stac-schema-explorer` submodule (and adds Finnish/Swedish STAC core
+  translations).
+- In-development extensions (`observatory-stac-extension`, `stac-semantics`) are
+  not built into this app; `observatory` links here with `?ext=<schema-url>`
+  instead.
+- `cards-zarr-optim` produces STAC/Zarr samples that tools can inspect.
 
 All repositories are pre-alpha and APIs can change with coordination. Keep
-changes to query/embedding and schema-copy contracts explicit, but do not require
-all downstream applications to update simultaneously. Read another repo's own
-instructions when crossing into it. A schema explorer can retain its own compact
-technical visual language; it need not adopt Observatory instance branding.
+changes to query/embedding, schema-copy, registry/crosswalk and reader contracts
+explicit, without requiring simultaneous downstream updates. Read another repo's
+own `AGENTS.md` when crossing into it. This app retains its own compact
+technical visual language rather than adopting downstream branding.
 
 ## Code map and invariants
 
@@ -179,20 +187,17 @@ components rather than introducing another design library.
   teal/green for valid states, amber for caution and red for errors. Reuse
   established meanings; a new color should not introduce an ambiguous new state.
 - **Color tokens and dark mode:** UI colors are CSS custom properties in
-  [style.css](src/style.css) (`--white`, `--ink`, `--slate-*`, `--indigo-*`,
-  status families, `--shadow`), named after their light-mode value. A
-  `prefers-color-scheme: dark` block mirrors each family (`--slate-50` becomes
-  near-black, `--white` a dark panel) so components keep using the same names;
-  dark mode is softer than a straight inversion (muted neutrals, lower text
-  contrast, chip outlines toned down through `--edge`). Surfaces have semantic
-  tokens: `--bg` (main view), `--pane` (bars and side panes), `--layer`
-  (translucent card/panel fill, so nested cards deepen per level), `--field`
-  (control fill) and `--hover`. Use these tokens in component styles, not hex
-  literals, and check both schemes. Identity mid-tones (`colorOf`, document
-  accents) work in both. A selected quick-select pill must read as more
-  prominent than an unselected one in both schemes, also in the cores' shared
-  slate: its tint and text use `--pick-fill`/`--pick-text`, whose dark values
-  lean the text to the light ink.
+  [style.css](src/style.css) — palette tokens plus semantic roles (`--bg`, `--pane`,
+  `--layer`, `--layer-opaque`, `--field`, `--hover`, `--border`, `--text`,
+  `--text-strong`, `--muted`, `--subtle`, `--accent`, `--valid`, `--warn`, `--error`)
+  and spacing/radius tokens (`--space-*`, `--radius-*`). Dark mode applies via
+  `prefers-color-scheme: dark` (unless overridden with `data-theme="light"`) or
+  explicitly via `data-theme="dark"` (`?theme=light|dark`, also selectable in Display).
+  Use semantic tokens in component styles, not hex literals, and check both schemes.
+  Identity mid-tones (`colorOf`, document accents) work in both. A selected
+  quick-select pill must read as more prominent than an unselected one in both schemes,
+  also in the cores' shared slate: its tint and text use `--pick-fill`/`--pick-text`,
+  whose dark values lean the text to the light ink.
 - **Identity colors:** document accents distinguish Catalog (indigo), Collection
   (teal) and Item/Feature (amber) through the card's icon and type name (and
   the tint of a selected card's heading). Extension identity comes from `colorOf` in
@@ -221,11 +226,12 @@ components rather than introducing another design library.
   named icon-only actions and non-color validity/presence cues. Explain loading,
   missing schemas and errors in text. Do not make hover or a clickable container
   the only way to perform an action.
-- **Localization/theme scope:** the standalone app has an English UI and
-  follows the user's light/dark preference (no manual toggle);
-  Observatory's schema translations do not localize this app. Do not claim
-  multilingual support without implementing and checking it; if introducing
-  it, centralize strings rather than duplicating conditional translations.
+- **Localization/theme scope:** the standalone app has an English UI (not
+  localized; Observatory's schema translations do not localize this app) and
+  follows the user's light/dark preference by default, with an optional
+  `?theme=light|dark` override (and Display selector) so embedding hosts can
+  match their own colour scheme. Do not claim multilingual support without
+  implementing and checking it.
 - **Motion:** keep inspection interactions calm; any new animation/programmatic
   scrolling needs a reduced-motion alternative without hiding state feedback.
 
@@ -244,28 +250,6 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
 
 ## TODO: observed discrepancies and decisions
 
-- [ ] Semantic UI tokens: surfaces have semantic tokens (`--bg`, `--pane`,
-  `--layer`, `--field`, `--hover`), but other colors are still palette tokens
-  (`--slate-500`, …) rather than roles (`--muted`, `--valid`, …), and spacing
-  is still literal. Preserve the standalone tool's identity, not an
-  assumed Observatory rebrand.
-- [ ] Establish consistent explicit focus-visible styling; current components
-  mostly rely on browser defaults. Audit icon-only accessible names in
-  `ExtensionPicker.vue` and related controls rather than relying only on `title`.
-- [ ] Make `DocCard.vue` header selection keyboard-operable; its clickable
-  header is not itself a native interactive control, unlike its expand button.
-- [ ] Check contrast and non-color distinctions for extension/validity/presence
-  states in `Legend.vue`, `FieldChips.vue` and `colors.ts`.
-- [ ] Decide the localization/theme contract before claiming seamless
-  multilingual Observatory embedding. The current app is English only and
-  follows the system color scheme; an embedding host cannot yet choose it.
-- [ ] Establish an explicit software license; attribution of Apache-licensed
-  source documentation in the README is not a repository-wide license.
-- [ ] Embedded metadata: this repository owns the netCDF/TIFF readers
-  (`stac-schema-explorer/readers`); the Observatory still has its own copies
-  (`@observatory/data` `readNetCDFMetadata`, `readTiffMetadata`, and the shared
-  `decodeAttributes` of its netCDF data loader) until it imports this module.
-  Until then, port reader fixes there too.
 - [ ] Software and standards, after the layers and versions slice: a software
   picker that marks which fields a program interprets, writes or ignores; 📜 standards
   as presets of conventions with requirement levels (GeoZarr, still a draft over the
