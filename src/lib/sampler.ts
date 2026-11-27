@@ -1,3 +1,4 @@
+import { baseDocument } from './base-docs';
 import type { Json, JsonObject } from './model';
 import type { SchemaStore } from './schemas';
 
@@ -62,6 +63,8 @@ export const FIELD_HINTS: Record<string, Json[]> = {
     'zarr:node_type': ['group'],
     'sci:doi': ['10.1000/xyz123'],
     'classification:classes': [[{ value: 1, name: 'water', description: 'Open water' }]],
+    'stac:item': [baseDocument('Feature', '1.1.0')],
+    'stac:collection': [baseDocument('Collection', '1.1.0')],
 };
 
 /** Example values for STAC core Common Metadata fields. */

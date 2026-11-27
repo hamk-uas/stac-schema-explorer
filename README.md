@@ -215,17 +215,18 @@ URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) 
 
 Most published STAC schemas have no descriptions and list allowed values without explaining them; the explanations are
 in the extensions' READMEs. This repository therefore vendors STAC core (1.0.0 and 1.1.0), the extensions of the
-quick-select list, the Zarr conventions `proj`, `spatial`, `multiscales` and `nz`
-([zarr-conventions](https://github.com/zarr-conventions)) and the R-CF conventions `cs` (coordinate sets), `ref` and
-`geolocation` ([R-CF](https://github.com/R-CF)) in [schemas/](schemas), as copies that add a title and a
+quick-select list, the Zarr conventions `proj`, `spatial`, `multiscales`, `stac` and `nz`
+([zarr-conventions](https://github.com/zarr-conventions)), the R-CF conventions `cs` (coordinate sets), `ref` and
+`geolocation` ([R-CF](https://github.com/R-CF)), and `license` and `uom`
+([clbarnes](https://github.com/clbarnes)) in [schemas/](schemas), as copies that add a title and a
 description to every field and turn every `enum` into a `oneOf` of titled (and, where documented, described) constants.
 The [Observatory](https://github.com/hamk-uas/observatory) uses these copies, adding its own Finnish and Swedish
 translations of STAC core.
 
 - [schemas/](schemas)`/<host>/<path>` is the documented copy of `https://<host>/<path>`; its `$id` is that URL (upstream
   ids end in `#` or, for v1.1.0 `common.json`, have a typo). Dependencies are unmodified: GeoJSON and PROJJSON, and
-  the schemas `cs` references from other conventions' main branches (ref, geolocation, geo-proj) and units of measure,
-  listed in `DEPENDENCY_URLS` of [scripts/manifest.mjs](scripts/manifest.mjs); the released ref and geolocation are
+  the schemas `cs` references from other conventions' main branches (ref, geolocation, geo-proj),
+  listed in `DEPENDENCY_URLS` of [scripts/manifest.mjs](scripts/manifest.mjs); the released ref, geolocation and uom are
   documented copies of their own.
 - [upstream/](upstream) holds the published originals. The tests ([test/vendored.test.ts](test/vendored.test.ts)) check
   that each copy validates exactly like its original (annotations removed, value lists turned back into `enum`), keeps

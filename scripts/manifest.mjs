@@ -64,6 +64,7 @@ export const VENDORED = [
     ZARR_CONVENTION('proj', 'v0.1'),
     ZARR_CONVENTION('spatial', 'v0.1'),
     ZARR_CONVENTION('multiscales', 'v0.1'),
+    ZARR_CONVENTION('stac', 'v0.1'),
     // NZ-1.0 has no release tag yet (its only tag, v1-proposed, is an earlier draft named NZUG-1.0): pinned to a commit.
     ZARR_CONVENTION('nz', '7c923cf7b5467c1a873ca93c9223bf08d60efc07'),
     // The coordinate set convention (R-CF), registered in `zarr_conventions` by UUID outside github.com/zarr-conventions.
@@ -75,14 +76,22 @@ export const VENDORED = [
     // Conventions cs composes (R-CF), at their release tags: references to other nodes, and geolocation arrays.
     R_CF_CONVENTION('zarr_convention_ref', 'v2.0.0'),
     R_CF_CONVENTION('zarr_convention_geolocation', 'v1.0.0'),
+    // License and units-of-measure conventions (clbarnes), at their release tags.
+    GITHUB_CONVENTION('clbarnes', 'zarr-convention-license', 'v1'),
+    GITHUB_CONVENTION('clbarnes', 'zarr-convention-uom', 'v1'),
 ];
+
+/** A Zarr convention hosted on GitHub: its schema and README at a release tag. */
+function GITHUB_CONVENTION(owner, repo, tag) {
+    return {
+        schemas: [`https://raw.githubusercontent.com/${owner}/${repo}/refs/tags/${tag}/schema.json`],
+        readmes: [`https://raw.githubusercontent.com/${owner}/${repo}/refs/tags/${tag}/README.md`],
+    };
+}
 
 /** A convention of github.com/R-CF: its schema and README at a release tag. */
 function R_CF_CONVENTION(repo, tag) {
-    return {
-        schemas: [`https://raw.githubusercontent.com/R-CF/${repo}/refs/tags/${tag}/schema.json`],
-        readmes: [`https://raw.githubusercontent.com/R-CF/${repo}/refs/tags/${tag}/README.md`],
-    };
+    return GITHUB_CONVENTION('R-CF', repo, tag);
 }
 
 /** A Zarr convention of github.com/zarr-conventions: its schema and README at a release tag, or at a commit (a 40-digit SHA). */
@@ -110,14 +119,13 @@ export const DEPENDENCY_HOSTS = ['geojson.org', 'proj.org', 'json-schema.org'];
 
 /**
  * Other schemas that are only dependencies: those of other conventions that a vendored convention `$ref`s from their
- * main branches (the coordinate set convention uses ref, geolocation, proj and units of measure), whose released
- * versions, where vendored, are documented copies of their own. Vendored unmodified, as fetched from these URLs.
+ * main branches (the coordinate set convention uses ref, geolocation and proj), whose released versions, where
+ * vendored, are documented copies of their own. Vendored unmodified, as fetched from these URLs.
  */
 export const DEPENDENCY_URLS = [
     'https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json',
     'https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/main/schema.json',
     'https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json',
-    'https://raw.githubusercontent.com/clbarnes/zarr-convention-uom/refs/tags/v1/schema.json',
 ];
 
 /** `https://host/path` → `host/path`, the relative location under `schemas/` and `upstream/`. */

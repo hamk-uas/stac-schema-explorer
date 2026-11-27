@@ -278,6 +278,39 @@ describe('embedded placement probing', () => {
         expect(required('zarr-v3:array', UNC1, 'err_corr_1_form')).toEqual({ when: 'any of err_corr_1_dim, err_corr_1_params, err_corr_1_units is present' });
     });
 
+    it('places license, uom and stac Zarr conventions in the node types their schemas allow', async () => {
+        const LICENSE = 'https://raw.githubusercontent.com/clbarnes/zarr-convention-license/refs/tags/v1/schema.json';
+        const UOM = 'https://raw.githubusercontent.com/clbarnes/zarr-convention-uom/refs/tags/v1/schema.json';
+        const STAC = 'https://raw.githubusercontent.com/zarr-conventions/stac/refs/tags/v0.1/schema.json';
+        const store = fixtureStore();
+        const result = await probeEmbedded(store, [LICENSE, UOM, STAC]);
+        for (const n of result.nodes) expect(n.errors, n.key).toEqual([]);
+        const at = (key: string, source: string, location?: string) => result.nodes.find((n) => n.key === key)!.placements
+            .filter((p) => p.source === source && (!location || p.location === location)).map((p) => p.field).sort();
+
+        // license applies to both groups and arrays in Zarr v3 and v2.
+        for (const key of ['zarr-v3:group', 'zarr-v3:array', 'zarr-v2:group', 'zarr-v2:array']) {
+            expect(at(key, LICENSE, '/attributes'), key).toEqual(['license']);
+            expect(at(key, LICENSE, '/attributes/license'), key).toEqual(['file', 'path', 'spdx', 'text', 'url']);
+        }
+        // uom applies to arrays only.
+        for (const key of ['zarr-v3:array', 'zarr-v2:array']) {
+            expect(at(key, UOM, '/attributes'), key).toEqual(['uom']);
+            expect(at(key, UOM, '/attributes/uom'), key).toEqual(['description', 'ucum']);
+            expect(at(key, UOM, '/attributes/uom/ucum'), key).toEqual(['unit', 'version']);
+        }
+        for (const key of ['zarr-v3:group', 'zarr-v2:group']) {
+            expect(result.nodes.find((n) => n.key === key)!.notApplicable, key).toContain(UOM);
+        }
+        // stac applies to groups only; its four prefixed attributes are mutually exclusive.
+        for (const key of ['zarr-v3:group', 'zarr-v2:group']) {
+            expect(at(key, STAC, '/attributes'), key).toEqual(['stac:collection', 'stac:item', 'stac:key', 'stac:link']);
+        }
+        for (const key of ['zarr-v3:array', 'zarr-v2:array']) {
+            expect(result.nodes.find((n) => n.key === key)!.notApplicable, key).toContain(STAC);
+        }
+    });
+
     it('validates a real node against its format and declared conventions', async () => {
         const store = fixtureStore();
         expect(await validateNode(store, { zarr_format: 3, node_type: 'group', attributes: {} }, `${B}zarr/v3/schema.json`, [])).toEqual([]);

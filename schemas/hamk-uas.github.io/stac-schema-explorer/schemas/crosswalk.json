@@ -1409,6 +1409,112 @@
       },
       "relation": "related",
       "note": "A copy of the product's STAC Item embedded in the product; the catalog's Item may differ from it."
+    },
+    {
+      "id": "license-spdx",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/clbarnes/zarr-convention-license/refs/tags/v1/schema.json",
+        "path": [
+          "attributes",
+          "license",
+          "spdx"
+        ],
+        "nodes": "any"
+      },
+      "stac": {
+        "paths": [
+          [
+            "license"
+          ]
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "same",
+      "note": "SPDX license identifier or expression; STAC Collections use SPDX identifiers or \"other\"/\"various\" with a licence link."
+    },
+    {
+      "id": "uom-unit",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/clbarnes/zarr-convention-uom/refs/tags/v1/schema.json",
+        "path": [
+          "attributes",
+          "uom",
+          "ucum",
+          "unit"
+        ],
+        "nodes": [
+          "array"
+        ]
+      },
+      "stac": {
+        "paths": [
+          [
+            "cube:variables",
+            "{name}",
+            "unit"
+          ],
+          [
+            "cube:dimensions",
+            "{name}",
+            "unit"
+          ]
+        ],
+        "in": [
+          "asset",
+          "document"
+        ],
+        "schema": "https://stac-extensions.github.io/datacube/v2.3.0/schema.json"
+      },
+      "relation": "same",
+      "note": "Both use UCUM unit strings."
+    },
+    {
+      "id": "stac-item",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/stac/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "stac:item"
+        ],
+        "nodes": [
+          "group"
+        ]
+      },
+      "stac": {
+        "paths": [
+          []
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "A complete STAC Item embedded in the Zarr group's attributes."
+    },
+    {
+      "id": "stac-collection",
+      "embedded": {
+        "schema": "https://raw.githubusercontent.com/zarr-conventions/stac/refs/tags/v0.1/schema.json",
+        "path": [
+          "attributes",
+          "stac:collection"
+        ],
+        "nodes": [
+          "group"
+        ]
+      },
+      "stac": {
+        "paths": [
+          []
+        ],
+        "in": [
+          "document"
+        ]
+      },
+      "relation": "related",
+      "note": "A complete STAC Collection embedded in the Zarr group's attributes."
     }
   ]
 }

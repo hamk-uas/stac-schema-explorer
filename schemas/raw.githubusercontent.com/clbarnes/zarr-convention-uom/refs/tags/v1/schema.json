@@ -6,12 +6,14 @@
   "properties": {
     "zarr_format": {
       "type": "integer",
-      "description": "Zarr format version"
+      "description": "Zarr format version",
+      "title": "Zarr Format"
     },
     "node_type": {
       "type": "string",
       "const": "array",
-      "description": "Type of Zarr node"
+      "description": "Type of Zarr node",
+      "title": "Node Type"
     },
     "attributes": {
       "type": "object",
@@ -22,7 +24,8 @@
           "description": "Array of convention metadata objects",
           "contains": {
             "$ref": "#/$defs/conventionMetadata"
-          }
+          },
+          "title": "Zarr Conventions"
         },
         "uom": {
           "$ref": "#/$defs/uom"
@@ -31,7 +34,8 @@
       "required": [
         "zarr_conventions",
         "uom"
-      ]
+      ],
+      "title": "Attributes"
     }
   },
   "required": [
@@ -48,26 +52,31 @@
         "schema_url": {
           "type": "string",
           "const": "https://raw.githubusercontent.com/clbarnes/zarr-convention-uom/refs/tags/v1/schema.json",
-          "description": "URL to the JSON Schema definition for this convention"
+          "description": "URL to the JSON Schema definition for this convention",
+          "title": "Schema URL"
         },
         "spec_url": {
           "type": "string",
           "const": "https://github.com/clbarnes/zarr-convention-uom/blob/v1/README.md",
-          "description": "URL to the full specification document"
+          "description": "URL to the full specification document",
+          "title": "Specification URL"
         },
         "uuid": {
           "type": "string",
           "const": "3bbe438d-df37-49fe-8e2b-739296d46dfb",
-          "description": "UUID that permanently identifies this convention"
+          "description": "UUID that permanently identifies this convention",
+          "title": "UUID"
         },
         "name": {
           "type": "string",
-          "description": "Human-readable name of the convention. Should be 'uom'"
+          "description": "Human-readable name of the convention. Should be 'uom'",
+          "title": "Name"
         },
         "description": {
           "type": "string",
           "const": "Units of measurement for Zarr arrays",
-          "description": "Brief description of the convention's purpose and usage"
+          "description": "Brief description of the convention's purpose and usage",
+          "title": "Description"
         }
       },
       "anyOf": [
@@ -95,7 +104,8 @@
       "properties": {
         "description": {
           "type": "string",
-          "description": "Free-text description of the unit of measurement"
+          "description": "Free-text description of the unit of measurement",
+          "title": "Description"
         },
         "ucum": {
           "$ref": "#/$defs/ucum"
@@ -103,7 +113,8 @@
       },
       "required": [
         "ucum"
-      ]
+      ],
+      "title": "Unit of measurement"
     },
     "ucum": {
       "type": "object",
@@ -111,13 +122,16 @@
       "properties": {
         "version": {
           "type": "string",
-          "description": "UCUM specification version"
+          "description": "UCUM specification version",
+          "title": "UCUM version"
         },
         "unit": {
           "type": "string",
-          "description": "UCUM unit string"
+          "description": "UCUM unit string",
+          "title": "UCUM unit"
         }
-      }
+      },
+      "title": "UCUM"
     }
   }
 }

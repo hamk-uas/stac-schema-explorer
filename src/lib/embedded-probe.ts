@@ -6,7 +6,7 @@ import type { FieldSchemaRef } from './fields';
 import { EMBEDDED_CONTAINERS, type Json, type JsonObject, type Placement, type PlacementKind, type SourceInfo } from './model';
 import { getAt, joinPointer } from './pointer';
 import { requirementOf } from './requirement';
-import { Sampler } from './sampler';
+import { FIELD_HINTS, Sampler } from './sampler';
 import { formatErrors, type SchemaStore } from './schemas';
 
 /** Members of a node whose entries are fields of their own: attributes (Zarr, netCDF), TIFF tags and GeoKeys. */
@@ -310,7 +310,10 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
     const base = clone(BASE_NODES[format.id]![nodeType]!);
     const placements: Placement[] = [];
     const notApplicable: string[] = [];
-    const sample = (field: NodeField): Json[] => field.refs.flatMap((ref) => sampler.samplesAt(ref.schemaUrl, ref.pointer)).slice(0, 4);
+    const sample = (field: NodeField): Json[] => [
+        ...(FIELD_HINTS[field.name] ?? []),
+        ...field.refs.flatMap((ref) => sampler.samplesAt(ref.schemaUrl, ref.pointer)),
+    ].slice(0, 6);
     const location = (field: NodeField) => (field.container ? joinPointer('', field.container) : '');
     const classify = (node: JsonObject, field: NodeField, value: Json, validators: ValidateFunction[]): PlacementKind =>
         invalidCandidates(value).some((invalid) => validators.some((validate) => !validate(set(node, field, invalid)))) ? 'validated' : 'presence';
@@ -328,15 +331,17 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
     // Each convention's fields, then all of them in one example node.
     let combined = clone(template);
     const applied: ValidateFunction[] = [];
+    const containerVariants: JsonObject[] = [];
     for (const { url } of conventions) {
         const validate = await store.validator(url);
         const source = sources.find((s) => s.key === url)!;
         const fields = nodeFields(store, url, true).filter((field) => !field.path && source.fields.includes(field.name) && source.containers[field.name] === field.container
             // A container of another format (`attributes` of Zarr and netCDF, `tags` of TIFF) is not where this format keeps fields.
             && (!field.container || ownContainers.has(field.container) || !allContainers.has(field.container)));
-        let node = clone(base);
+        let clean = clone(base);
         const cmo = format.id.startsWith('zarr') ? conventionMetadata(store, url) : undefined;
-        if (cmo) node = set(node, { name: 'zarr_conventions', container: 'attributes', refs: [] }, [cmo]);
+        if (cmo) clean = set(clean, { name: 'zarr_conventions', container: 'attributes', refs: [] }, [cmo]);
+        let node = clone(clean);
         // Fields are added one by one, each kept unless it adds errors: required companions (spatial:dimensions of an array)
         // are kept whatever their order, and a convention that cannot apply here (multiscales in an array) keeps its errors.
         const failures = (candidate: JsonObject) => [validate, formatValidate].reduce((count, v) => count + (v(candidate) ? 0 : v.errors?.length ?? 1), 0);
@@ -375,6 +380,22 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
             notApplicable.push(url);
             continue;
         }
+        // Mutually exclusive alternatives at container level (such as the four `stac:*` fields, where `oneOf` allows only one):
+        // tried on a clean node without the convention's already-placed fields, and kept as variants for required/inner checks.
+        for (const field of fields) {
+            if (values.has(field)) continue;
+            const before = failures(clean);
+            for (const value of sample(field)) {
+                const added = withCompanions(clean, field, value, before);
+                if (!added) continue;
+                let variant = clone(clean);
+                for (const [f, v] of added) variant = set(variant, f, v);
+                if (failures(variant) > 0) continue;
+                placements.push({ source: url, field: field.name, location: location(field), kind: classify(variant, field, value, [validate]) });
+                containerVariants.push(variant);
+                break;
+            }
+        }
         if (cmo) {
             const declared = ((combined.attributes as JsonObject).zarr_conventions as Json[] | undefined) ?? [];
             combined = set(combined, { name: 'zarr_conventions', container: 'attributes', refs: [] }, [...declared, cmo]);
@@ -406,7 +427,7 @@ async function probeNode(store: SchemaStore, sampler: Sampler, format: DataForma
     const placed = new Set<string>();
     // The example node first, then variants holding alternatives the example cannot (`external` coordinate values where
     // the example has `regular` ones), which are searched further for the fields inside them (its `ref`).
-    const docs: JsonObject[] = [combined];
+    const docs: JsonObject[] = [combined, ...containerVariants];
     const MAX_VARIANTS = 16;
     for (let round = 0, changed = true; changed && round < 4; round++) {
         changed = false;
