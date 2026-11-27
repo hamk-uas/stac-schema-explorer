@@ -75,9 +75,9 @@ function fieldTitle(source: string, field: string): string {
     return [doc?.title, doc?.type, 'Click to open field details.'].filter(Boolean).join('\n');
 }
 
-/** Finds the non-core extension/convention that owns a column path segment (e.g. `table:column`, `cube:variable`, `multiscales`). */
+/** Finds the non-core extension/convention that owns a column path segment (e.g. `table:columns[]`, `cube:variables{}`, `multiscales`). */
 function segmentColor(segment: string): string | undefined {
-    const clean = segment.replace(/\[\]$/, '');
+    const clean = segment.replace(/(?:\[\]|\{\})$/, '');
     const colon = clean.indexOf(':');
     const prefix = colon > 0 ? clean.slice(0, colon) : undefined;
     const isCore = (key: string) => key === 'core' || !!formatOfSchema(key) || props.hidden.includes(key);

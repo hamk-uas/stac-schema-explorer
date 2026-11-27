@@ -53,7 +53,7 @@ issues, pull requests, RFCs and documentation.
   `(*)` = conditionally required). Generated JSON validates against STAC core and all selected extensions and can be
   copied or downloaded.
 - **Placement matrix:** compares every field × every conceptual location (`Collection › Asset › Band`, `Item ›
-  properties › cube:variable`, …) on one screen, followed by one matrix per active data format. Hover any mark for
+  properties › cube:variables{}`, …) on one screen, followed by one matrix per active data format. Hover any mark for
   exact JSON Pointers; click a mark to inspect the field and jump to it in the example JSON.
 - **Explore a STAC or data URL:** open a live STAC document (static or STAC API / openEO Collection) and browse its
   children, or open a Zarr store (`zarr.json` / `.zmetadata`), netCDF or TIFF/COG file directly.

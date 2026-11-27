@@ -56,9 +56,9 @@ const KIND_LABEL: Record<string, string> = {
     link: 'Link',
     provider: 'Provider',
     band: 'Band',
-    dimension: 'cube:dimension',
-    variable: 'cube:variable',
-    column: 'table:column',
+    dimension: 'cube:dimensions{}',
+    variable: 'cube:variables{}',
+    column: 'table:columns[]',
 };
 
 export function conceptPath(pointer: string, locations: Set<string>, mapKeys: ReadonlySet<string> = CORE_MAP_KEYS): string[] {

@@ -403,10 +403,10 @@ describe('views', () => {
         const result = await defaultProbe();
         const matrix = buildMatrix(stacMatrixGroups(result.templates), result.sources, new Set([CORE]));
         const keys = matrix.columns.map((c) => c.key);
-        expect(keys).toContain('Feature properties › cube:variable');
+        expect(keys).toContain('Feature properties › cube:variables{}');
         expect(keys).toContain('Collection Item Asset › Band');
         expect(keys).not.toContain('Collection assets › Asset');
-        const cell = matrix.cells.get(`${CF}|cf:cell_methods|Feature properties › cube:variable`);
+        const cell = matrix.cells.get(`${CF}|cf:cell_methods|Feature properties › cube:variables{}`);
         expect(cell?.kind).toBe('validated');
         expect(matrix.cells.get(`${DATACUBE}|cube:dimensions|Collection `)?.partial).toBe(false);
         expect(matrix.cells.get(`${DATACUBE}|cube:dimensions|Collection Asset`)?.partial).toBe(false);
