@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf } from '../lib/colors';
-import { customOrigin, describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, repoUrl, toShortId } from '../lib/extensions';
+import { customOrigin, describeUrl, fromShortId, KNOWN_EXTENSIONS, normalizeSchemaUrl, repoUrl, toShortId, type KnownExtension } from '../lib/extensions';
 import type { SourceInfo } from '../lib/model';
 
 const props = defineProps<{ modelValue: string[]; sources: SourceInfo[] }>();
@@ -16,6 +16,15 @@ function info(url: string) {
     return props.sources.find((s) => s.key === normalizeSchemaUrl(url));
 }
 
+function knownOf(url: string): KnownExtension | undefined {
+    const key = normalizeSchemaUrl(url);
+    return KNOWN_EXTENSIONS.find((ext) => ext.versions.some((v) => v.url === key));
+}
+
+function activeUrl(ext: KnownExtension): string | undefined {
+    return ext.versions.find((v) => selected.value.has(v.url))?.url;
+}
+
 function label(url: string) {
     const known = info(url);
     const origin = customOrigin(url);
@@ -27,6 +36,40 @@ function label(url: string) {
 function toggle(url: string) {
     const key = normalizeSchemaUrl(url);
     emit('update:modelValue', selected.value.has(key) ? props.modelValue.filter((u) => normalizeSchemaUrl(u) !== key) : [...props.modelValue, key]);
+}
+
+function toggleKnown(ext: KnownExtension) {
+    const urls = new Set(ext.versions.map((v) => v.url));
+    if (ext.versions.some((v) => selected.value.has(v.url))) {
+        emit('update:modelValue', props.modelValue.filter((u) => !urls.has(normalizeSchemaUrl(u))));
+    } else {
+        emit('update:modelValue', [...props.modelValue, ext.versions[0].url]);
+    }
+}
+
+function changeVersion(oldUrl: string, newUrl: string) {
+    const oldKey = normalizeSchemaUrl(oldUrl);
+    const newKey = normalizeSchemaUrl(newUrl);
+    if (oldKey === newKey) return;
+    const next: string[] = [];
+    for (const u of props.modelValue) {
+        const key = normalizeSchemaUrl(u);
+        const target = key === oldKey ? newKey : key;
+        if (!next.includes(target)) next.push(target);
+    }
+    emit('update:modelValue', next);
+}
+
+function quickTitle(ext: KnownExtension): string {
+    const latest = ext.versions[0];
+    const active = activeUrl(ext);
+    const versions = ext.versions.length > 1 ? `Versions: ${ext.versions.map((v) => `v${v.version}`).join(', ')}` : '';
+    return [
+        `${ext.fullTitle ?? `${ext.title} Extension`}${ext.note ? ` (${ext.note})` : ''}`,
+        versions,
+        active ?? latest.url,
+        active ? 'Click to remove this extension.' : `Click to add v${latest.version} (version can be changed in the list above).`,
+    ].filter(Boolean).join('\n');
 }
 
 function add() {
@@ -59,10 +102,20 @@ function add() {
           @click="emit('focus', normalizeSchemaUrl(url))"
         >
           {{ label(url).title }}
-          <span v-if="label(url).version" class="ver">v{{ label(url).version }}</span>
+          <span v-if="label(url).version && !(knownOf(url) && knownOf(url)!.versions.length > 1)" class="ver">v{{ label(url).version }}</span>
           <span v-if="label(url).origin" class="origin" title="Custom schema URL (not from the quick-select list)">{{ label(url).origin }}</span>
           <code v-for="p in label(url).prefixes" :key="p" class="prefix">{{ p }}:</code>
         </button>
+        <select
+          v-if="knownOf(url) && knownOf(url)!.versions.length > 1"
+          class="ver-select"
+          :value="normalizeSchemaUrl(url)"
+          :aria-label="`Version of ${label(url).title}`"
+          title="Change extension schema version"
+          @change="changeVersion(url, ($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="v in knownOf(url)!.versions" :key="v.url" :value="v.url">v{{ v.version }}</option>
+        </select>
         <a
           v-if="repoUrl(url)"
           :href="repoUrl(url)"
@@ -94,21 +147,17 @@ function add() {
     </div>
     <p class="hint">Published STAC extensions, or paste any custom or draft JSON Schema URL above.</p>
     <div class="quick">
-      <template v-for="ext in KNOWN_EXTENSIONS" :key="ext.name">
-        <button
-          v-for="v in ext.versions"
-          :key="v.url"
-          type="button"
-          class="q"
-          :class="{ on: selected.has(v.url) }"
-          :aria-pressed="selected.has(v.url)"
-          :style="selected.has(v.url) ? { '--c': colorOf(v.url) } : undefined"
-          :title="`${ext.fullTitle ?? `${ext.title} Extension`} ${v.version}${ext.note ? ` (${ext.note})` : ''}\n${v.url}\nClick to ${selected.has(v.url) ? 'remove' : 'add'} this extension.`"
-          @click="toggle(v.url)"
-        >
-          {{ ext.title }}<span v-if="ext.versions.length > 1 || v.version === 'dev'" class="ver">{{ v.version }}</span>
-        </button>
-      </template>
+      <button
+        v-for="ext in KNOWN_EXTENSIONS"
+        :key="ext.name"
+        type="button"
+        class="q"
+        :class="{ on: !!activeUrl(ext) }"
+        :aria-pressed="!!activeUrl(ext)"
+        :style="activeUrl(ext) ? { '--c': colorOf(activeUrl(ext)!) } : undefined"
+        :title="quickTitle(ext)"
+        @click="toggleKnown(ext)"
+      >{{ ext.title }}</button>
     </div>
   </div>
 </template>
@@ -161,6 +210,15 @@ function add() {
   font-size: 11px;
   color: var(--slate-500);
   margin-left: 3px;
+}
+.ver-select {
+  border: 0;
+  border-radius: 4px;
+  background: var(--field);
+  color: var(--slate-700);
+  font: 500 11px var(--sans);
+  padding: 1px 4px;
+  cursor: pointer;
 }
 .prefix,
 .origin {

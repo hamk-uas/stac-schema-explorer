@@ -18,12 +18,9 @@ const selected = computed(() => CORES.filter((core) => props.modelValue.includes
 const set = (ids: string[]) => emit('update:modelValue', ALL_CORES.filter((id) => ids.includes(id)));
 const toggle = (id: string) => set(props.modelValue.includes(id) ? props.modelValue.filter((c) => c !== id) : [...props.modelValue, id]);
 
-/** STAC is shown in one version at a time: choosing a version selects STAC, choosing the shown one deselects it. */
-function pickStac(version: string) {
-    const shown = props.modelValue.includes('stac') && props.stacVersion === version;
-    if (shown) return set(props.modelValue.filter((c) => c !== 'stac'));
-    emit('update:stacVersion', version);
-    if (!props.modelValue.includes('stac')) set([...props.modelValue, 'stac']);
+/** Toggling STAC selects it (at its current version, defaulting to latest) or hides it. */
+function toggleStac() {
+    toggle('stac');
 }
 
 function links(core: Core): { label: string; href: string; title: string }[] {
@@ -51,9 +48,18 @@ function links(core: Core): { label: string; href: string; title: string }[] {
           @click="emit('focus', core.source)"
         >
           {{ core.title }}
-          <span v-if="core.id === 'stac'" class="ver">{{ stacVersion }}</span>
           <span class="kind"><span aria-hidden="true">{{ LAYERS[core.layer].symbol }}</span> {{ core.layer === 'standard' ? 'Standard' : 'Format' }}</span>
         </button>
+        <select
+          v-if="core.id === 'stac'"
+          class="ver-select"
+          :value="stacVersion"
+          aria-label="STAC specification version"
+          title="Change STAC specification version"
+          @change="emit('update:stacVersion', ($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="v in STAC_VERSIONS" :key="v" :value="v">v{{ v }}</option>
+        </select>
         <a v-for="link in links(core)" :key="link.label" :href="link.href" target="_blank" rel="noopener" class="icon text" :title="link.title">{{ link.label }}</a>
         <button type="button" class="icon" :title="`Click to hide ${core.title} fields`" :aria-label="`Remove ${core.title}`" @click="toggle(core.id)">×</button>
       </li>
@@ -67,16 +73,14 @@ function links(core: Core): { label: string; href: string; title: string }[] {
     </div>
     <div class="quick">
       <button
-        v-for="v in STAC_VERSIONS"
-        :key="v"
         type="button"
         class="q"
-        :class="{ on: modelValue.includes('stac') && stacVersion === v }"
-        :aria-pressed="modelValue.includes('stac') && stacVersion === v"
-        :style="modelValue.includes('stac') && stacVersion === v ? { '--c': colorOf('core') } : undefined"
-        :title="modelValue.includes('stac') && stacVersion === v ? `STAC ${v} core fields are shown.\nClick to hide STAC core fields.` : `STAC ${v}: core fields of the STAC specification.\nClick to select STAC ${v} and show its fields.`"
-        @click="pickStac(v)"
-      >STAC<span class="ver">{{ v }}</span></button>
+        :class="{ on: modelValue.includes('stac') }"
+        :aria-pressed="modelValue.includes('stac')"
+        :style="modelValue.includes('stac') ? { '--c': colorOf('core') } : undefined"
+        :title="modelValue.includes('stac') ? `STAC v${stacVersion} core fields are shown.\nClick to hide STAC core fields.` : `SpatioTemporal Asset Catalog (STAC) core specification.\nClick to show STAC v${stacVersion} core fields (version can be changed in the list above).`"
+        @click="toggleStac"
+      >STAC</button>
       <button
         v-for="core in CORES.filter((c) => c.layer === 'format')"
         :key="core.id"
@@ -140,6 +144,15 @@ function links(core: Core): { label: string; href: string; title: string }[] {
   font-size: 11px;
   color: var(--slate-500);
   margin-left: 3px;
+}
+.ver-select {
+  border: 0;
+  border-radius: 4px;
+  background: var(--field);
+  color: var(--slate-700);
+  font: 500 11px var(--sans);
+  padding: 1px 4px;
+  cursor: pointer;
 }
 .kind {
   font-size: 10px;

@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf } from '../lib/colors';
-import { CONVENTION_KINDS, conventionOfSchema, fromConventionShortId, KNOWN_CONVENTIONS, toConventionShortId } from '../lib/conventions';
+import { CONVENTION_KINDS, conventionOfSchema, fromConventionShortId, KNOWN_CONVENTIONS, toConventionShortId, type KnownConvention } from '../lib/conventions';
 import type { EmbeddedSourceInfo } from '../lib/embedded-probe';
 import { normalizeSchemaUrl, repoUrl } from '../lib/extensions';
 
@@ -18,6 +18,14 @@ function info(url: string) {
     return props.sources.find((s) => s.key === normalizeSchemaUrl(url));
 }
 
+function knownOf(url: string): KnownConvention | undefined {
+    return conventionOfSchema(url)?.convention;
+}
+
+function activeUrl(convention: KnownConvention): string | undefined {
+    return convention.versions.find((v) => selected.value.has(v.schema))?.schema;
+}
+
 function label(url: string) {
     const known = conventionOfSchema(url);
     const kind = CONVENTION_KINDS.find((k) => k.kind === known?.convention.kind)?.title.replace(/s$/, '');
@@ -27,6 +35,41 @@ function label(url: string) {
 function toggle(url: string) {
     const key = normalizeSchemaUrl(url);
     emit('update:modelValue', selected.value.has(key) ? props.modelValue.filter((u) => normalizeSchemaUrl(u) !== key) : [...props.modelValue, key]);
+}
+
+function toggleKnown(convention: KnownConvention) {
+    const urls = new Set(convention.versions.map((v) => v.schema));
+    if (convention.versions.some((v) => selected.value.has(v.schema))) {
+        emit('update:modelValue', props.modelValue.filter((u) => !urls.has(normalizeSchemaUrl(u))));
+    } else {
+        emit('update:modelValue', [...props.modelValue, convention.versions[0].schema]);
+    }
+}
+
+function changeVersion(oldUrl: string, newUrl: string) {
+    const oldKey = normalizeSchemaUrl(oldUrl);
+    const newKey = normalizeSchemaUrl(newUrl);
+    if (oldKey === newKey) return;
+    const next: string[] = [];
+    for (const u of props.modelValue) {
+        const key = normalizeSchemaUrl(u);
+        const target = key === oldKey ? newKey : key;
+        if (!next.includes(target)) next.push(target);
+    }
+    emit('update:modelValue', next);
+}
+
+function quickTitle(convention: KnownConvention): string {
+    const latest = convention.versions[0];
+    const active = activeUrl(convention);
+    const versions = convention.versions.length > 1 ? `Versions: ${convention.versions.map((v) => v.version).join(', ')}` : '';
+    return [
+        `${convention.title}: ${convention.description}`,
+        `Formats: ${convention.formats.join(', ')}`,
+        versions,
+        active ?? latest.schema,
+        active ? 'Click to remove this convention.' : `Click to add ${latest.version}${convention.versions.length > 1 ? ' (version can be changed in the list above)' : ''}.`,
+    ].filter(Boolean).join('\n');
 }
 
 function add() {
@@ -59,10 +102,20 @@ function add() {
           @click="emit('focus', normalizeSchemaUrl(url))"
         >
           {{ label(url).title }}
-          <span v-if="label(url).version" class="ver">{{ label(url).version }}</span>
+          <span v-if="label(url).version && !(knownOf(url) && knownOf(url)!.versions.length > 1)" class="ver">{{ label(url).version }}</span>
           <span class="kind">{{ label(url).kind }}</span>
           <span v-if="label(url).authored" class="unofficial" title="No official JSON Schema exists; this app's schema describes the convention">unofficial schema</span>
         </button>
+        <select
+          v-if="knownOf(url) && knownOf(url)!.versions.length > 1"
+          class="ver-select"
+          :value="normalizeSchemaUrl(url)"
+          :aria-label="`Version of ${label(url).title}`"
+          title="Change convention schema version"
+          @change="changeVersion(url, ($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="v in knownOf(url)!.versions" :key="v.schema" :value="v.schema">{{ v.version }}</option>
+        </select>
         <a v-if="repoUrl(url)" :href="repoUrl(url)" target="_blank" rel="noopener" class="icon text" :title="`Open the repository (README) in a new tab\n${repoUrl(url)}`" :aria-label="`Repository of ${label(url).title}`">site ↗</a>
         <a v-if="/^https?:\/\//i.test(url)" :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema in a new tab\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
         <button type="button" class="icon" :title="`Click to remove ${toConventionShortId(url)}`" :aria-label="`Remove ${label(url).title}`" @click="toggle(url)">×</button>
@@ -83,21 +136,17 @@ function add() {
     <template v-for="group in CONVENTION_KINDS" :key="group.kind">
       <h4 class="kind-title" :title="group.hint">{{ group.title }}</h4>
       <div class="quick">
-        <template v-for="convention in KNOWN_CONVENTIONS.filter((c) => c.kind === group.kind)" :key="convention.id">
-          <button
-            v-for="v in convention.versions"
-            :key="v.schema"
-            type="button"
-            class="q"
-            :class="{ on: selected.has(v.schema) }"
-            :aria-pressed="selected.has(v.schema)"
-            :style="selected.has(v.schema) ? { '--c': colorOf(v.schema) } : undefined"
-            :title="`${convention.title} ${v.version}: ${convention.description}\nFormats: ${convention.formats.join(', ')}\n${v.schema}\nClick to ${selected.has(v.schema) ? 'remove' : 'add'} this convention.`"
-            @click="toggle(v.schema)"
-          >
-            {{ convention.title }}<span class="ver">{{ v.version }}</span>
-          </button>
-        </template>
+        <button
+          v-for="convention in KNOWN_CONVENTIONS.filter((c) => c.kind === group.kind)"
+          :key="convention.id"
+          type="button"
+          class="q"
+          :class="{ on: !!activeUrl(convention) }"
+          :aria-pressed="!!activeUrl(convention)"
+          :style="activeUrl(convention) ? { '--c': colorOf(activeUrl(convention)!) } : undefined"
+          :title="quickTitle(convention)"
+          @click="toggleKnown(convention)"
+        >{{ convention.title }}</button>
       </div>
     </template>
   </div>
@@ -151,6 +200,15 @@ function add() {
   font-size: 11px;
   color: var(--slate-500);
   margin-left: 3px;
+}
+.ver-select {
+  border: 0;
+  border-radius: 4px;
+  background: var(--field);
+  color: var(--slate-700);
+  font: 500 11px var(--sans);
+  padding: 1px 4px;
+  cursor: pointer;
 }
 .kind,
 .unofficial {
