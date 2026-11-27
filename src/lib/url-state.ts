@@ -22,6 +22,28 @@ function readRewrite(value: string): Rewrite | undefined {
 export type Mode = 'example' | 'href';
 export type Theme = '' | 'light' | 'dark';
 
+export interface ExampleUrl {
+    label: string;
+    href: string;
+}
+
+function readExample(value: string): ExampleUrl | undefined {
+    const bar = value.indexOf('|');
+    const rawLabel = bar >= 0 ? value.slice(0, bar).trim() : '';
+    const href = (bar >= 0 ? value.slice(bar + 1) : value).trim();
+    try {
+        const parsed = new URL(href);
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return undefined;
+    } catch {
+        return undefined;
+    }
+    return { label: rawLabel || href, href };
+}
+
+function writeExample(example: ExampleUrl): string {
+    return example.label && example.label !== example.href ? `${example.label}|${example.href}` : example.href;
+}
+
 export interface AppState {
     mode: Mode;
     stacVersion: string;
@@ -29,6 +51,8 @@ export interface AppState {
     /** Schemas of conventions of embedded metadata (Zarr conventions, CF, ACDD, …), the counterparts of extensions. */
     conventions: string[];
     href: string;
+    /** Additional example URLs offered in URL-explore mode (`example=label|url` or `example=url`). */
+    examples: ExampleUrl[];
     /** Selected document: `catalog`, `subcatalog`, `collection`, `item` in the example, or a document URL. */
     selected: string;
     /** Selected object pointer within the selected document. */
@@ -60,6 +84,7 @@ export function defaultState(): AppState {
         extensions: [],
         conventions: [],
         href: '',
+        examples: [],
         selected: 'collection',
         pointer: '',
         cores: [...ALL_CORES],
@@ -79,6 +104,7 @@ export function readState(search: string): AppState {
     const params = new URLSearchParams(search);
     const state = defaultState();
     if (params.has('href')) state.href = params.get('href') ?? '';
+    state.examples = params.getAll('example').map(readExample).filter((e): e is ExampleUrl => !!e);
     state.mode = params.get('mode') === 'href' || (params.get('mode') === null && state.href) ? 'href' : 'example';
     const version = params.get('v');
     if (version && (STAC_VERSIONS as readonly string[]).includes(version)) state.stacVersion = version;
@@ -115,6 +141,7 @@ export function writeState(state: AppState): string {
     for (const url of state.extensions) params.append('ext', toShortId(url));
     for (const url of state.conventions) params.append('conv', toConventionShortId(url));
     if (state.href) params.set('href', state.href);
+    for (const example of state.examples) params.append('example', writeExample(example));
     if (state.selected && !(state.mode === 'href' && state.selected === state.href)) params.set('sel', state.selected);
     if (state.pointer) params.set('ptr', state.pointer);
     if (ALL_CORES.some((id) => !state.cores.includes(id))) {

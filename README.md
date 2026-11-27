@@ -101,6 +101,7 @@ https://hamk-uas.github.io/stac-schema-explorer/?ext=table@1.3.0&ext=https://raw
 | `ext` | STAC extension, repeatable: `name@version` or a full JSON Schema URL (none when omitted) |
 | `conv` | Data convention, repeatable: `name@version` (e.g. `proj@v0.1`, `cf@1.13`) or a schema URL (none when omitted) |
 | `href` | Remote STAC document or data file URL (Zarr store/metadata, netCDF, TIFF) to explore |
+| `example` | Additional example URL to list under *Try:* in URL mode, repeatable: `Label\|https://…` or `https://…` |
 | `sel`, `ptr` | Selected document (`catalog`, `subcatalog`, `collection`, `item`, URL, or `node:…`) and JSON Pointer |
 | `view` | `matrix` for the placement matrix (omit for the tree view) |
 | `focus` | Schema key (`core`, `name@version`, or schema URL) whose fields are highlighted |

@@ -64,12 +64,19 @@ describe('url state', () => {
         state.schema = EOPF;
         state.cores = ['stac', 'netcdf'];
         state.theme = 'dark';
+        state.examples = [
+            { label: 'Custom Item', href: 'https://example.com/custom-item.json' },
+            { label: 'https://example.com/plain.zarr', href: 'https://example.com/plain.zarr' },
+        ];
         const search = writeState(state);
         expect(search).toContain('ext=cf@1.0.0');
         expect(search).toContain('core=stac&core=netcdf');
         expect(search).toContain('theme=dark');
+        expect(search).toContain('example=Custom+Item|https://example.com/custom-item.json');
         expect(readState(search)).toEqual(state);
         expect(readState('?theme=invalid').theme).toBe('');
+        expect(readState('?example=Bad|javascript:alert(1)&example=Good|https://example.com/a.json').examples)
+            .toEqual([{ label: 'Good', href: 'https://example.com/a.json' }]);
     });
 
     it('starts with every core and no extensions or conventions, and keeps chosen ones', () => {

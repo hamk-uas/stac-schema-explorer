@@ -822,13 +822,15 @@ const findings = computed(() => {
 });
 
 const EXAMPLE_URLS = [
-    { label: 'Arctic TROPOMI CH4 Item', href: 'https://cardsmirror.blob.core.windows.net/arctic-tropomi-ch4-l3/stac/arctic-tropomi-ch4-l3-2021/arctic-tropomi-ch4-l3-2021.json' },
-    { label: 'Arctic TROPOMI CH4 Zarr store', href: 'https://cardsmirror.blob.core.windows.net/arctic-tropomi-ch4-l3/arctic_tropomi_ch4_l3_2021.zarr' },
     { label: 'Sentinel-2 L2A COG (Earth Search)', href: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/36/Q/WD/2020/7/S2A_36QWD_20200701_0_L2A/B04.tif' },
     { label: 'EOPF Sentinel-2 L1C (API)', href: 'https://stac.core.eopf.eodc.eu/collections/sentinel-2-l1c' },
     { label: 'Earth Search Sentinel-2 L2A (API)', href: 'https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a' },
     { label: 'openEO CDSE Sentinel-2 L2A collection', href: 'https://openeo.dataspace.copernicus.eu/openeo/1.2/collections/SENTINEL2_L2A' },
 ];
+const exampleUrls = computed(() => [
+    ...state.examples,
+    ...EXAMPLE_URLS.filter((ex) => !state.examples.some((custom) => custom.href === ex.href)),
+]);
 
 onMounted(() => {
     if (state.mode === 'href' && state.href) void openHref(state.href, true);
@@ -1153,7 +1155,7 @@ onMounted(() => {
         <p class="examples">
           Try:
           <button
-            v-for="ex in EXAMPLE_URLS"
+            v-for="ex in exampleUrls"
             :key="ex.href"
             type="button"
             class="link"
