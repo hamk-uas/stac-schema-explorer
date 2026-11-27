@@ -760,6 +760,11 @@ function showSchemaField(name: string) {
     openField(panel.source, name, panel.sources);
 }
 
+function selectJsonField(source: string, name: string, parent: string) {
+    select(state.selected, [parent], [name]);
+    openField(source, name, selectedDocument.value?.sources);
+}
+
 const fullAppUrl = computed(() => {
     const url = new URL(location.href);
     url.searchParams.delete('embed');
@@ -1101,7 +1106,9 @@ onMounted(() => {
         :href="selectedDocument?.href"
         :rewrites="selectedDocument?.rewrites"
         :index="jsonIndex"
+        :sources="selectedDocument?.sources ?? []"
         :pointers="jsonPointers"
+        @field="selectJsonField"
       />
     </div>
 

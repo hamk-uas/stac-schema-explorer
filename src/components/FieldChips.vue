@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 
 import { colorOf, sourceLabel, versionLabel } from '../lib/colors';
+import { EDIT_TEXT, fieldTitle as buildFieldTitle, STATE_TEXT } from '../lib/field-tooltip';
 import type { SourceInfo } from '../lib/model';
 import { requirementText } from '../lib/requirement';
 import { groupFields, type FieldGroup, type FieldView } from '../lib/tree';
@@ -35,24 +36,8 @@ function toggle(group: FieldGroup) {
     emit('group', source, group.fields.map((f) => f.name));
 }
 
-const STATE_TEXT = {
-    populated: 'populated',
-    possible: 'allowed here, not populated',
-    unexpected: 'populated, but no selected or declared schema places it here',
-};
-
 function fieldTitle(field: FieldView): string {
-    const how = field.kind === 'presence'
-        ? 'the schema does not validate the value here, but its presence satisfies the extension\'s "at least one field" requirement'
-        : field.kind === 'validated' ? 'validated here by the schema' : '';
-    // Placed fields (with a kind) are required or optional where they are placed.
-    const need = field.kind ? requirementText(field.required, true) : '';
-    const doc = docOf(field);
-    const about = doc ? [`${doc.title ?? ''}${doc.title ? ' — ' : ''}${doc.type}`, firstSentence(doc.description)] : [];
-    const state = field.edit ? EDIT_TEXT[field.edit] : STATE_TEXT[field.state];
-    return [field.name, ...about, '', sourceLabel(field.source, props.sources), state, ...(need ? [need] : []), how, '', 'Click for details.']
-        .filter((line, i, all) => line !== undefined && !(line === '' && all[i - 1] === ''))
-        .join('\n');
+    return buildFieldTitle(field, props.sources);
 }
 
 /** The marker of a required field: `*` always, `(*)` when a condition holds. */
@@ -66,8 +51,6 @@ function pickLabel(field: FieldView): string {
     return field.required ? `${field.name}, ${requirementText(field.required, true)}` : field.name;
 }
 
-const EDIT_TEXT = { added: 'added by a rewrite (example value)', removed: 'removed by a rewrite' };
-
 /** The edit button of a field: add an absent field, remove a present one, or undo its rewrite. */
 function editAction(field: FieldView): { symbol: string; label: string } {
     if (field.edit === 'added') return { symbol: '×', label: `Undo adding ${field.name}` };
@@ -78,13 +61,6 @@ function editAction(field: FieldView): { symbol: string; label: string } {
 
 function docOf(field: FieldView) {
     return props.sources.find((s) => s.key === field.source)?.docs[field.name];
-}
-
-function firstSentence(text: string | undefined): string | undefined {
-    if (!text) return undefined;
-    const end = text.search(/\.\s/);
-    if (end > 0 && end < 200) return text.slice(0, end + 1);
-    return text.length > 200 ? `${text.slice(0, 197)}…` : text;
 }
 
 function groupState(group: FieldGroup): string {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 
-import type { JsonObject } from '../lib/model';
+import type { JsonObject, SourceInfo } from '../lib/model';
 import type { FieldView } from '../lib/tree';
 import JsonNode from './JsonNode.vue';
 
@@ -12,7 +12,12 @@ const props = defineProps<{
     /** Number of rewrites applied to `doc`: it is not the document as published. */
     rewrites?: number;
     index: Map<string, FieldView>;
+    sources: SourceInfo[];
     pointers: string[];
+}>();
+
+const emit = defineEmits<{
+    field: [source: string, name: string, parent: string];
 }>();
 
 const container = ref<HTMLElement>();
@@ -73,9 +78,11 @@ watch(() => [props.pointers, props.doc], async () => {
         pointer=""
         parent=""
         :index="index"
+        :sources="sources"
         :highlighted="highlighted"
         :depth="0"
         :last="true"
+        @field="(s: string, n: string, p: string) => emit('field', s, n, p)"
       />
       <p v-else class="empty">Select a document or a data node in the tree.</p>
     </div>
