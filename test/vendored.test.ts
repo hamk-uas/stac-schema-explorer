@@ -88,7 +88,7 @@ describe('drafting documentation', () => {
         expect(draftWritable(GEOLOCATION, PROJ)).toBe(false);
         expect(draftWritable(GEOLOCATION, `${R_CF}zarr_convention_ref/refs/tags/v2.0.0/schema.json`)).toBe(false);
         expect(draftWritable(PROJ, 'https://proj.org/schemas/v0.7/projjson.schema.json')).toBe(false);
-        expect(draftWritable(`${R_CF}zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json`, `${R_CF}zarr_convention_ref/main/schema.json`)).toBe(false);
+        expect(draftWritable(`${R_CF}zarr_conventions_cs/c131620d06b067cefec0963a805e941e31ec55df/schema.json`, `${R_CF}zarr_convention_ref/main/schema.json`)).toBe(false);
     });
 
     it('documents a property referencing a document it may not change next to its own $ref', () => {

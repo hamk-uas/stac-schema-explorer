@@ -1,6 +1,6 @@
 import { conventionOfSchema } from './conventions';
 import { CORE, type Json, type JsonObject, type Placement, type SourceInfo } from './model';
-import { getAt, joinPointer } from './pointer';
+import { getAt, isSafeKey, joinPointer, splitPointer } from './pointer';
 import { mapKeysOf, shapeOf, type FieldEdit, type FieldEdits } from './tree';
 
 /**
@@ -41,6 +41,7 @@ export function templateValue(template: { doc: JsonObject; placements: Placement
 export function applyRewrites(doc: JsonObject, rewrites: readonly Rewrite[], valueOf: (rewrite: Rewrite) => Json | undefined): JsonObject {
     const out = clone(doc);
     for (const rewrite of rewrites) {
+        if (!isSafeKey(rewrite.field) || splitPointer(rewrite.pointer).some((s) => !isSafeKey(s))) continue;
         const target = getAt(out, rewrite.pointer);
         if (!isObject(target)) continue;
         if (rewrite.op === 'remove') delete target[rewrite.field];

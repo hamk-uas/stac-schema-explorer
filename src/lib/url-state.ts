@@ -1,7 +1,8 @@
 import { fromConventionShortId, toConventionShortId } from './conventions';
 import { ALL_CORES } from './cores';
-import { fromShortId, toShortId } from './extensions';
+import { fromShortId, isHttpUrl, toShortId } from './extensions';
 import { STAC_VERSIONS } from './model';
+import { isSafeKey, splitPointer } from './pointer';
 import type { Rewrite } from './rewrites';
 
 const sourceId = (source: string) => (source === 'core' || source.startsWith('?') ? source : toShortId(source));
@@ -16,7 +17,10 @@ function readRewrite(value: string): Rewrite | undefined {
     const parts = value.split('|');
     if (parts.length < 5 || (parts[0] !== 'add' && parts[0] !== 'remove')) return undefined;
     // A field name has no `|`; the pointer takes whatever is left between the document and the field.
-    return { op: parts[0], source: sourceUrl(parts[1]), doc: parts[2], pointer: parts.slice(3, -1).join('|'), field: parts[parts.length - 1] };
+    const pointer = parts.slice(3, -1).join('|');
+    const field = parts[parts.length - 1];
+    if (!isSafeKey(field) || splitPointer(pointer).some((s) => !isSafeKey(s))) return undefined;
+    return { op: parts[0], source: sourceUrl(parts[1]), doc: parts[2], pointer, field };
 }
 
 export type Mode = 'example' | 'href';
@@ -103,7 +107,8 @@ export function defaultState(): AppState {
 export function readState(search: string): AppState {
     const params = new URLSearchParams(search);
     const state = defaultState();
-    if (params.has('href')) state.href = params.get('href') ?? '';
+    const rawHref = params.get('href')?.trim() ?? '';
+    if (isHttpUrl(rawHref)) state.href = rawHref;
     state.examples = params.getAll('example').map(readExample).filter((e): e is ExampleUrl => !!e);
     state.mode = params.get('mode') === 'href' || (params.get('mode') === null && state.href) ? 'href' : 'example';
     const version = params.get('v');
@@ -118,7 +123,10 @@ export function readState(search: string): AppState {
     state.includeDeclared = params.get('declared') !== '0';
     state.view = params.get('view') === 'matrix' ? 'matrix' : 'tree';
     const focus = params.get('focus');
-    state.focus = focus ? (focus === 'core' ? 'core' : fromShortId(focus)) : '';
+    if (focus) {
+        const resolved = focus === 'core' ? 'core' : fromShortId(focus);
+        state.focus = resolved === 'core' || isHttpUrl(resolved) ? resolved : '';
+    }
     const field = params.get('field');
     if (field && field.includes('|')) {
         const at = field.indexOf('|');
@@ -126,7 +134,10 @@ export function readState(search: string): AppState {
         state.field = `${source === 'core' ? 'core' : fromShortId(source)}|${field.slice(at + 1)}`;
     }
     const schema = params.get('schema');
-    if (schema && !state.field) state.schema = schema === 'core' || schema.startsWith('?') ? schema : fromShortId(schema);
+    if (schema && !state.field) {
+        const resolved = schema === 'core' || schema.startsWith('?') ? schema : fromShortId(schema);
+        state.schema = resolved === 'core' || resolved.startsWith('?') || isHttpUrl(resolved) ? resolved : '';
+    }
     state.rewrites = params.getAll('rw').map(readRewrite).filter((r): r is Rewrite => !!r);
     state.embed = params.get('embed') === '1';
     const theme = params.get('theme');

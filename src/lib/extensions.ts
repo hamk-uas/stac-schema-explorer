@@ -21,19 +21,19 @@ export const KNOWN_EXTENSIONS: readonly KnownExtension[] = [
     se('classification', 'Classification', ['2.0.0']),
     se('eo', 'EO', ['2.0.0']),
     se('raster', 'Raster', ['2.0.0']),
-    se('projection', 'Projection', ['2.0.0']),
+    se('projection', 'Projection', ['2.1.0']),
     se('file', 'File Info', ['2.1.0']),
     se('zarr', 'Zarr', ['1.1.0']),
     se('scientific', 'Scientific', ['1.0.0']),
     se('attribution', 'Attribution', ['0.1.0']),
-    se('processing', 'Processing', ['1.2.0']),
-    se('product', 'Product', ['1.0.0']),
+    se('processing', 'Processing', ['1.3.0']),
+    se('product', 'Product', ['1.1.0']),
     se('timestamps', 'Timestamps', ['1.1.0']),
     se('version', 'Version', ['1.2.0']),
     se('language', 'Language', ['1.0.0']),
-    se('contacts', 'Contacts', ['0.1.1']),
+    se('contacts', 'Contacts', ['1.0.1']),
     se('storage', 'Storage', ['2.0.0']),
-    se('render', 'Render', ['2.0.0']),
+    se('render', 'Render', ['2.1.0']),
     se('sat', 'Satellite', ['1.2.0']),
     se('view', 'View', ['1.1.0']),
     se('grid', 'Grid', ['1.1.0']),
@@ -55,6 +55,17 @@ const STAC_EXTENSIONS_URL = /^https:\/\/stac-extensions\.github\.io\/([a-z0-9-]+
 
 export function normalizeSchemaUrl(url: string): string {
     return url.trim().replace(/#$/, '');
+}
+
+/** True only for absolute `http:` or `https:` URLs (rejects `javascript:`, `data:`, `file:`, relative paths, etc.). */
+export function isHttpUrl(url: string | undefined): url is string {
+    if (!url) return false;
+    try {
+        const { protocol } = new URL(url);
+        return protocol === 'http:' || protocol === 'https:';
+    } catch {
+        return false;
+    }
 }
 
 /** A schema URL without its version (`…/datacube/v2.2.0/schema.json` → `…/datacube/schema.json`): which extension, of any version. */

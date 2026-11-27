@@ -31,18 +31,23 @@ export const VENDORED = [
     EXT('classification', '2.0.0'),
     EXT('eo', '2.0.0'),
     EXT('raster', '2.0.0'),
+    EXT('projection', '2.1.0'),
     EXT('projection', '2.0.0'),
     EXT('file', '2.1.0'),
     EXT('zarr', '1.1.0'),
     EXT('scientific', '1.0.0'),
     EXT('attribution', '0.1.0'),
+    EXT('processing', '1.3.0'),
     EXT('processing', '1.2.0'),
+    EXT('product', '1.1.0'),
     EXT('product', '1.0.0'),
     EXT('timestamps', '1.1.0'),
     EXT('version', '1.2.0'),
     EXT('language', '1.0.0'),
+    EXT('contacts', '1.0.1'),
     EXT('contacts', '0.1.1'),
     EXT('storage', '2.0.0'),
+    EXT('render', '2.1.0'),
     EXT('render', '2.0.0'),
     EXT('sat', '1.2.0'),
     EXT('view', '1.1.0'),
@@ -67,11 +72,12 @@ export const VENDORED = [
     // The coordinate set convention (R-CF), registered in `zarr_conventions` by UUID outside github.com/zarr-conventions.
     // No tags or releases: pinned to a commit of main.
     {
-        schemas: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json'],
-        readmes: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/README.md'],
+        schemas: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/c131620d06b067cefec0963a805e941e31ec55df/schema.json'],
+        readmes: ['https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/c131620d06b067cefec0963a805e941e31ec55df/README.md'],
     },
     // Conventions cs composes (R-CF), at their release tags: references to other nodes, and geolocation arrays.
     R_CF_CONVENTION('zarr_convention_ref', 'v2.0.0'),
+    R_CF_CONVENTION('zarr_convention_geolocation', 'v2.0.0'),
     R_CF_CONVENTION('zarr_convention_geolocation', 'v1.0.0'),
     // License and units-of-measure conventions (clbarnes), at their release tags.
     GITHUB_CONVENTION('clbarnes', 'zarr-convention-license', 'v1'),
@@ -122,6 +128,7 @@ export const DEPENDENCY_HOSTS = ['geojson.org', 'proj.org', 'json-schema.org'];
 export const DEPENDENCY_URLS = [
     'https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json',
     'https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/main/schema.json',
+    'https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v1.1.0/schema.json',
     'https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json',
 ];
 

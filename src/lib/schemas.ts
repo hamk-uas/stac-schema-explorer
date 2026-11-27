@@ -5,14 +5,15 @@ import draft7MetaSchema from 'ajv/dist/refs/json-schema-draft-07.json';
 import addFormats from 'ajv-formats';
 import addFormatsDraft2019 from 'ajv-formats-draft2019';
 
-import { normalizeSchemaUrl } from './extensions';
+import { isHttpUrl, normalizeSchemaUrl } from './extensions';
 import { CORE, type StacType } from './model';
 import { escapePointerSegment, splitPointer } from './pointer';
+import { isVendored } from './vendored';
 
 export type FetchJson = (url: string) => Promise<unknown>;
 
 export const networkFetchJson: FetchJson = async (url) => {
-    const response = await fetch(url, { headers: { accept: 'application/schema+json, application/json' } });
+    const response = await fetch(url, { credentials: 'omit', headers: { accept: 'application/schema+json, application/json' } });
     if (!response.ok) throw new Error(`${response.status} ${response.statusText} (${url})`);
     return response.json();
 };
@@ -61,18 +62,30 @@ export class SchemaStore {
         let pending = this.pending.get(key);
         if (!pending) {
             // A relative or non-HTTP value (a mistyped share link) would otherwise be fetched relative to the app.
-            if (!/^https?:\/\/[^/]/i.test(key)) {
+            if (!isHttpUrl(key)) {
                 const invalid = Promise.reject(new Error(`not a schema URL or name@version: ${url}`));
                 invalid.catch(() => undefined);
                 return invalid;
             }
+            const keyOrigin = new URL(key).origin;
             pending = this.fetchJson(key).then((schema) => {
                 if (typeof schema !== 'object' || schema === null || Array.isArray(schema)) throw new Error(`not a JSON Schema object: ${key}`);
                 this.documents.set(key, schema);
                 const id = (schema as { $id?: unknown }).$id;
                 if (typeof id === 'string') {
-                    const normalizedId = normalizeSchemaUrl(new URL(id, key).toString());
-                    if (!this.documents.has(normalizedId)) this.documents.set(normalizedId, schema);
+                    try {
+                        const resolved = new URL(id, key);
+                        const normalizedId = normalizeSchemaUrl(resolved.toString());
+                        // Only alias $id within the same HTTP(S) origin and never let an external schema shadow a vendored schema.
+                        if ((resolved.protocol === 'http:' || resolved.protocol === 'https:')
+                            && resolved.origin === keyOrigin
+                            && (!isVendored(normalizedId) || isVendored(key))
+                            && !this.documents.has(normalizedId)) {
+                            this.documents.set(normalizedId, schema);
+                        }
+                    } catch {
+                        // Ignore malformed $id values from external schemas.
+                    }
                 }
                 return schema;
             });
@@ -91,11 +104,22 @@ export class SchemaStore {
         return [...this.documents.keys()];
     }
 
-    /** The `$id` of a loaded schema (normalized), or the URL it was loaded from. */
+    /** The `$id` of a loaded schema (normalized, same HTTP(S) origin), or the URL it was loaded from. */
     baseOf(url: string): string {
-        const doc = this.getDocument(url) as { $id?: unknown } | undefined;
+        const key = normalizeSchemaUrl(url);
+        const doc = this.getDocument(key) as { $id?: unknown } | undefined;
         const id = doc?.$id;
-        return typeof id === 'string' ? normalizeSchemaUrl(new URL(id, url).toString()) : normalizeSchemaUrl(url);
+        if (typeof id === 'string') {
+            try {
+                const resolved = new URL(id, key);
+                if ((resolved.protocol === 'http:' || resolved.protocol === 'https:') && resolved.origin === new URL(key).origin) {
+                    return normalizeSchemaUrl(resolved.toString());
+                }
+            } catch {
+                // Fall back to the loaded URL.
+            }
+        }
+        return key;
     }
 
     /** Resolves an absolute URI with an optional JSON Pointer fragment to a node of a loaded schema. */

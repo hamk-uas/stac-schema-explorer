@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeUrl, fromShortId, repoUrl, toShortId } from '../src/lib/extensions';
+import { describeUrl, fromShortId, isHttpUrl, repoUrl, toShortId } from '../src/lib/extensions';
+import { readableAssets } from '../src/lib/embedded-docs';
 import { buildMatrix, stacMatrixGroups } from '../src/lib/matrix';
 import { CORE, type ProbeResult, type StacType } from '../src/lib/model';
+import { getAt } from '../src/lib/pointer';
 import { probe } from '../src/lib/probe';
 import { requirementOf, requirementText } from '../src/lib/requirement';
+import { applyRewrites } from '../src/lib/rewrites';
 import { stringFromRegex } from '../src/lib/sampler';
 import { formatErrors, SchemaStore } from '../src/lib/schemas';
+import { fetchDoc, toRealDoc } from '../src/lib/stac';
 import { documentView, groupFields, mapKeysOf, shapeOf, templateView, type ObjectView } from '../src/lib/tree';
 import { readState, writeState } from '../src/lib/url-state';
 import { EXTENSIONS, fixtureFetch, fixtureStore } from './helpers';
@@ -399,5 +403,82 @@ describe('views', () => {
         expect(cell?.kind).toBe('validated');
         expect(matrix.cells.get(`${DATACUBE}|cube:dimensions|Collection `)?.partial).toBe(false);
         expect(matrix.cells.get(`${DATACUBE}|cube:dimensions|Collection Asset`)?.partial).toBe(false);
+    });
+});
+
+describe('security hardening for untrusted external URLs and schemas', () => {
+    it('blocks prototype traversal and pollution via pointers, rewrites, and URL params', () => {
+        const doc = { type: 'Feature', id: 'x', assets: { data: { href: 'https://example.com/a.tif' } } };
+        expect(getAt(doc, '/__proto__')).toBeUndefined();
+        expect(getAt(doc, '/assets/__proto__')).toBeUndefined();
+        expect(getAt(doc, '/constructor/prototype')).toBeUndefined();
+
+        const before = Object.prototype.hasOwnProperty;
+        applyRewrites(
+            doc,
+            [
+                { op: 'add', source: CORE, doc: 'x', pointer: '/__proto__', field: 'polluted' },
+                { op: 'add', source: CORE, doc: 'x', pointer: '/assets/__proto__', field: 'polluted' },
+                { op: 'remove', source: CORE, doc: 'x', pointer: '/__proto__', field: 'hasOwnProperty' },
+                { op: 'add', source: CORE, doc: 'x', pointer: '', field: '__proto__' },
+            ],
+            () => 'evil',
+        );
+        expect(('polluted' in ({} as Record<string, unknown>))).toBe(false);
+        expect(Object.prototype.hasOwnProperty).toBe(before);
+
+        const state = readState('?rw=add|core|doc|/__proto__|polluted&rw=remove|core|doc|/assets|constructor&rw=add|core|doc|/assets|title');
+        expect(state.rewrites).toEqual([{ op: 'add', source: CORE, doc: 'doc', pointer: '/assets', field: 'title' }]);
+    });
+
+    it('rejects non-HTTP(S) URLs in query state, STAC links/assets, and fetchDoc', async () => {
+        expect(isHttpUrl('https://example.com/a.json')).toBe(true);
+        expect(isHttpUrl('javascript:alert(1)')).toBe(false);
+        expect(isHttpUrl('data:application/json,{}')).toBe(false);
+        expect(isHttpUrl('/relative/path.json')).toBe(false);
+
+        const state = readState('?href=data:application/json,%7B%7D&schema=javascript:alert(1)&focus=file:///etc/passwd');
+        expect(state.href).toBe('');
+        expect(state.schema).toBe('');
+        expect(state.focus).toBe('');
+
+        const real = toRealDoc('https://example.com/catalog.json', {
+            type: 'Catalog',
+            id: 'c',
+            links: [
+                { rel: 'child', href: 'javascript:alert(1)' },
+                { rel: 'item', href: 'data:application/json,{}' },
+                { rel: 'child', href: 'sub/catalog.json' },
+            ],
+        });
+        expect(real.childLinks.map((l) => l.href)).toEqual(['https://example.com/sub/catalog.json']);
+
+        const assets = readableAssets(
+            {
+                assets: {
+                    bad: { href: 'javascript:alert(1)', type: 'image/tiff' },
+                    good: { href: 'data.tif', type: 'image/tiff' },
+                },
+            },
+            'https://example.com/item.json',
+        );
+        expect(assets.map((a) => a.href)).toEqual(['https://example.com/data.tif']);
+        await expect(fetchDoc('data:application/json,{}')).rejects.toThrow('unsupported URL scheme');
+    });
+
+    it('prevents cross-origin or vendored $id cache poisoning in SchemaStore', async () => {
+        const evilUrl = 'https://attacker.example/evil.json';
+        const store = new SchemaStore(async (url) => {
+            if (url === evilUrl) return { $schema: 'http://json-schema.org/draft-07/schema#', $id: CF, title: 'Poisoned' };
+            return fixtureFetch(url);
+        });
+        await store.load(evilUrl);
+        expect(store.getDocument(CF)).toBeUndefined();
+        expect(store.baseOf(evilUrl)).toBe(evilUrl);
+
+        const jsIdUrl = 'https://attacker.example/js-id.json';
+        const store2 = new SchemaStore(async () => ({ $schema: 'http://json-schema.org/draft-07/schema#', $id: 'javascript:alert(1)' }));
+        await store2.load(jsIdUrl);
+        expect(store2.baseOf(jsIdUrl)).toBe(jsIdUrl);
     });
 });

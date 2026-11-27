@@ -4,7 +4,7 @@
   "attributes": {
     "zarr_conventions": [
       {
-        "schema_url": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/schema.json",
+        "schema_url": "https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/refs/heads/main/schema.json",
         "name": "cs"
       },
       {

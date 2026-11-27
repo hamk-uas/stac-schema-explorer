@@ -4,6 +4,7 @@ import { computed, reactive } from 'vue';
 import { sourceLabel } from '../lib/colors';
 import { TYPE_LABEL, type DocEntry } from '../lib/docs';
 import { otherAssets, READER_LABEL, type DataView } from '../lib/embedded-docs';
+import { isHttpUrl } from '../lib/extensions';
 import type { SourceInfo } from '../lib/model';
 import { joinPointer } from '../lib/pointer';
 import type { FieldView } from '../lib/tree';
@@ -73,8 +74,10 @@ const hasChildren = computed(() => props.entry.children.length > 0 || props.entr
 const validityTitle = computed(() => {
     if (props.entry.valid === undefined) return 'Validating…';
     const declared = Array.isArray(props.entry.doc?.stac_extensions) ? props.entry.doc.stac_extensions.length : 0;
-    return props.entry.valid
-        ? `Valid against STAC core${declared ? ` and ${declared} declared extension schema(s)` : ''}`
+    if (props.entry.valid) return `Valid against STAC core${declared ? ` and ${declared} declared extension schema(s)` : ''}`;
+    const count = props.entry.errors?.length ?? 0;
+    return editable.value
+        ? `${count} validation error(s). Click to jump to the full list below.`
         : `Validation errors:\n${(props.entry.errors ?? []).join('\n')}`;
 });
 const undeclaredTitle = computed(() => [
@@ -114,6 +117,9 @@ const undeclaredTitle = computed(() => [
       </button>
       <span v-if="entry.status === 'loading'" class="status">loading…</span>
       <span v-else-if="entry.status === 'error'" class="status error" :title="entry.error">⚠ {{ entry.error }}</span>
+      <a v-else-if="entry.view && entry.valid === false && editable" href="#validation-errors" class="validity bad" :title="validityTitle">
+        ✗ {{ entry.errors?.length ?? 0 }} error(s)
+      </a>
       <span v-else-if="entry.view" class="validity" :class="{ ok: entry.valid, bad: entry.valid === false }" :title="validityTitle">
         {{ entry.valid === undefined ? '…' : entry.valid ? '✓ valid' : `✗ ${entry.errors?.length ?? 0} error(s)` }}
       </span>
@@ -125,7 +131,7 @@ const undeclaredTitle = computed(() => [
         ⚠ undeclared: {{ entry.undeclared.map((u) => sourceLabel(u.source, docSources)).join(', ') }}
       </span>
       <a
-        v-if="entry.href"
+        v-if="isHttpUrl(entry.href)"
         class="open"
         :href="entry.href"
         target="_blank"
@@ -183,6 +189,7 @@ const undeclaredTitle = computed(() => [
         <span v-else-if="file.status === 'error'" class="status error" :title="file.error">⚠ {{ file.error }}</span>
         <span v-else-if="file.status === 'ready'" class="status">{{ file.nodes.length }} node{{ file.nodes.length === 1 ? '' : 's' }}</span>
         <a
+          v-if="isHttpUrl(file.href)"
           class="open"
           :href="file.href"
           target="_blank"

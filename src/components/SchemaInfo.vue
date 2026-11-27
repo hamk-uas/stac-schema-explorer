@@ -4,7 +4,7 @@ import { computed } from 'vue';
 import { colorOf, sourceLabel } from '../lib/colors';
 import { CONVENTION_KINDS, conventionOfSchema, DATA_FORMATS, formatOfSchema } from '../lib/conventions';
 import type { EmbeddedSourceInfo } from '../lib/embedded-probe';
-import { PREFIXES_WITHOUT_SCHEMA, repoUrl } from '../lib/extensions';
+import { isHttpUrl, PREFIXES_WITHOUT_SCHEMA, repoUrl } from '../lib/extensions';
 import { schemaLayer } from '../lib/layers';
 import { inlineMarkdown } from '../lib/markdown';
 import { CORE, type SourceInfo } from '../lib/model';
@@ -73,11 +73,11 @@ const links = computed(() => {
     }
     const specification = known.value?.convention.versions.find((v) => v.version === known.value?.version)?.specification
         ?? known.value?.convention.specification ?? format.value?.specification;
-    if (specification) out.push({ label: 'specification ↗', href: specification, title: 'Open the specification in a new tab' });
+    if (isHttpUrl(specification)) out.push({ label: 'specification ↗', href: specification, title: 'Open the specification in a new tab' });
     const repo = repoUrl(props.source);
-    if (repo && repo !== specification) out.push({ label: 'site ↗', href: repo, title: 'Open the repository (README) in a new tab' });
-    out.push({ label: 'schema ↗', href: props.source, title: 'Open the published JSON Schema in a new tab' });
-    if (isVendored(props.source)) {
+    if (isHttpUrl(repo) && repo !== specification) out.push({ label: 'site ↗', href: repo, title: 'Open the repository (README) in a new tab' });
+    if (isHttpUrl(props.source)) out.push({ label: 'schema ↗', href: props.source, title: 'Open the published JSON Schema in a new tab' });
+    if (isVendored(props.source) && isHttpUrl(props.source)) {
         const { host, pathname } = new URL(props.source);
         out.push({ label: 'documented copy ↗', href: `https://github.com/hamk-uas/stac-schema-explorer/blob/main/schemas/${host}${pathname}`, title: 'Open the enriched copy with titles and descriptions on GitHub in a new tab' });
     }

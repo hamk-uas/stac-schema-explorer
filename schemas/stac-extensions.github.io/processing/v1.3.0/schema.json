@@ -1,0 +1,360 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stac-extensions.github.io/processing/v1.3.0/schema.json",
+  "title": "Processing Extension",
+  "description": "STAC Processing Extension for STAC Items and STAC Collections.",
+  "type": "object",
+  "required": [
+    "stac_extensions",
+    "type"
+  ],
+  "properties": {
+    "stac_extensions": {
+      "type": "array",
+      "contains": {
+        "const": "https://stac-extensions.github.io/processing/v1.3.0/schema.json"
+      }
+    },
+    "type": {
+      "type": "string",
+      "oneOf": [
+        {
+          "const": "Collection",
+          "title": "Collection"
+        },
+        {
+          "const": "Feature",
+          "title": "Item (GeoJSON Feature)"
+        }
+      ]
+    },
+    "assets": {
+      "$comment": "This validates the fields in Item and Collection Assets, but does not require them.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/fieldsAndProviders"
+      }
+    },
+    "assetTemplates": {
+      "$comment": "This validates the fields in Asset Templates, but does not require them.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/fieldsAndProviders"
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "$comment": "This is the schema for STAC Items.",
+      "type": "object",
+      "required": [
+        "type",
+        "properties"
+      ],
+      "properties": {
+        "type": {
+          "const": "Feature"
+        },
+        "properties": {
+          "$ref": "#/definitions/fieldsAndProviders"
+        }
+      }
+    },
+    {
+      "$comment": "This is the schema for STAC Collections.",
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "Collection"
+        },
+        "providers": {
+          "$ref": "#/definitions/providers"
+        },
+        "summaries": {
+          "$ref": "#/definitions/summaries"
+        },
+        "item_assets": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/fieldsAndProviders"
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "processing:expression": {
+      "title": "Processing Expression",
+      "type": "object",
+      "required": [
+        "format",
+        "expression"
+      ],
+      "properties": {
+        "format": {
+          "type": "string",
+          "title": "Format",
+          "description": "The type of the expression that is specified in the `expression` property."
+        },
+        "expression": {
+          "description": "Any data type, depending on the format chosen.",
+          "title": "Expression"
+        }
+      },
+      "description": "An expression or processing chain that describes how the data has been processed. Alternatively, you can also link to a processing chain with the relation type `processing-expression`."
+    },
+    "processing:lineage": {
+      "title": "Processing Lineage Information",
+      "type": "string",
+      "examples": [
+        "Post Processing GRD"
+      ],
+      "description": "Lineage Information provided as free text information about the how observations were processed or models that were used to create the resource being described NASA ISO. For example, `GRD Post Processing` for \"GRD\" product of Sentinel-1 satellites. CommonMark 0.29 syntax MAY be used for rich text representation."
+    },
+    "processing:level": {
+      "title": "Processing Level",
+      "type": "string",
+      "examples": [
+        "RAW",
+        "L1",
+        "L1A",
+        "L1B",
+        "L1C",
+        "L2",
+        "L2A",
+        "L3",
+        "L4"
+      ],
+      "description": "The name commonly used to refer to the processing level to make it easier to search for product level across collections or items. The short name must be used (only `L`, not `Level`)."
+    },
+    "processing:facility": {
+      "title": "Processing Facility",
+      "type": "string",
+      "examples": [
+        "Copernicus S1 Core Ground Segment - DPA"
+      ],
+      "description": "The name of the facility that produced the data. For example, `Copernicus S1 Core Ground Segment - DPA` for product of Sentinel-1 satellites."
+    },
+    "processing:version": {
+      "title": "Processing Version",
+      "type": "string",
+      "examples": [
+        "0.2.0"
+      ],
+      "description": "The version of the primary processing software or processing chain that produced the data. For example, this could be the processing baseline for the Sentinel missions."
+    },
+    "processing:datetime": {
+      "title": "Processing Datetime",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(\\+00:00|Z)$",
+      "examples": [
+        "2020-01-05T12:34:55Z"
+      ],
+      "description": "Processing date and time of the corresponding data formatted according to RFC 3339, section 5.6, in UTC."
+    },
+    "processing:software": {
+      "title": "Processing Software Name / version",
+      "type": "object",
+      "patternProperties": {
+        ".{1,}": {
+          "type": "string"
+        }
+      },
+      "examples": [
+        {
+          "Sentinel-1 IPF": "002.71"
+        }
+      ],
+      "description": "A dictionary with name/version for key/value describing one or more applications or libraries that were involved during the production of the data for provenance purposes."
+    },
+    "processing:datastrip_id": {
+      "title": "Datastrip ID",
+      "type": "string",
+      "minLength": 1,
+      "examples": [
+        "S2A_OPER_MSI_L2A_DS_2APS_20250626T142217_S20250626T102649_N05.11"
+      ],
+      "description": "The identifier of the datastrip, i.e. the part of a datatake that the ground segment processed as one unit. See Datastrip ID for details."
+    },
+    "fields": {
+      "$comment": "Don't require fields here as they would be required in all places where the fields are referenced.",
+      "type": "object",
+      "properties": {
+        "processing:expression": {
+          "$ref": "#/definitions/processing:expression"
+        },
+        "processing:lineage": {
+          "$ref": "#/definitions/processing:lineage"
+        },
+        "processing:level": {
+          "$ref": "#/definitions/processing:level"
+        },
+        "processing:facility": {
+          "$ref": "#/definitions/processing:facility"
+        },
+        "processing:version": {
+          "$ref": "#/definitions/processing:version"
+        },
+        "processing:datetime": {
+          "$ref": "#/definitions/processing:datetime"
+        },
+        "processing:software": {
+          "$ref": "#/definitions/processing:software"
+        },
+        "processing:datastrip_id": {
+          "$ref": "#/definitions/processing:datastrip_id"
+        }
+      },
+      "patternProperties": {
+        "^(?!processing:)": {}
+      },
+      "additionalProperties": false
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/fields"
+      }
+    },
+    "fieldsAndProviders": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/fields"
+        },
+        {
+          "properties": {
+            "providers": {
+              "$ref": "#/definitions/providers"
+            }
+          }
+        }
+      ]
+    },
+    "summaries": {
+      "$comment": "These are examples summaries that allows lists, ranges and JSON schemas, depending on how it makes sense for the individual data types of the fields. Validation only works for lists and ranges. JSON Schema (type: object) can always be provided for fields, but the corresponding schema for lists (type: array and items) and ranges (properties) should only be provided if it actually makes sense.",
+      "type": "object",
+      "properties": {
+        "processing:expression": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:expression"
+          },
+          "title": "Processing Instructions",
+          "description": "An expression or processing chain that describes how the data has been processed. Alternatively, you can also link to a processing chain with the relation type `processing-expression`."
+        },
+        "processing:lineage": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:lineage"
+          },
+          "title": "Lineage",
+          "description": "Lineage Information provided as free text information about the how observations were processed or models that were used to create the resource being described NASA ISO. For example, `GRD Post Processing` for \"GRD\" product of Sentinel-1 satellites. CommonMark 0.29 syntax MAY be used for rich text representation."
+        },
+        "processing:level": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:level"
+          },
+          "properties": {
+            "minimum": {
+              "$ref": "#/definitions/processing:level"
+            },
+            "maximum": {
+              "$ref": "#/definitions/processing:level"
+            }
+          },
+          "title": "Level",
+          "description": "The name commonly used to refer to the processing level to make it easier to search for product level across collections or items. The short name must be used (only `L`, not `Level`)."
+        },
+        "processing:facility": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:facility"
+          },
+          "title": "Facility",
+          "description": "The name of the facility that produced the data. For example, `Copernicus S1 Core Ground Segment - DPA` for product of Sentinel-1 satellites."
+        },
+        "processing:version": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:version"
+          },
+          "properties": {
+            "minimum": {
+              "$ref": "#/definitions/processing:version"
+            },
+            "maximum": {
+              "$ref": "#/definitions/processing:version"
+            }
+          },
+          "title": "Processor Version",
+          "description": "The version of the primary processing software or processing chain that produced the data. For example, this could be the processing baseline for the Sentinel missions."
+        },
+        "processing:datetime": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:datetime"
+          },
+          "properties": {
+            "minimum": {
+              "$ref": "#/definitions/processing:datetime"
+            },
+            "maximum": {
+              "$ref": "#/definitions/processing:datetime"
+            }
+          },
+          "title": "Processing Time",
+          "description": "Processing date and time of the corresponding data formatted according to RFC 3339, section 5.6, in UTC."
+        },
+        "processing:software": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:software"
+          },
+          "title": "Software",
+          "description": "A dictionary with name/version for key/value describing one or more applications or libraries that were involved during the production of the data for provenance purposes."
+        },
+        "processing:datastrip_id": {
+          "type": [
+            "array",
+            "object"
+          ],
+          "items": {
+            "$ref": "#/definitions/processing:datastrip_id"
+          },
+          "title": "Datastrip Id",
+          "description": "The identifier of the datastrip, i.e. the part of a datatake that the ground segment processed as one unit. See Datastrip ID for details."
+        }
+      },
+      "patternProperties": {
+        "^(?!processing:)": {}
+      },
+      "additionalProperties": false
+    }
+  }
+}

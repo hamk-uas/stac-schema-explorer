@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 import { colorOf, sourceLabel } from '../lib/colors';
-import { PREFIXES_WITHOUT_SCHEMA } from '../lib/extensions';
+import { isHttpUrl, PREFIXES_WITHOUT_SCHEMA } from '../lib/extensions';
 import type { SchemaLayer } from '../lib/layers';
 import { inlineMarkdown } from '../lib/markdown';
 import type { FieldDoc, Requirement, SourceInfo } from '../lib/model';
@@ -48,7 +48,10 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{ close: []; place: [place: FieldPlace] }>();
 
-const schemaLink = computed(() => props.doc?.definedAt.split('#')[0]);
+const schemaLink = computed(() => {
+    const url = props.doc?.definedAt.split('#')[0];
+    return isHttpUrl(url) ? url : undefined;
+});
 /** A field of a prefix that another specification defines without a STAC extension schema (openEO's `openeo:status`). */
 const withoutSchema = computed(() => {
     const spec = props.source.startsWith('?') ? PREFIXES_WITHOUT_SCHEMA[props.source.slice(1)] : undefined;

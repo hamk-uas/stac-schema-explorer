@@ -17,6 +17,13 @@ export function splitPointer(pointer: string): string[] {
     return pointer.slice(1).split('/').map(unescapePointerSegment);
 }
 
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/** False for prototype-chain keys (`__proto__`, `constructor`, `prototype`) that must never be traversed or written. */
+export function isSafeKey(key: string): boolean {
+    return !FORBIDDEN_KEYS.has(key);
+}
+
 function isObject(value: unknown): value is JsonObject {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -24,9 +31,14 @@ function isObject(value: unknown): value is JsonObject {
 export function getAt(doc: Json, pointer: string): Json | undefined {
     let node: Json | undefined = doc;
     for (const segment of splitPointer(pointer)) {
-        if (Array.isArray(node)) node = node[Number(segment)];
-        else if (isObject(node)) node = node[segment];
-        else return undefined;
+        if (Array.isArray(node)) {
+            const index = Number(segment);
+            if (!Number.isInteger(index) || index < 0 || index >= node.length) return undefined;
+            node = node[index];
+        } else if (isObject(node)) {
+            if (!isSafeKey(segment) || !Object.hasOwn(node, segment)) return undefined;
+            node = node[segment];
+        } else return undefined;
     }
     return node;
 }

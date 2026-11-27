@@ -1,5 +1,6 @@
 import { DATA_FORMATS, KNOWN_CONVENTIONS, loadableSchema, versionDetection } from './conventions';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo, NodeTemplate } from './embedded-probe';
+import { isHttpUrl } from './extensions';
 import { CORE, EMBEDDED_CONTAINERS, type Json, type JsonObject, type TypeTemplate } from './model';
 import { documentView, templateView, type FieldEdits, type FieldView, type ObjectView } from './tree';
 
@@ -174,7 +175,8 @@ export function readableAssets(doc: JsonObject | undefined, baseHref: string | u
         const kind = readerKind(asset.href, typeof asset.type === 'string' ? asset.type : undefined);
         if (!kind) continue;
         try {
-            out.push({ key, href: new URL(asset.href, baseHref).toString(), kind });
+            const resolved = new URL(asset.href, baseHref).toString();
+            if (isHttpUrl(resolved)) out.push({ key, href: resolved, kind });
         } catch {
             // An href that is not a URL cannot be read.
         }
@@ -245,7 +247,8 @@ export function otherAssets(doc: JsonObject | undefined, baseHref: string | unde
         const type = typeof asset.type === 'string' && asset.type.trim() ? asset.type.trim() : undefined;
         let href: string | undefined;
         try {
-            href = typeof asset.href === 'string' ? new URL(asset.href, baseHref).toString() : undefined;
+            const resolved = typeof asset.href === 'string' ? new URL(asset.href, baseHref).toString() : undefined;
+            href = isHttpUrl(resolved) ? resolved : undefined;
         } catch {
             href = undefined;
         }

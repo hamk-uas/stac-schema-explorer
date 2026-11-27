@@ -120,7 +120,7 @@ describe('embedded placement probing', () => {
     });
 
     it('places the coordinate set convention down to coordinate values, and its examples show no unexpected field', async () => {
-        const CS = 'https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json';
+        const CS = 'https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/c131620d06b067cefec0963a805e941e31ec55df/schema.json';
         const store = fixtureStore();
         const result = await probeEmbedded(store, [CS]);
         const node = (key: string) => result.nodes.find((n) => n.key === key)!;

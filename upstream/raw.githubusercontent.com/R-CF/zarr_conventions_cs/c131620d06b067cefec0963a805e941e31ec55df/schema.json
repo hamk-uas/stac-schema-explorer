@@ -89,12 +89,12 @@
       "properties": {
         "schema_url": {
           "type": "string",
-          "const": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/schema.json",
+          "const": "https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/refs/heads/main/schema.json",
           "description": "URL to the JSON Schema definition for this convention"
         },
         "spec_url": {
           "type": "string",
-          "const": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/README.md",
+          "const": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/refs/heads/main/README.md",
           "description": "URL to the full specification document"
         },
         "uuid": {
@@ -132,12 +132,12 @@
           "items": {
             "oneOf": [
               { "$ref": "#/$defs/crs" },
-              { "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json#/$defs/ref" }
+              { "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json#/$defs/refProperty" }
             ]
           }
         },
         "id": {
-          "$ref": "https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json#/$defs/projAttributes"
+          "$ref": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json#/$defs/projAttributes"
         },
         "attributes": {
           "type": "object"
@@ -171,10 +171,10 @@
           }
         },
         "id": {
-          "$ref": "https://raw.githubusercontent.com/zarr-conventions/geo-proj/main/schema.json#/$defs/projAttributes"
+          "$ref": "https://raw.githubusercontent.com/zarr-conventions/proj/refs/tags/v0.1/schema.json#/$defs/projAttributes"
         },
         "geolocation": {
-          "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/main/schema.json#/$defs/geolocation"
+          "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v1.1.0/schema.json#/$defs/geolocation"
         }
       },
       "required": ["type", "axes"],
@@ -271,7 +271,7 @@
           "type": "object",
           "properties": {
             "ref": {
-              "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json#/$defs/ref"
+              "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json#/$defs/ref"
             }
           },
           "required": ["ref"],
@@ -306,7 +306,7 @@
           "type": "object",
           "properties": {
             "ref": {
-              "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/main/schema.json#/$defs/ref"
+              "$ref": "https://raw.githubusercontent.com/R-CF/zarr_convention_ref/refs/tags/v2.0.0/schema.json#/$defs/ref"
             }
           },
           "required": ["ref"],

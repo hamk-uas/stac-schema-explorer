@@ -19,7 +19,7 @@ import { TYPE_LABEL, type DocEntry } from './lib/docs';
 import { dataFiles, nodeConventions, READER_LABEL, readerKind, realNodeView, templateEntries, zarrDocument, zarrMetadataUrls, type DataView, type NodeEntry, type ReaderKind } from './lib/embedded-docs';
 import type { EmbeddedProbeResult, EmbeddedSourceInfo } from './lib/embedded-probe';
 import { Engine } from './lib/engine';
-import { describeUrl, extensionWithoutVersion, normalizeSchemaUrl } from './lib/extensions';
+import { describeUrl, extensionWithoutVersion, isHttpUrl, normalizeSchemaUrl } from './lib/extensions';
 import { conceptPath, stacMatrixGroups, type MatrixGroup } from './lib/matrix';
 import { CORE, STAC_TYPES, type JsonObject, type ProbeProgress, type ProbeResult, type SourceInfo, type StacType } from './lib/model';
 import { getAt, joinPointer, objectLocations } from './lib/pointer';
@@ -104,7 +104,8 @@ const rewritesOf = (doc: string) => state.rewrites.filter((r) => r.doc === doc);
 const rewriteSchemas = (rewrites: Rewrite[]) => rewrites.map((r) => r.source).filter((s) => s !== CORE && !s.startsWith('?'));
 
 async function fetchJson(url: string): Promise<unknown> {
-    const response = await fetch(url, { headers: { accept: 'application/json' } });
+    if (!isHttpUrl(url)) throw new Error(`unsupported URL scheme: ${url}`);
+    const response = await fetch(url, { credentials: 'omit', headers: { accept: 'application/json' } });
     if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
     return response.json();
 }
@@ -329,6 +330,11 @@ async function toggle(entry: DocEntry) {
 async function openHref(href: string, keepSelection = false) {
     const trimmed = href.trim();
     if (!trimmed) return;
+    if (!isHttpUrl(trimmed)) {
+        engineError.value = `Only http:// and https:// URLs can be explored: ${trimmed}`;
+        return;
+    }
+    engineError.value = '';
     state.mode = 'href';
     state.href = trimmed;
     hrefInput.value = trimmed;
@@ -821,6 +827,37 @@ const findings = computed(() => {
     return out;
 });
 
+const validationErrors = computed(() => {
+    const out: { key: string; label: string; errors: string[] }[] = [];
+    const seen = new Set<string>();
+    const addDoc = (e: DocEntry) => {
+        if (seen.has(e.key)) return;
+        seen.add(e.key);
+        if (e.errors?.length) out.push({ key: e.key, label: `${TYPE_LABEL[e.type]}: ${e.title}`, errors: e.errors });
+    };
+    walk(hrefRoot.value, addDoc);
+    if (detached.value) addDoc(detached.value);
+    for (const view of dataViews()) {
+        for (const node of view.nodes) {
+            if (seen.has(node.key)) continue;
+            seen.add(node.key);
+            if (node.errors?.length) out.push({ key: node.key, label: `${node.formatTitle} ${node.nodeType}: ${node.title || 'root'}`, errors: node.errors });
+        }
+    }
+    return out;
+});
+const totalValidationErrors = computed(() => validationErrors.value.reduce((sum, item) => sum + item.errors.length, 0));
+
+/** JSON Pointer of a formatted validation error (`<source>: /path message`), or `''` for the root. */
+function errorPointer(error: string): string {
+    const match = /:\s+(\/\S*)/.exec(error);
+    return !match || match[1] === '/' ? '' : match[1];
+}
+
+function revealError(docKey: string, error: string) {
+    select(docKey, [errorPointer(error)]);
+}
+
 const EXAMPLE_URLS = [
     { label: 'Sentinel-2 L2A COG (Earth Search)', href: 'https://sentinel-cogs.s3.us-west-2.amazonaws.com/sentinel-s2-l2a-cogs/36/Q/WD/2020/7/S2A_36QWD_20200701_0_L2A/B04.tif' },
     { label: 'EOPF Sentinel-2 L1C (API)', href: 'https://stac.core.eopf.eodc.eu/collections/sentinel-2-l1c' },
@@ -1243,6 +1280,22 @@ onMounted(() => {
             />
           </section>
         </div>
+        <section v-if="validationErrors.length" id="validation-errors" class="validation-errors" aria-labelledby="validation-errors-heading">
+          <h3 id="validation-errors-heading">Validation errors ({{ totalValidationErrors }})</h3>
+          <div v-for="group in validationErrors" :key="group.key" class="error-group">
+            <p v-if="validationErrors.length > 1" class="error-source">{{ group.label }}</p>
+            <ul>
+              <li v-for="(err, i) in group.errors" :key="i">
+                <button
+                  type="button"
+                  class="error-item"
+                  :title="`Click to reveal ${errorPointer(err) || 'the top-level document'} in the JSON panel`"
+                  @click="revealError(group.key, err)"
+                >{{ err }}</button>
+              </li>
+            </ul>
+          </div>
+        </section>
       </template>
     </main>
 
@@ -1741,6 +1794,44 @@ onMounted(() => {
   margin: 0 0 4px;
   font: 700 17px/1.25 var(--sans);
   color: var(--slate-900);
+}
+.validation-errors {
+  margin-top: 28px;
+  color: var(--error);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.validation-errors h3 {
+  margin: 0 0 8px;
+  font: 700 14px var(--sans);
+  color: var(--error);
+}
+.validation-errors .error-source {
+  margin: 10px 0 4px;
+  font-weight: 600;
+}
+.validation-errors ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-family: var(--mono);
+  word-break: break-word;
+}
+.validation-errors .error-item {
+  border: 0;
+  background: none;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.validation-errors .error-item:hover {
+  background: var(--error-bg);
+  text-decoration: underline;
 }
 .rewrites-banner {
   margin: 4px 0 10px;

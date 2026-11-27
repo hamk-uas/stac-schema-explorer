@@ -253,10 +253,10 @@
       "specification": "https://github.com/R-CF/zarr_conventions_cs",
       "maturity": "Pilot",
       "checked": {
-        "date": "2026-11-03",
-        "latest": "main-33df41a",
+        "date": "2026-11-27",
+        "latest": "main-c131620",
         "source": "https://github.com/R-CF/zarr_conventions_cs",
-        "note": "No tags or releases: pinned to commit 33df41a of main. The schema URL it declares (R-CF/zarr_convention_cs, singular) does not resolve; the repository is R-CF/zarr_conventions_cs. It references the ref, geolocation and proj (geo-proj) conventions from their main branches (vendored unmodified) and the v1 units-of-measure convention."
+        "note": "No tags or releases: pinned to commit c131620 of main. References released tags of ref (v2.0.0), geolocation (v1.1.0), proj (v0.1) and units-of-measure (v1)."
       },
       "declaration": {
         "zarrConventions": {
@@ -265,10 +265,10 @@
       },
       "versions": [
         {
-          "version": "main-33df41a",
-          "schema": "https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/33df41a6164e5af1761b32c6686b342bfe4beb3c/schema.json",
-          "declaredSchema": "https://raw.githubusercontent.com/R-CF/zarr_convention_cs/main/schema.json",
-          "specification": "https://github.com/R-CF/zarr_conventions_cs/blob/33df41a6164e5af1761b32c6686b342bfe4beb3c/README.md"
+          "version": "main-c131620",
+          "schema": "https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/c131620d06b067cefec0963a805e941e31ec55df/schema.json",
+          "declaredSchema": "https://raw.githubusercontent.com/R-CF/zarr_conventions_cs/refs/heads/main/schema.json",
+          "specification": "https://github.com/R-CF/zarr_conventions_cs/blob/c131620d06b067cefec0963a805e941e31ec55df/README.md"
         }
       ]
     },
@@ -285,8 +285,8 @@
       "specification": "https://github.com/R-CF/zarr_convention_geolocation",
       "maturity": "Pilot",
       "checked": {
-        "date": "2026-11-03",
-        "latest": "v1.0.0",
+        "date": "2026-11-27",
+        "latest": "v2.0.0",
         "source": "https://github.com/R-CF/zarr_convention_geolocation"
       },
       "declaration": {
@@ -295,6 +295,11 @@
         }
       },
       "versions": [
+        {
+          "version": "v2.0.0",
+          "schema": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v2.0.0/schema.json",
+          "specification": "https://github.com/R-CF/zarr_convention_geolocation/blob/v2.0.0/README.md"
+        },
         {
           "version": "v1.0.0",
           "schema": "https://raw.githubusercontent.com/R-CF/zarr_convention_geolocation/refs/tags/v1.0.0/schema.json",

@@ -1,3 +1,4 @@
+import { isHttpUrl } from './extensions';
 import type { JsonObject, StacType } from './model';
 
 export interface RealDoc {
@@ -28,7 +29,8 @@ export function toRealDoc(href: string, json: unknown): RealDoc {
     const links = Array.isArray(json.links) ? json.links.filter(isObject) : [];
     const resolve = (target: unknown) => {
         try {
-            return new URL(String(target), href).toString();
+            const resolved = new URL(String(target), href).toString();
+            return isHttpUrl(resolved) ? resolved : undefined;
         } catch {
             return undefined;
         }
@@ -51,9 +53,10 @@ export function toRealDoc(href: string, json: unknown): RealDoc {
 const cache = new Map<string, Promise<RealDoc>>();
 
 export function fetchDoc(href: string): Promise<RealDoc> {
+    if (!isHttpUrl(href)) return Promise.reject(new Error(`unsupported URL scheme: ${href}`));
     let pending = cache.get(href);
     if (!pending) {
-        pending = fetch(href, { headers: { accept: 'application/json, application/geo+json' } })
+        pending = fetch(href, { credentials: 'omit', headers: { accept: 'application/json, application/geo+json' } })
             .then(async (response) => {
                 if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
                 return toRealDoc(response.url || href, await response.json());
@@ -66,9 +69,10 @@ export function fetchDoc(href: string): Promise<RealDoc> {
 
 /** Items of a STAC API `items` link, as documents with synthetic hrefs (`<items url>#<id>`). */
 export async function fetchItems(href: string, limit: number): Promise<RealDoc[]> {
+    if (!isHttpUrl(href)) throw new Error(`unsupported URL scheme: ${href}`);
     const url = new URL(href);
     if (!url.searchParams.has('limit')) url.searchParams.set('limit', String(limit));
-    const response = await fetch(url, { headers: { accept: 'application/geo+json, application/json' } });
+    const response = await fetch(url, { credentials: 'omit', headers: { accept: 'application/geo+json, application/json' } });
     if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
     const json = await response.json();
     const features: unknown[] = Array.isArray(json?.features) ? json.features : [];
@@ -76,7 +80,15 @@ export async function fetchItems(href: string, limit: number): Promise<RealDoc[]
         const self = isObject(feature) && Array.isArray(feature.links)
             ? feature.links.find((l) => isObject(l) && l.rel === 'self' && typeof l.href === 'string')
             : undefined;
-        const docHref = isObject(self) ? new URL(String(self.href), href).toString() : `${href}#${isObject(feature) ? String(feature.id) : ''}`;
+        let docHref = `${href}#${isObject(feature) ? String(feature.id) : ''}`;
+        if (isObject(self)) {
+            try {
+                const resolved = new URL(String(self.href), href).toString();
+                if (isHttpUrl(resolved)) docHref = resolved;
+            } catch {
+                // Keep the synthetic href.
+            }
+        }
         const doc = toRealDoc(docHref, feature);
         cache.set(docHref, Promise.resolve(doc));
         return doc;

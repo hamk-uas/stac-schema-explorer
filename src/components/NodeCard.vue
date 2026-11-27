@@ -3,6 +3,7 @@ import { computed } from 'vue';
 
 import { embeddedSchemaLabel } from '../lib/conventions';
 import type { NodeEntry } from '../lib/embedded-docs';
+import { isHttpUrl } from '../lib/extensions';
 import type { SourceInfo } from '../lib/model';
 import type { FieldView } from '../lib/tree';
 import FieldChips from './FieldChips.vue';
@@ -48,7 +49,11 @@ const DOCUMENT: Record<string, string> = { 'zarr-v3': 'zarr.json', 'zarr-v2': '.
 const validityTitle = computed(() => {
     if (props.entry.valid === undefined) return 'Validating…';
     const checked = [props.entry.formatTitle, ...props.entry.conventions.map(embeddedSchemaLabel)].join(', ');
-    return props.entry.valid ? `Valid against ${checked}` : `Validation errors:\n${(props.entry.errors ?? []).join('\n')}`;
+    if (props.entry.valid) return `Valid against ${checked}`;
+    const count = props.entry.errors?.length ?? 0;
+    return props.editable
+        ? `${count} validation error(s). Click to jump to the full list below.`
+        : `Validation errors:\n${(props.entry.errors ?? []).join('\n')}`;
 });
 const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embeddedSchemaLabel));
 </script>
@@ -71,7 +76,10 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
         <span v-if="!inDataSection" class="tag" :title="`Metadata embedded in the data (${DOCUMENT[entry.format] ?? entry.format}), not a STAC document`">embedded in the data</span>
         <span class="title" :title="entry.title || 'root'">{{ entry.title || 'root' }}</span>
       </button>
-      <span class="validity" :class="{ ok: entry.valid, bad: entry.valid === false }" :title="validityTitle">
+      <a v-if="entry.valid === false && editable" href="#validation-errors" class="validity bad" :title="validityTitle">
+        ✗ {{ entry.errors?.length ?? 0 }} error(s)
+      </a>
+      <span v-else class="validity" :class="{ ok: entry.valid, bad: entry.valid === false }" :title="validityTitle">
         {{ entry.valid === undefined ? '…' : entry.valid ? '✓ valid' : `✗ ${entry.errors?.length ?? 0} error(s)` }}
       </span>
       <span v-if="entry.rewrites" class="rewritten" :title="`${entry.rewrites} rewrite(s) applied to this node: it is shown and validated as rewritten`">
@@ -79,7 +87,7 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
         <button type="button" :title="`Click to undo all local rewrites on node ${entry.title || 'root'}`" :aria-label="`Undo the rewrites of node ${entry.title || 'root'}`" @click="emit('reset', entry.key)">undo</button>
       </span>
       <a
-        v-if="entry.href"
+        v-if="isHttpUrl(entry.href)"
         class="open"
         :href="entry.href"
         target="_blank"
