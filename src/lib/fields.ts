@@ -1,7 +1,7 @@
 import { joinPointer } from './pointer';
 import type { SchemaStore } from './schemas';
 
-/** Core STAC and Common Metadata keys; never reported as extension fields. */
+/** Core STAC and Common Metadata keys; used to identify unprefixed core keys in real documents and unprefixed extensions. */
 export const CORE_KEYS = new Set([
     'type', 'stac_version', 'stac_extensions', 'id', 'title', 'description', 'keywords', 'roles', 'links', 'assets',
     'item_assets', 'properties', 'summaries', 'extent', 'license', 'providers', 'geometry', 'bbox', 'collection',
@@ -172,13 +172,14 @@ function walk(store: SchemaStore, schemaUrl: string, pointer: string, mode: Mode
  * Besides its own fields (those with its prefixes), a schema may validate fields of other extensions, for example
  * `cf:cell_methods` in Table columns; those are reported too, so that such extensions of other schemas show up.
  */
-export function collectFields(store: SchemaStore, schemaUrl: string): CollectedFields {
+export function collectFields(store: SchemaStore, schemaUrl: string, commonFields?: ReadonlySet<string>): CollectedFields {
     const prefixes = declaredPrefixes(store.getDocument(schemaUrl)) ?? guessPrefix(store, schemaUrl);
     const isOwn = (key: string) => {
         const prefix = prefixOf(key);
         return prefixes.length > 0 ? prefix !== undefined && prefixes.includes(prefix) : prefix === undefined && !CORE_KEYS.has(key);
     };
-    const isForeignField = (key: string) => prefixOf(key) !== undefined && !isOwn(key);
+    const isForeignField = (key: string) => (prefixOf(key) !== undefined && !isOwn(key))
+        || (prefixes.length > 0 && !!commonFields?.has(key));
 
     const fields = new Map<string, FieldSchemaRef[]>();
     const collect = (own: (key: string) => boolean, accept: (key: string) => boolean) => walk(store, schemaUrl, '', 'container', {

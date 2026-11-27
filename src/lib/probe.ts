@@ -116,7 +116,7 @@ async function prepareSources(store: SchemaStore, stacVersion: string, urls: rea
             infos.push({ key: entry.url, url: entry.url, title: name, prefixes: [], version, fields: [], unsampled: [], docs: {}, error: entry.error });
             continue;
         }
-        const { prefixes, fields } = collectFields(store, entry.url);
+        const { prefixes, fields } = collectFields(store, entry.url, new Set(coreFields));
         const samples = new Map<string, Json[]>();
         const unsampled: string[] = [];
         for (const [field, refs] of fields) {

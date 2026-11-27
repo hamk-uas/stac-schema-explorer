@@ -358,7 +358,7 @@ describe('views', () => {
         expect(asset.find((f) => f.name === 'cf:standard_name')?.state).toBe('populated');
         expect(asset.find((f) => f.name === 'themes')).toMatchObject({ state: 'unexpected', source: THEMES });
         const groups = groupFields(props, result.sources);
-        expect(groups.find((g) => g.source === CF)?.label).toBe('cf:*');
+        expect(groups.find((g) => g.source === CF)?.label).toBe('cf:*, description, unit');
     });
 
     it('does not flag unprefixed sub-properties inside field values as unexpected core fields', async () => {
@@ -511,6 +511,9 @@ describe('security hardening for untrusted external URLs and schemas', () => {
         expect(result.sources.find((s) => s.key === draftUrl)?.title).toBe('Climate and Forecasting Convention');
         expect(result.sources.find((s) => s.key === CF)?.title).toBe('Climate and Forecasting Convention');
         expect(placed(result, 'Feature', draftUrl, 'cf:standard_name').get('/properties/table:columns/0')).toBe('validated');
+        expect(placed(result, 'Feature', draftUrl, 'unit').get('/properties/table:columns/0')).toBe('validated');
+        expect(placed(result, 'Feature', draftUrl, 'description').get('/properties/table:columns/0')).toBe('validated');
         expect(placed(result, 'Feature', CF, 'cf:standard_name').has('/properties/table:columns/0')).toBe(false);
+        expect(placed(result, 'Feature', CF, 'unit').has('/properties/table:columns/0')).toBe(false);
     });
 });
