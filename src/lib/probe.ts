@@ -168,7 +168,7 @@ class TypeProbe {
 
     constructor(private readonly type: StacType, stacVersion: string, private readonly sources: Source[]) {
         this.doc = baseDocument(type, stacVersion);
-        this.doc.stac_extensions = sources.filter((s) => s.declaration).map((s) => s.declaration!);
+        this.doc.stac_extensions = [...new Set(sources.filter((s) => s.declaration).map((s) => s.declaration!))];
         for (const source of sources) this.passing.set(source.key, this.validate(source));
     }
 
@@ -372,7 +372,7 @@ class TypeProbe {
     finish(stacVersion: string, store: SchemaStore): TypeTemplate {
         const used = new Set(this.placements.map((p) => p.source));
         const applicable = this.sources.filter((s) => s.key === CORE || used.has(s.key));
-        this.doc.stac_extensions = applicable.filter((s) => s.declaration).map((s) => s.declaration!);
+        this.doc.stac_extensions = [...new Set(applicable.filter((s) => s.declaration).map((s) => s.declaration!))];
         const errors: string[] = [];
         for (const source of applicable) {
             const validator = source.validators[this.type]!;

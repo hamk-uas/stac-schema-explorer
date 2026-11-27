@@ -508,6 +508,8 @@ describe('security hardening for untrusted external URLs and schemas', () => {
         };
         const store = new SchemaStore(async (url) => (url === draftUrl ? draftCf : fixtureFetch(url)));
         const result = await probe(store, '1.1.0', [table, draftUrl, CF]);
+        expect(result.templates.Feature.errors).toEqual([]);
+        expect(placed(result, 'Feature', CORE, 'title').size).toBeGreaterThan(0);
         expect(result.sources.find((s) => s.key === draftUrl)?.title).toBe('Climate and Forecasting Convention');
         expect(result.sources.find((s) => s.key === CF)?.title).toBe('Climate and Forecasting Convention');
         expect(placed(result, 'Feature', draftUrl, 'cf:standard_name').get('/properties/table:columns/0')).toBe('validated');
