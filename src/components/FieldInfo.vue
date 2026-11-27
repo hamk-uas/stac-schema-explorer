@@ -60,6 +60,7 @@ const vendoredLink = computed(() => {
     const { host, pathname } = new URL(schemaLink.value);
     return `https://github.com/hamk-uas/stac-schema-explorer/blob/main/schemas/${host}${pathname}`;
 });
+const placeTitle = (place: FieldPlace) => [...place.locations.filter(Boolean), 'Click to jump to this location in the example JSON.'].join('\n');
 </script>
 
 <template>
@@ -67,15 +68,15 @@ const vendoredLink = computed(() => {
     <header>
       <code class="name">{{ name }}</code>
       <span v-if="doc?.title" class="title">{{ doc.title }}</span>
-      <button type="button" class="close" aria-label="Close field information" @click="emit('close')">×</button>
+      <button type="button" class="close" title="Click to close field information" aria-label="Close field information" @click="emit('close')">×</button>
     </header>
     <p class="source">
       <span class="role">defined by</span>
       <LayerBadge v-if="definer" :layer="definer.layer" :label="definer.kind" />
       <span class="dot" />{{ sourceLabel(source, sources) }}
       <span v-if="definer?.maturity" class="maturity" title="Maturity the convention states">{{ definer.maturity }}</span>
-      <a v-if="schemaLink" :href="schemaLink" target="_blank" rel="noopener" title="Published JSON Schema">schema ↗</a>
-      <a v-if="vendoredLink" :href="vendoredLink" target="_blank" rel="noopener" title="Copy with titles and descriptions, vendored by this app">documented copy ↗</a>
+      <a v-if="schemaLink" :href="schemaLink" target="_blank" rel="noopener" title="Open the published JSON Schema in a new tab">schema ↗</a>
+      <a v-if="vendoredLink" :href="vendoredLink" target="_blank" rel="noopener" title="Open the enriched copy with titles and descriptions on GitHub in a new tab">documented copy ↗</a>
       <Checked
         v-if="definer?.checked"
         :date="definer.checked.date"
@@ -158,7 +159,12 @@ const vendoredLink = computed(() => {
       <span class="label">Allowed in</span>
       <ul>
         <li v-for="place in places" :key="`${place.type} ${place.label}`">
-          <button type="button" :class="place.kind" :title="place.locations.join('\n')" @click="emit('place', place)">{{ place.label }}</button>
+          <button
+            type="button"
+            :class="place.kind"
+            :title="placeTitle(place)"
+            @click="emit('place', place)"
+          >{{ place.label }}</button>
           <span class="need" :class="{ required: place.required }">{{ requirementText(place.required) }}</span>
         </li>
       </ul>

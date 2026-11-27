@@ -49,31 +49,36 @@ function add() {
 <template>
   <div class="picker">
     <ul class="selected">
-      <li v-if="modelValue.length === 0" class="none">No conventions: embedded metadata is not shown.</li>
+      <li v-if="modelValue.length === 0" class="none">No data conventions selected.</li>
       <li v-for="url in modelValue" :key="url" :class="{ failed: info(url)?.error }">
         <span class="square" :style="{ background: colorOf(normalizeSchemaUrl(url)) }" />
-        <button type="button" class="name" :title="`Highlight ${label(url).title} fields\n${url}`" @click="emit('focus', normalizeSchemaUrl(url))">
+        <button
+          type="button"
+          class="name"
+          :title="`${url}\nClick to toggle highlighting ${label(url).title} fields and view schema information.`"
+          @click="emit('focus', normalizeSchemaUrl(url))"
+        >
           {{ label(url).title }}
           <span v-if="label(url).version" class="ver">{{ label(url).version }}</span>
           <span class="kind">{{ label(url).kind }}</span>
           <span v-if="label(url).authored" class="unofficial" title="No official JSON Schema exists; this app's schema describes the convention">unofficial schema</span>
         </button>
-        <a v-if="repoUrl(url)" :href="repoUrl(url)" target="_blank" rel="noopener" class="icon text" :title="`Open the repository (README)\n${repoUrl(url)}`" :aria-label="`Repository of ${label(url).title}`">site ↗</a>
-        <a v-if="/^https?:\/\//i.test(url)" :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
-        <button type="button" class="icon" :title="`Remove ${toConventionShortId(url)}`" :aria-label="`Remove ${label(url).title}`" @click="toggle(url)">×</button>
+        <a v-if="repoUrl(url)" :href="repoUrl(url)" target="_blank" rel="noopener" class="icon text" :title="`Open the repository (README) in a new tab\n${repoUrl(url)}`" :aria-label="`Repository of ${label(url).title}`">site ↗</a>
+        <a v-if="/^https?:\/\//i.test(url)" :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema in a new tab\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
+        <button type="button" class="icon" :title="`Click to remove ${toConventionShortId(url)}`" :aria-label="`Remove ${label(url).title}`" @click="toggle(url)">×</button>
         <div v-if="info(url)?.error" class="error">{{ info(url)?.error }}</div>
       </li>
     </ul>
 
     <form class="add" @submit.prevent="add">
       <input v-model="input" type="text" placeholder="schema URL or name@version" aria-label="Convention schema URL or name@version" />
-      <button type="submit">Add</button>
+      <button type="submit" title="Click to add and probe this convention schema">Add</button>
     </form>
     <p v-if="inputError" class="error">{{ inputError }}</p>
 
     <div class="quick-head">
       <h3>Quick select</h3>
-      <button type="button" class="link" @click="emit('update:modelValue', [])">clear</button>
+      <button type="button" class="link" title="Click to remove all selected data conventions" @click="emit('update:modelValue', [])">clear</button>
     </div>
     <template v-for="group in CONVENTION_KINDS" :key="group.kind">
       <h4 class="kind-title" :title="group.hint">{{ group.title }}</h4>
@@ -87,7 +92,7 @@ function add() {
             :class="{ on: selected.has(v.schema) }"
             :aria-pressed="selected.has(v.schema)"
             :style="selected.has(v.schema) ? { '--c': colorOf(v.schema) } : undefined"
-            :title="`${convention.title} ${v.version}: ${convention.description}\nFormats: ${convention.formats.join(', ')}\n${v.schema}`"
+            :title="`${convention.title} ${v.version}: ${convention.description}\nFormats: ${convention.formats.join(', ')}\n${v.schema}\nClick to ${selected.has(v.schema) ? 'remove' : 'add'} this convention.`"
             @click="toggle(v.schema)"
           >
             {{ convention.title }}<span class="ver">{{ v.version }}</span>

@@ -67,9 +67,9 @@ watch(() => [props.pointers, props.doc], async () => {
       <strong class="title" :title="title">{{ title }}</strong>
       <span v-if="rewrites" class="rewritten" :title="`${rewrites} rewrite(s) applied: this is not the published document`">✎ rewritten</span>
       <span class="spacer" />
-      <a v-if="href" :href="href" target="_blank" rel="noopener">open ↗</a>
-      <button type="button" :disabled="!doc" @click="copy">{{ copied ? 'copied' : 'copy' }}</button>
-      <button type="button" :disabled="!doc" @click="download">download</button>
+      <a v-if="href" :href="href" target="_blank" rel="noopener" title="Open the original document in a new tab">open ↗</a>
+      <button type="button" :disabled="!doc" title="Click to copy this JSON to the clipboard" @click="copy">{{ copied ? 'copied' : 'copy' }}</button>
+      <button type="button" :disabled="!doc" title="Click to download this JSON file" @click="download">download</button>
     </div>
     <div ref="container" class="scroll">
       <JsonNode

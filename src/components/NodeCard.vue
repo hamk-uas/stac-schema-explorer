@@ -56,7 +56,13 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
 <template>
   <div class="node" :class="{ selected: isSelected }">
     <header>
-      <button type="button" class="select" :aria-pressed="isSelected" @click="emit('select', entry.key, [''])">
+      <button
+        type="button"
+        class="select"
+        :aria-pressed="isSelected"
+        :title="`Click to select this ${entry.formatTitle} ${entry.nodeType} and show its metadata in the JSON panel`"
+        @click="emit('select', entry.key, [''])"
+      >
         <span class="node-icon" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="14" height="14"><ellipse cx="8" cy="3.5" rx="5.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
         </span>
@@ -70,12 +76,12 @@ const notApplicable = computed(() => (props.entry.notApplicable ?? []).map(embed
       </span>
       <span v-if="entry.rewrites" class="rewritten" :title="`${entry.rewrites} rewrite(s) applied to this node: it is shown and validated as rewritten`">
         ✎ {{ entry.rewrites }} rewrite{{ entry.rewrites === 1 ? '' : 's' }}
-        <button type="button" :aria-label="`Undo the rewrites of node ${entry.title || 'root'}`" @click="emit('reset', entry.key)">undo</button>
+        <button type="button" :title="`Click to undo all local rewrites on node ${entry.title || 'root'}`" :aria-label="`Undo the rewrites of node ${entry.title || 'root'}`" @click="emit('reset', entry.key)">undo</button>
       </span>
       <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the metadata document in a new tab">↗</a>
     </header>
     <div class="body">
-      <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
+      <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" title="Click to highlight this node in the JSON panel" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">node</span>
         <FieldChips :fields="entry.view.fields" :sources="entry.sources" :group="group" :focus="focus" :editable="editable" @field="(s: string, n: string) => pick([''], s, n)" @group="(s: string, names: string[]) => pickGroup([''], s, names)" @edit="(f: FieldView) => emit('edit', entry.key, [''], f)" />
       </div>

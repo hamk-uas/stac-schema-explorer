@@ -28,12 +28,12 @@ function pickStac(version: string) {
 
 function links(core: Core): { label: string; href: string; title: string }[] {
     if (core.id === 'stac') {
-        return [{ label: 'spec ↗', href: `https://github.com/radiantearth/stac-spec/tree/v${props.stacVersion}`, title: `STAC specification ${props.stacVersion}` }];
+        return [{ label: 'spec ↗', href: `https://github.com/radiantearth/stac-spec/tree/v${props.stacVersion}`, title: `Open the STAC ${props.stacVersion} specification in a new tab` }];
     }
     const format = DATA_FORMATS.find((f) => f.id === core.id)!;
     return [
-        { label: 'spec ↗', href: format.specification, title: `${format.title} specification` },
-        { label: 'schema ↗', href: format.schema, title: 'Unofficial JSON Schema of the format, authored by this app' },
+        { label: 'spec ↗', href: format.specification, title: `Open the ${format.title} specification in a new tab` },
+        { label: 'schema ↗', href: format.schema, title: 'Open this app\'s unofficial JSON Schema for the format in a new tab' },
     ];
 }
 </script>
@@ -41,24 +41,29 @@ function links(core: Core): { label: string; href: string; title: string }[] {
 <template>
   <div class="picker">
     <ul class="selected">
-      <li v-if="selected.length === 0" class="none">No cores: STAC core and data format fields are hidden.</li>
+      <li v-if="selected.length === 0" class="none">No cores selected: STAC core and format-native fields are hidden.</li>
       <li v-for="core in selected" :key="core.id">
         <span class="marker" :class="{ square: core.layer === 'format' }" :style="{ background: colorOf(core.source) }" />
-        <button type="button" class="name" :title="`Highlight ${core.title} fields\n${core.description}`" @click="emit('focus', core.source)">
+        <button
+          type="button"
+          class="name"
+          :title="[core.description, `Click to toggle highlighting ${core.title} fields and view schema information.`].filter(Boolean).join('\n')"
+          @click="emit('focus', core.source)"
+        >
           {{ core.title }}
           <span v-if="core.id === 'stac'" class="ver">{{ stacVersion }}</span>
           <span class="kind"><span aria-hidden="true">{{ LAYERS[core.layer].symbol }}</span> {{ core.layer === 'standard' ? 'Standard' : 'Format' }}</span>
         </button>
         <a v-for="link in links(core)" :key="link.label" :href="link.href" target="_blank" rel="noopener" class="icon text" :title="link.title">{{ link.label }}</a>
-        <button type="button" class="icon" :title="`Hide ${core.title} fields`" :aria-label="`Remove ${core.title}`" @click="toggle(core.id)">×</button>
+        <button type="button" class="icon" :title="`Click to hide ${core.title} fields`" :aria-label="`Remove ${core.title}`" @click="toggle(core.id)">×</button>
       </li>
     </ul>
-    <p v-if="explore && modelValue.includes('stac')" class="hint">Explored documents are compared with the STAC version of their own <code>stac_version</code>.</p>
+    <p v-if="explore && modelValue.includes('stac')" class="hint">Explored documents are validated against the STAC version in their own <code>stac_version</code>.</p>
 
     <div class="quick-head">
       <h3>Quick select</h3>
-      <button type="button" class="link" @click="set([...ALL_CORES])">all</button>
-      <button type="button" class="link" @click="set([])">clear</button>
+      <button type="button" class="link" title="Click to select all cores" @click="set([...ALL_CORES])">all</button>
+      <button type="button" class="link" title="Click to hide all core fields" @click="set([])">clear</button>
     </div>
     <div class="quick">
       <button
@@ -69,7 +74,7 @@ function links(core: Core): { label: string; href: string; title: string }[] {
         :class="{ on: modelValue.includes('stac') && stacVersion === v }"
         :aria-pressed="modelValue.includes('stac') && stacVersion === v"
         :style="modelValue.includes('stac') && stacVersion === v ? { '--c': colorOf('core') } : undefined"
-        :title="`STAC ${v}: show the fields of the STAC specification, in the example of version ${v}`"
+        :title="modelValue.includes('stac') && stacVersion === v ? `STAC ${v} core fields are shown.\nClick to hide STAC core fields.` : `STAC ${v}: core fields of the STAC specification.\nClick to select STAC ${v} and show its fields.`"
         @click="pickStac(v)"
       >STAC<span class="ver">{{ v }}</span></button>
       <button
@@ -80,7 +85,7 @@ function links(core: Core): { label: string; href: string; title: string }[] {
         :class="{ on: modelValue.includes(core.id) }"
         :aria-pressed="modelValue.includes(core.id)"
         :style="modelValue.includes(core.id) ? { '--c': colorOf(core.source) } : undefined"
-        :title="`${core.title}: ${core.description}`"
+        :title="`${core.title}: ${core.description}\nClick to ${modelValue.includes(core.id) ? 'hide' : 'show'} ${core.title} format fields.`"
         @click="toggle(core.id)"
       >{{ core.title }}</button>
     </div>

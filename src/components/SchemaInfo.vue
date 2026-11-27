@@ -68,18 +68,18 @@ const links = computed(() => {
     if (unknown.value) return out;
     if (props.source === CORE) {
         const version = props.info?.version;
-        out.push({ label: 'specification ↗', href: `https://github.com/radiantearth/stac-spec/tree/${version ? `v${version}` : 'master'}`, title: 'STAC specification' });
+        out.push({ label: 'specification ↗', href: `https://github.com/radiantearth/stac-spec/tree/${version ? `v${version}` : 'master'}`, title: 'Open the STAC specification in a new tab' });
         return out;
     }
     const specification = known.value?.convention.versions.find((v) => v.version === known.value?.version)?.specification
         ?? known.value?.convention.specification ?? format.value?.specification;
-    if (specification) out.push({ label: 'specification ↗', href: specification, title: 'Specification' });
+    if (specification) out.push({ label: 'specification ↗', href: specification, title: 'Open the specification in a new tab' });
     const repo = repoUrl(props.source);
-    if (repo && repo !== specification) out.push({ label: 'site ↗', href: repo, title: 'Repository (README)' });
-    out.push({ label: 'schema ↗', href: props.source, title: 'Published JSON Schema' });
+    if (repo && repo !== specification) out.push({ label: 'site ↗', href: repo, title: 'Open the repository (README) in a new tab' });
+    out.push({ label: 'schema ↗', href: props.source, title: 'Open the published JSON Schema in a new tab' });
     if (isVendored(props.source)) {
         const { host, pathname } = new URL(props.source);
-        out.push({ label: 'documented copy ↗', href: `https://github.com/hamk-uas/stac-schema-explorer/blob/main/schemas/${host}${pathname}`, title: 'Copy with titles and descriptions, vendored by this app' });
+        out.push({ label: 'documented copy ↗', href: `https://github.com/hamk-uas/stac-schema-explorer/blob/main/schemas/${host}${pathname}`, title: 'Open the enriched copy with titles and descriptions on GitHub in a new tab' });
     }
     return out;
 });
@@ -89,8 +89,9 @@ const software = computed(() => softwareFor(props.source));
 const fields = computed(() => props.info?.fields ?? []);
 const fieldTitle = (name: string) => {
     const doc = props.info?.docs[name];
-    return [doc?.title, doc?.type, 'Click for details.'].filter(Boolean).join('\n');
+    return [doc?.title, doc?.type, 'Click to open field details and highlight it in the JSON panel.'].filter(Boolean).join('\n');
 };
+const placeTitle = (place: FieldPlace) => [...place.locations.filter(Boolean), 'Click to jump to this location in the example JSON.'].join('\n');
 </script>
 
 <template>
@@ -101,7 +102,7 @@ const fieldTitle = (name: string) => {
       <LayerBadge v-if="layer" :layer="layer.layer" :label="kind" />
       <span v-else class="kind">{{ kind }}</span>
       <span v-if="layer && 'maturity' in layer && layer.maturity" class="maturity" title="Maturity the convention states">{{ layer.maturity }}</span>
-      <button type="button" class="close" aria-label="Close schema information" @click="emit('close')">×</button>
+      <button type="button" class="close" title="Click to close schema information" aria-label="Close schema information" @click="emit('close')">×</button>
     </header>
     <p v-if="layer && 'checked' in layer && layer.checked" class="currency">
       <Checked
@@ -134,7 +135,12 @@ const fieldTitle = (name: string) => {
       <span class="label">Fields allowed in</span>
       <ul>
         <li v-for="place in places" :key="`${place.type} ${place.label}`">
-          <button type="button" :class="place.kind" :title="place.locations.join('\n')" @click="emit('place', place)">{{ place.label }}</button>
+          <button
+            type="button"
+            :class="place.kind"
+            :title="placeTitle(place)"
+            @click="emit('place', place)"
+          >{{ place.label }}</button>
         </li>
       </ul>
     </div>
@@ -147,7 +153,7 @@ const fieldTitle = (name: string) => {
       </ul>
     </div>
     <details v-if="fields.length > here.length" class="fields" :open="!here.length">
-      <summary><span class="label">All fields ({{ fields.length }})</span></summary>
+      <summary title="Click to expand or collapse all fields defined by this schema"><span class="label">All fields ({{ fields.length }})</span></summary>
       <ul>
         <li v-for="name in fields" :key="name">
           <button type="button" :class="{ here: hereSet.has(name) }" :title="fieldTitle(name)" @click="emit('field', name)">{{ name }}</button>
@@ -157,7 +163,13 @@ const fieldTitle = (name: string) => {
     <p v-if="info?.unsampled.length" class="missing">No valid example value could be generated for: {{ info.unsampled.join(', ') }}</p>
     <SoftwareInfo :uses="software" />
     <p class="actions">
-      <button type="button" class="toggle" :aria-pressed="focused" @click="emit('focus')">
+      <button
+        type="button"
+        class="toggle"
+        :aria-pressed="focused"
+        :title="focused ? 'Click to clear highlighting and show all schemas at full contrast' : 'Click to highlight this schema\'s fields and dim all others'"
+        @click="emit('focus')"
+      >
         {{ focused ? 'Stop highlighting its fields' : 'Highlight its fields' }}
       </button>
     </p>

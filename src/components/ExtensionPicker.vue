@@ -48,10 +48,15 @@ function add() {
 <template>
   <div class="picker">
     <ul class="selected">
-      <li v-if="modelValue.length === 0" class="none">No extensions: STAC core only.</li>
+      <li v-if="modelValue.length === 0" class="none">No extensions selected.</li>
       <li v-for="url in modelValue" :key="url" :class="{ failed: info(url)?.error }">
         <span class="dot" :style="{ background: colorOf(normalizeSchemaUrl(url)) }" />
-        <button type="button" class="name" :title="`Highlight ${label(url).title} fields\n${url}`" @click="emit('focus', normalizeSchemaUrl(url))">
+        <button
+          type="button"
+          class="name"
+          :title="`${url}\nClick to toggle highlighting ${label(url).title} fields and view schema information.`"
+          @click="emit('focus', normalizeSchemaUrl(url))"
+        >
           {{ label(url).title }}
           <span v-if="label(url).version" class="ver">v{{ label(url).version }}</span>
           <code v-for="p in label(url).prefixes" :key="p" class="prefix">{{ p }}:</code>
@@ -62,11 +67,11 @@ function add() {
           target="_blank"
           rel="noopener"
           class="icon text"
-          :title="`Open the GitHub repository (README)\n${repoUrl(url)}`"
+          :title="`Open the GitHub repository (README) in a new tab\n${repoUrl(url)}`"
           :aria-label="`GitHub repository of ${label(url).title}`"
         >site ↗</a>
-        <a v-if="/^https?:\/\//i.test(url)" :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
-        <button type="button" class="icon" :title="`Remove ${toShortId(url)}`" @click="toggle(url)">×</button>
+        <a v-if="/^https?:\/\//i.test(url)" :href="url" target="_blank" rel="noopener" class="icon text" :title="`Open the JSON Schema in a new tab\n${url}`" :aria-label="`JSON Schema of ${label(url).title}`">schema ↗</a>
+        <button type="button" class="icon" :title="`Click to remove ${toShortId(url)}`" :aria-label="`Remove ${label(url).title}`" @click="toggle(url)">×</button>
         <div v-if="info(url)?.error" class="error">{{ info(url)?.error }}</div>
         <div v-else-if="info(url)?.unsampled.length" class="warn" title="No example value valid against the schema could be generated, so these fields may be missing from the results.">
           no valid example for: {{ info(url)?.unsampled.join(', ') }}
@@ -77,15 +82,15 @@ function add() {
 
     <form class="add" @submit.prevent="add">
       <input v-model="input" type="text" placeholder="schema URL or name@version" aria-label="Extension schema URL or name@version" />
-      <button type="submit">Add</button>
+      <button type="submit" title="Click to add and probe this extension schema">Add</button>
     </form>
     <p v-if="inputError" class="error">{{ inputError }}</p>
 
     <div class="quick-head">
       <h3>Quick select</h3>
-      <button type="button" class="link" @click="emit('update:modelValue', [])">clear</button>
+      <button type="button" class="link" title="Click to remove all selected extensions" @click="emit('update:modelValue', [])">clear</button>
     </div>
-    <p class="hint">Published STAC extensions, including those the openEO API recommends or its back-ends use.</p>
+    <p class="hint">Published STAC extensions, or paste any custom or draft JSON Schema URL above.</p>
     <div class="quick">
       <template v-for="ext in KNOWN_EXTENSIONS" :key="ext.name">
         <button
@@ -94,8 +99,9 @@ function add() {
           type="button"
           class="q"
           :class="{ on: selected.has(v.url) }"
+          :aria-pressed="selected.has(v.url)"
           :style="selected.has(v.url) ? { '--c': colorOf(v.url) } : undefined"
-          :title="`${ext.title} ${v.version}${ext.note ? ` (${ext.note})` : ''}\n${v.url}`"
+          :title="`${ext.title} ${v.version}${ext.note ? ` (${ext.note})` : ''}\n${v.url}\nClick to ${selected.has(v.url) ? 'remove' : 'add'} this extension.`"
           @click="toggle(v.url)"
         >
           {{ ext.title }}<span v-if="ext.versions.length > 1 || v.version === 'dev'" class="ver">{{ v.version }}</span>

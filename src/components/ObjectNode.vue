@@ -42,7 +42,7 @@ function isSelected(): boolean {
 
 <template>
   <div class="obj" :class="[`kind-${node.kind}`]">
-    <div class="row" :class="{ selected: isSelected() }" @click.stop="emit('select', node.pointers)">
+    <div class="row" :class="{ selected: isSelected() }" :title="`Click to highlight ${node.label} in the JSON panel`" @click.stop="emit('select', node.pointers)">
       <span class="glyph" :title="ARRAY_KINDS.has(node.kind) ? 'object in an array' : 'object'">{{ ARRAY_KINDS.has(node.kind) ? '[{}]' : '{}' }}</span>
       <span class="label">{{ node.label }}</span>
       <span v-if="node.kind === 'properties'" class="tag geojson" title="Item properties are the properties of a GeoJSON Feature">GeoJSON Feature properties</span>

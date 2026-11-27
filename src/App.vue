@@ -30,9 +30,10 @@ import { ALL_CORES } from './lib/cores';
 import { LAYERS, schemaLayer } from './lib/layers';
 import { fetchDoc, fetchItems, stacVersionFor, type RealDoc } from './lib/stac';
 import { documentView, fieldIndex, templateView, undeclaredExtensions, type FieldView } from './lib/tree';
-import { readState, writeState, type AppState } from './lib/url-state';
+import { defaultState, readState, writeState, type AppState } from './lib/url-state';
 import { isVendored } from './lib/vendored';
 
+const DEFAULTS = defaultState();
 const state = reactive<AppState>(readState(location.search));
 watch(() => writeState(state), (search) => {
     if (search !== location.search) history.replaceState(null, '', search + location.hash);
@@ -517,6 +518,28 @@ const paneStyle = computed(() => ({
     ...(jsonWidth.value === undefined || !jsonOpen.value ? {} : { '--json-col': `min(${jsonWidth.value}px, 70vw)` }),
 }));
 
+const coresModified = computed(() => state.stacVersion !== DEFAULTS.stacVersion || ALL_CORES.some((id) => !state.cores.includes(id)));
+const panesModified = computed(() => sideWidth.value !== undefined || jsonWidth.value !== undefined);
+const displayModified = computed(() => state.groupFields !== DEFAULTS.groupFields
+    || (state.mode === 'href' && state.includeDeclared !== DEFAULTS.includeDeclared)
+    || state.focus !== DEFAULTS.focus
+    || panesModified.value);
+
+function resetCores() {
+    state.cores = [...ALL_CORES];
+    state.stacVersion = DEFAULTS.stacVersion;
+}
+function resetPanes() {
+    sideWidth.value = undefined;
+    jsonWidth.value = undefined;
+}
+function resetDisplay() {
+    state.groupFields = DEFAULTS.groupFields;
+    state.includeDeclared = DEFAULTS.includeDeclared;
+    state.focus = DEFAULTS.focus;
+    resetPanes();
+}
+
 /** Fields of a clicked chip, shown in the selected objects of the JSON. */
 const focusNames = ref<string[]>([]);
 
@@ -810,31 +833,68 @@ onMounted(() => {
   <div ref="appEl" class="app" :class="{ 'no-json': !jsonOpen, embed: state.embed }" :style="paneStyle">
     <header v-if="!state.embed" class="top">
       <div class="brand">
-        <h1><a class="home" :href="homeUrl" title="Start over: reset all settings and selections">STAC Schema Explorer</a></h1>
-        <p>Where can each field of STAC, its extensions and the metadata embedded in data (Zarr, netCDF, TIFF) go?</p>
+        <h1><a class="home" :href="homeUrl" title="Click to reset all settings and selections">STAC Schema Explorer</a></h1>
+        <p>Explore, compare and share where fields of STAC, its extensions and embedded data metadata (Zarr, netCDF, TIFF) belong.</p>
       </div>
       <nav class="modes" aria-label="View">
-        <button type="button" :class="{ on: state.mode === 'example' }" @click="setMode('example')">Example catalog</button>
-        <button type="button" :class="{ on: state.mode === 'href' }" title="A STAC Catalog, Collection or Item (static or STAC API), a Zarr store, a netCDF or TIFF file" @click="setMode('href')">Explore a STAC or data URL</button>
+        <button
+          type="button"
+          :class="{ on: state.mode === 'example' }"
+          title="Click to view a generated example catalog and placement matrix for the selected schemas"
+          @click="setMode('example')"
+        >Example catalog</button>
+        <button
+          type="button"
+          :class="{ on: state.mode === 'href' }"
+          title="Click to inspect and validate a live STAC Catalog, Collection, Item (static or STAC API), Zarr store, netCDF or TIFF URL"
+          @click="setMode('href')"
+        >Explore a STAC or data URL</button>
       </nav>
-      <button type="button" class="json-toggle" @click="jsonOpen = !jsonOpen">{{ jsonOpen ? 'Hide JSON' : 'Show JSON' }}</button>
-      <a class="gh" href="https://github.com/hamk-uas/stac-schema-explorer" target="_blank" rel="noopener">About / source</a>
+      <button
+        type="button"
+        class="json-toggle"
+        :title="jsonOpen ? 'Click to hide the details and JSON panel' : 'Click to show the details and JSON panel'"
+        @click="jsonOpen = !jsonOpen"
+      >{{ jsonOpen ? 'Hide JSON' : 'Show JSON' }}</button>
+      <a
+        class="gh"
+        href="https://github.com/hamk-uas/stac-schema-explorer"
+        target="_blank"
+        rel="noopener"
+        title="Open the README and source code on GitHub in a new tab"
+      >About / source</a>
     </header>
 
     <aside id="side-pane" ref="sideEl" class="side">
       <details class="panel" :open="panels.cores" @toggle="setPanel('cores', $event)">
-        <summary>
+        <summary title="Click to collapse or expand the Cores panel">
           <h2><span aria-hidden="true">{{ LAYERS.standard.symbol }}{{ LAYERS.format.symbol }}</span> Cores</h2>
+          <button
+            v-if="coresModified"
+            type="button"
+            class="reset"
+            :title="`Click to restore default cores (all cores, STAC ${DEFAULTS.stacVersion})`"
+            aria-label="Restore default cores"
+            @click.prevent.stop="resetCores"
+          >↺</button>
           <span class="count" :title="`${state.cores.length} of ${ALL_CORES.length} cores selected`">{{ state.cores.length }}/{{ ALL_CORES.length }}</span>
         </summary>
         <div class="panel-body">
-          <p class="hint">What STAC documents and data files are built on: STAC itself and the data formats. Like extensions and conventions, a selected core shows its fields.</p>
+          <p class="hint">Base schemas for STAC documents and data files. Select a core to display its own fields.</p>
           <CorePicker v-model="state.cores" v-model:stac-version="state.stacVersion" :explore="state.mode === 'href'" @focus="focusFromPicker" />
         </div>
       </details>
       <details class="panel" :open="panels.extensions" @toggle="setPanel('extensions', $event)">
-        <summary>
+        <summary title="Click to collapse or expand the STAC extensions panel">
           <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> STAC extensions</h2>
+          <button
+            v-if="state.extensions.length"
+            type="button"
+            class="reset"
+            title="Click to restore default (no extensions selected)"
+            aria-label="Restore default extensions"
+            @click.prevent.stop="state.extensions = []"
+          >↺</button>
           <span class="count" :title="`${state.extensions.length} extensions selected`">{{ state.extensions.length }}</span>
         </summary>
         <div class="panel-body">
@@ -842,28 +902,82 @@ onMounted(() => {
         </div>
       </details>
       <details class="panel" :open="panels.conventions" @toggle="setPanel('conventions', $event)">
-        <summary>
+        <summary title="Click to collapse or expand the Data conventions panel">
           <h2><span aria-hidden="true">{{ LAYERS.convention.symbol }}</span> Data conventions</h2>
+          <button
+            v-if="state.conventions.length"
+            type="button"
+            class="reset"
+            title="Click to restore default (no data conventions selected)"
+            aria-label="Restore default data conventions"
+            @click.prevent.stop="state.conventions = []"
+          >↺</button>
           <span class="count" :title="`${state.conventions.length} data conventions selected`">{{ state.conventions.length }}</span>
         </summary>
         <div class="panel-body">
-          <p class="hint">Conventions of metadata embedded in data files (Zarr, netCDF, TIFF): the counterparts of STAC extensions.</p>
+          <p class="hint">Metadata conventions embedded inside data files (Zarr, netCDF, TIFF) — the data-file counterparts of STAC extensions.</p>
           <ConventionPicker v-model="state.conventions" :sources="embeddedSources" @focus="focusFromPicker" />
         </div>
       </details>
       <details class="panel" :open="panels.display" @toggle="setPanel('display', $event)">
-        <summary><h2>Display</h2></summary>
+        <summary title="Click to collapse or expand Display options">
+          <h2>Display</h2>
+          <button
+            v-if="displayModified"
+            type="button"
+            class="reset"
+            title="Click to restore all Display options to their defaults"
+            aria-label="Restore default display options"
+            @click.prevent.stop="resetDisplay"
+          >↺</button>
+        </summary>
         <div class="panel-body">
-          <label><input v-model="state.groupFields" type="checkbox" /> Group fields by extension</label>
-          <label v-if="state.mode === 'href'"><input v-model="state.includeDeclared" type="checkbox" /> Include extensions the documents declare</label>
-          <div v-if="state.focus" class="focus">
-            Highlighting <span class="swatch" :style="{ background: colorOf(state.focus) }" /> {{ sourceLabel(state.focus, [...sources, ...embeddedSources]) }}
-            <button type="button" class="link" @click="state.focus = ''">clear</button>
+          <div class="setting-row">
+            <label title="Click to toggle grouping each schema's fields into a single expandable chip"><input v-model="state.groupFields" type="checkbox" /> Group fields by schema</label>
+            <button
+              v-if="state.groupFields !== DEFAULTS.groupFields"
+              type="button"
+              class="reset"
+              title="Click to restore default (grouped)"
+              aria-label="Restore default field grouping"
+              @click="state.groupFields = DEFAULTS.groupFields"
+            >↺</button>
+          </div>
+          <div v-if="state.mode === 'href'" class="setting-row">
+            <label title="Click to toggle comparing explored documents against extensions they declare in stac_extensions"><input v-model="state.includeDeclared" type="checkbox" /> Include extensions the documents declare</label>
+            <button
+              v-if="state.includeDeclared !== DEFAULTS.includeDeclared"
+              type="button"
+              class="reset"
+              title="Click to restore default (included)"
+              aria-label="Restore default declared-extension handling"
+              @click="state.includeDeclared = DEFAULTS.includeDeclared"
+            >↺</button>
+          </div>
+          <div v-if="state.focus" class="setting-row focus">
+            <span>Highlighting <span class="swatch" :style="{ background: colorOf(state.focus) }" /> {{ sourceLabel(state.focus, [...sources, ...embeddedSources]) }}</span>
+            <button
+              type="button"
+              class="reset"
+              title="Click to restore default (no schema highlighted)"
+              aria-label="Clear highlighted schema"
+              @click="state.focus = ''"
+            >↺</button>
+          </div>
+          <div v-if="panesModified" class="setting-row focus">
+            <span>Pane widths: custom</span>
+            <button
+              type="button"
+              class="reset"
+              title="Click to restore default pane widths"
+              aria-label="Restore default pane widths"
+              @click="resetPanes"
+            >↺</button>
           </div>
         </div>
       </details>
       <details class="panel" :open="panels.legend" @toggle="setPanel('legend', $event)">
-        <summary><h2>Legend</h2></summary>
+        <summary title="Click to collapse or expand the Legend"><h2>Legend</h2></summary>
         <div class="panel-body">
           <Legend />
         </div>
@@ -873,8 +987,13 @@ onMounted(() => {
     <main class="main">
       <p v-if="state.embed" class="embed-bar">
         <strong>STAC Schema Explorer</strong>
-        <button type="button" class="link" @click="jsonOpen = !jsonOpen">{{ jsonOpen ? 'hide JSON' : 'show JSON' }}</button>
-        <a :href="fullAppUrl" target="_blank" rel="noopener">open full app ↗</a>
+        <button
+          type="button"
+          class="link"
+          :title="jsonOpen ? 'Click to hide the details and JSON panel' : 'Click to show the details and JSON panel'"
+          @click="jsonOpen = !jsonOpen"
+        >{{ jsonOpen ? 'hide JSON' : 'show JSON' }}</button>
+        <a :href="fullAppUrl" target="_blank" rel="noopener" title="Open this exact view in the full app in a new tab">open full app ↗</a>
       </p>
       <div v-if="busy" class="progress" role="status">
         <div class="bar" :style="{ width: `${Math.round(100 * (progress?.done ?? 0) / (progress?.total || 1))}%` }" />
@@ -885,42 +1004,61 @@ onMounted(() => {
       <template v-if="state.mode === 'example'">
         <div class="toolbar">
           <div class="tabs">
-            <button type="button" :class="{ on: state.view === 'tree' }" @click="state.view = 'tree'">Catalog tree</button>
-            <button type="button" :class="{ on: state.view === 'matrix' }" @click="state.view = 'matrix'">Placement matrix</button>
+            <button
+              type="button"
+              :class="{ on: state.view === 'tree' }"
+              title="Click to inspect the generated example Catalog, Collection, Item and data nodes as a tree"
+              @click="state.view = 'tree'"
+            >Catalog tree</button>
+            <button
+              type="button"
+              :class="{ on: state.view === 'matrix' }"
+              title="Click to compare every field across all conceptual locations in a single matrix"
+              @click="state.view = 'matrix'"
+            >Placement matrix</button>
           </div>
           <p class="explain">
-            The <em>extreme case</em>: every field of the selected schemas placed everywhere the schemas allow it, in an example that
-            validates against STAC {{ state.stacVersion }} core and every selected extension.
+            Generated <em>extreme case</em>: every field of the selected schemas placed wherever the schemas allow it, validated against
+            STAC {{ state.stacVersion }} core and all selected extensions. Select any schema, object or field to inspect details and JSON — share any view by copying the URL.
           </p>
         </div>
         <div v-if="state.view === 'tree' && exampleRoot" class="tree">
-          <DocCard
-            :entry="exampleRoot"
-            :sources="sources"
-            :group="state.groupFields"
-            :focus="state.focus"
-            :selected-doc="state.selected"
-            :selected-pointers="selectedPointers"
-            @select="select"
-            @toggle="toggle"
-            @field="openField"
-            @schema="openSchema"
-          />
-          <details v-if="findings.length" class="findings" open>
-            <summary>Findings ({{ findings.length }})</summary>
-            <ul>
-              <li v-for="(f, i) in findings" :key="i" :class="f.type">{{ f.text }}</li>
-            </ul>
-          </details>
-          <section class="embedded-section" aria-labelledby="embedded-heading">
-            <h3 id="embedded-heading">Embedded in the data</h3>
-            <p class="explain">
-              Metadata stored in the data files of assets, not in STAC: the nodes of each selected format core, and of each format the
-              selected data conventions apply to, with every field placed where the format and convention schemas allow it.
-              A format's own fields (the counterparts of STAC core) are shown when its core is selected.
+          <section class="main-panel" aria-labelledby="stac-tree-heading">
+            <header class="panel-head">
+              <h3 id="stac-tree-heading"><span aria-hidden="true">{{ LAYERS.standard.symbol }}</span> STAC {{ state.stacVersion }}</h3>
+              <span class="panel-tag">STAC catalog hierarchy</span>
+            </header>
+            <p class="panel-desc">Catalog, Collection and Item documents with every field of STAC core and the selected extensions placed where allowed.</p>
+            <DocCard
+              :entry="exampleRoot"
+              :sources="sources"
+              :group="state.groupFields"
+              :focus="state.focus"
+              :selected-doc="state.selected"
+              :selected-pointers="selectedPointers"
+              @select="select"
+              @toggle="toggle"
+              @field="openField"
+              @schema="openSchema"
+            />
+            <details v-if="findings.length" class="findings" open>
+              <summary>Findings ({{ findings.length }})</summary>
+              <ul>
+                <li v-for="(f, i) in findings" :key="i" :class="f.type">{{ f.text }}</li>
+              </ul>
+            </details>
+          </section>
+          <section class="main-panel" aria-labelledby="embedded-heading">
+            <header class="panel-head">
+              <h3 id="embedded-heading"><span aria-hidden="true">{{ LAYERS.format.symbol }}</span> Embedded in the data</h3>
+              <span class="panel-tag">Zarr, netCDF, TIFF</span>
+            </header>
+            <p class="panel-desc">
+              Metadata stored inside data files (not in STAC): nodes for each selected format core and each format targeted by the
+              selected data conventions, with every field placed where its schemas allow it.
             </p>
             <p v-if="embeddedError" class="error">{{ embeddedError }}</p>
-            <p v-if="state.conventions.length === 0 && formatCores.length === 0" class="explain">Select format cores or data conventions to see where their fields go.</p>
+            <p v-if="state.conventions.length === 0 && formatCores.length === 0" class="panel-desc">Select format cores or data conventions in the sidebar to see where their fields go.</p>
             <NodeCard
               v-for="node in exampleNodes"
               :key="node.key"
@@ -935,66 +1073,83 @@ onMounted(() => {
             />
           </section>
         </div>
-        <template v-else-if="state.view === 'matrix'">
-          <MatrixView
-            v-if="result"
-            :groups="stacGroups"
-            :sources="result.sources"
-            :hidden="showsCore('stac') ? [] : [CORE]"
-            :focus="state.focus"
-            intro="Where each field can be placed, per STAC object type and conceptual location."
-            legend
-            @select="selectFromMatrix"
-            @field="(s: string, n: string) => openField(s, n)"
-            @schema="(s: string) => openSchema(s)"
-          />
-          <section class="embedded-section" aria-labelledby="embedded-matrix-heading">
-            <h3 id="embedded-matrix-heading">Embedded in the data</h3>
-            <p class="explain">
-              One matrix per data format: the conventions of different formats are distinct, as are their node types. A convention
-              that applies to several formats (CF to netCDF and Zarr) appears in each. A format's own fields are shown when its core is selected.
-            </p>
-            <p v-if="state.conventions.length === 0 && formatCores.length === 0" class="explain">Select format cores or data conventions to see where their fields go.</p>
+        <div v-else-if="state.view === 'matrix'" class="matrices">
+          <p class="matrix-legend">
+            <span class="mark validated" /> validated by the schema,
+            <span class="mark presence" /> presence only (counts towards an extension's “at least one field” requirement),
+            <span class="mark validated partial" /> only in some objects of that kind (hover for details).
+            Click any mark to open field details and highlight it in the example JSON.
+          </p>
+          <section v-if="result" class="main-panel" aria-labelledby="stac-matrix-heading">
+            <header class="panel-head">
+              <h3 id="stac-matrix-heading"><span aria-hidden="true">{{ LAYERS.standard.symbol }}</span> STAC {{ state.stacVersion }}</h3>
+              <span class="panel-tag">Standard · Catalog, Collection and Item</span>
+            </header>
+            <p class="panel-desc">Where each STAC core and extension field can be placed, by document type and object path.</p>
             <MatrixView
-              v-for="m in embeddedMatrices"
-              :key="m.format.id"
+              :groups="stacGroups"
+              :sources="result.sources"
+              :hidden="showsCore('stac') ? [] : [CORE]"
+              :focus="state.focus"
+              @select="selectFromMatrix"
+              @field="(s: string, n: string) => openField(s, n)"
+              @schema="(s: string) => openSchema(s)"
+            />
+          </section>
+          <section v-for="m in embeddedMatrices" :key="m.format.id" class="main-panel" :aria-labelledby="`matrix-${m.format.id}`">
+            <header class="panel-head">
+              <h3 :id="`matrix-${m.format.id}`"><span aria-hidden="true">{{ LAYERS.format.symbol }}</span> {{ m.format.title }}</h3>
+              <span class="panel-tag">Embedded in the data · {{ m.groups.map((g) => g.label).join(' and ') }} nodes</span>
+            </header>
+            <p class="panel-desc">{{ m.format.description }} Select format cores or data conventions in the sidebar to show their fields.</p>
+            <MatrixView
               :groups="m.groups"
               :sources="m.sources"
               :hidden="showsCore(m.format.id) ? [] : [m.format.schema]"
               :focus="state.focus"
-              :intro="`${m.format.title}: ${m.groups.map((g) => g.label).join(' and ')} nodes.`"
               top-label="node"
-              class="format-matrix"
               @select="selectFromMatrix"
               @field="(s: string, n: string) => openField(s, n, m.sources)"
               @schema="(s: string) => openSchema(s, [], m.sources)"
             />
           </section>
-        </template>
+          <section v-if="state.conventions.length === 0 && formatCores.length === 0" class="main-panel" aria-labelledby="embedded-matrix-empty">
+            <header class="panel-head">
+              <h3 id="embedded-matrix-empty"><span aria-hidden="true">{{ LAYERS.format.symbol }}</span> Embedded in the data</h3>
+              <span class="panel-tag">Zarr, netCDF, TIFF</span>
+            </header>
+            <p class="panel-desc">Select format cores or data conventions in the sidebar to see placement matrices for metadata embedded in data files.</p>
+          </section>
+        </div>
       </template>
 
       <template v-else>
         <form class="href-form" @submit.prevent="openHref(hrefInput)">
           <input v-model="hrefInput" type="url" placeholder="https://…/catalog.json, collection.json, item.json, or a Zarr store, netCDF or TIFF file" aria-label="STAC document or data file URL" />
-          <button type="submit">Open</button>
+          <button type="submit" title="Click to fetch, inspect and validate this URL">Open</button>
         </form>
         <p class="examples">
           Try:
-          <button v-for="ex in EXAMPLE_URLS" :key="ex.href" type="button" class="link" @click="openHref(ex.href)">{{ ex.label }}</button>
+          <button
+            v-for="ex in EXAMPLE_URLS"
+            :key="ex.href"
+            type="button"
+            class="link"
+            :title="`Click to open and inspect this example\n${ex.href}`"
+            @click="openHref(ex.href)"
+          >{{ ex.label }}</button>
         </p>
         <p class="explain">
-          Populated fields are highlighted within the fields the schemas would allow at the same place (dotted = allowed but
-          absent; red = present but not placed there by any selected or declared schema). Expand a document to load its children. The data
-          files of assets (Zarr, netCDF, TIFF) appear inside their document in dashed “embedded in the data” sections: Zarr
-          stores are read at once, netCDF and TIFF files when expanded.
-          Use + and − on a field to add it with an example value or remove it: a local rewrite, kept in the share link.
+          Populated fields are shown alongside every field allowed at the same location (dotted = allowed but absent; red = present
+          but not placed there by any selected or declared schema). Expand cards to load child documents or embedded asset metadata
+          (Zarr, netCDF, TIFF), and use + / − on fields to test local rewrites — all changes stay in the shareable URL.
         </p>
         <p v-if="state.rewrites.length" class="rewrites-banner" role="status">
           <strong>✎ Rewrites applied:</strong>
           {{ state.rewrites.length }} change{{ state.rewrites.length === 1 ? '' : 's' }} to {{ rewrittenDocs }}
-          document{{ rewrittenDocs === 1 ? '' : 's' }} or node{{ rewrittenDocs === 1 ? '' : 's' }}. The tree, the JSON (copy and
-          download) and validation show the rewritten versions; the originals are unchanged.
-          <button type="button" @click="resetRewrites()">Undo all</button>
+          document{{ rewrittenDocs === 1 ? '' : 's' }} or node{{ rewrittenDocs === 1 ? '' : 's' }}. The tree, JSON (copy and
+          download) and validation reflect the rewritten versions; the remote originals are unchanged.
+          <button type="button" title="Click to discard all local rewrites and restore the original documents" @click="resetRewrites()">Undo all</button>
         </p>
         <div class="tree">
           <DocCard
@@ -1260,12 +1415,42 @@ onMounted(() => {
   border-radius: 999px;
   padding: 0 7px;
 }
+.panel > summary .reset + .count {
+  margin-left: 0;
+}
+.panel > summary .reset {
+  margin-left: auto;
+}
+.reset {
+  border: 0;
+  background: none;
+  color: var(--slate-500);
+  cursor: pointer;
+  font: 600 14px/1 var(--sans);
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex: none;
+}
+.reset:hover {
+  color: var(--indigo-600);
+  background: var(--hover);
+}
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.setting-row > label,
+.setting-row > span {
+  flex: 1;
+  min-width: 0;
+}
 .side h2 {
   margin: 0;
-  font: 600 12px var(--sans);
+  font: 700 13px var(--sans);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--slate-600);
+  letter-spacing: 0.04em;
+  color: var(--slate-700);
 }
 .side label {
   display: block;
@@ -1449,16 +1634,73 @@ onMounted(() => {
   color: var(--slate-500);
   margin: 18px 0 0;
 }
-.embedded-section {
-  margin-top: 28px;
-}
-.format-matrix {
+.main-panel {
   margin-top: 14px;
+  padding: 14px 16px 16px;
+  background: var(--layer);
+  border-radius: 10px;
+}
+.tree > .main-panel:first-child,
+.matrices > .main-panel:first-of-type {
+  margin-top: 8px;
+}
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.panel-head h3 {
+  margin: 0;
+  font: 700 17px/1.25 var(--sans);
+  color: var(--slate-900);
+}
+.panel-tag {
+  font: 500 11px var(--sans);
+  color: var(--slate-600);
+  background: var(--field);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+.panel-desc {
+  font-size: 12px;
+  color: var(--slate-500);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.matrix-legend {
+  font-size: 12px;
+  color: var(--slate-600);
+  margin: 2px 0 8px;
+  line-height: 1.7;
+}
+.matrix-legend .mark {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--slate-600);
+  background: var(--slate-600);
+  vertical-align: middle;
+}
+.matrix-legend .mark.presence {
+  background: var(--bg);
+  border-style: dashed;
+}
+.matrix-legend .mark.partial {
+  background: linear-gradient(90deg, var(--slate-600) 50%, var(--bg) 50%);
+}
+.embedded-section {
+  margin-top: 16px;
+  padding: 14px 16px 16px;
+  background: var(--layer);
+  border-radius: 10px;
 }
 .embedded-section h3 {
   margin: 0 0 4px;
-  font: 600 14px var(--sans);
-  color: var(--slate-700);
+  font: 700 17px/1.25 var(--sans);
+  color: var(--slate-900);
 }
 .rewrites-banner {
   margin: 4px 0 10px;

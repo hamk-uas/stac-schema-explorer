@@ -53,10 +53,10 @@ function pickLabel(field: FieldView): string {
 
 /** The edit button of a field: add an absent field, remove a present one, or undo its rewrite. */
 function editAction(field: FieldView): { symbol: string; label: string } {
-    if (field.edit === 'added') return { symbol: '×', label: `Undo adding ${field.name}` };
-    if (field.edit === 'removed') return { symbol: '+', label: `Restore ${field.name}` };
-    if (field.state === 'possible') return { symbol: '+', label: `Add ${field.name} with an example value (rewrite)` };
-    return { symbol: '−', label: `Remove ${field.name} (rewrite)` };
+    if (field.edit === 'added') return { symbol: '×', label: `Click to undo adding ${field.name}` };
+    if (field.edit === 'removed') return { symbol: '+', label: `Click to restore ${field.name}` };
+    if (field.state === 'possible') return { symbol: '+', label: `Click to add ${field.name} with an example value (local rewrite)` };
+    return { symbol: '−', label: `Click to remove ${field.name} (local rewrite)` };
 }
 
 function docOf(field: FieldView) {
@@ -76,7 +76,11 @@ function groupTitle(group: FieldGroup): string {
         const title = docOf(f)?.title;
         return `• ${f.name}${title ? ` (${title})` : ''}${f.kind === 'presence' ? ', presence only' : ''}${f.required ? `, ${requirementText(f.required)}` : ''} — ${f.edit ? EDIT_TEXT[f.edit] : STATE_TEXT[f.state]}`;
     });
-    return `${sourceLabel(group.source, props.sources)}\n${lines.join('\n')}\n\nClick to ${expanded.value.has(group.source) ? 'collapse' : 'list the fields'}.`;
+    return [
+        sourceLabel(group.source, props.sources),
+        ...lines,
+        `Click to ${expanded.value.has(group.source) ? 'collapse this group' : 'expand individual fields'}, highlight them in the JSON panel, and open schema details.`,
+    ].join('\n');
 }
 
 function counts(group: FieldGroup): string {

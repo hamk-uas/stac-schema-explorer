@@ -52,7 +52,7 @@ const usesOf = (software: Software) => (software.uses ?? []).join(', ');
       <LayerBadge :layer="group.layer" :label="LAYERS[group.layer].plural" />
       <ul>
         <li v-for="use in group.uses" :key="use.software.id">
-          <a class="name" :href="use.software.url" target="_blank" rel="noopener" :title="use.software.description">{{ use.software.title }}</a>
+          <a class="name" :href="use.software.url" target="_blank" rel="noopener" :title="[use.software.description, 'Open project documentation in a new tab.'].filter(Boolean).join('\n')">{{ use.software.title }}</a>
           <Checked
             v-if="checkedOf(use.software)"
             :date="checkedOf(use.software)!.date"
@@ -66,7 +66,7 @@ const usesOf = (software: Software) => (software.uses ?? []).join(', ');
             <span v-if="support.since" class="since">since {{ support.since }}</span>
             <span v-if="where(support)" class="since">{{ where(support) }}</span>
             <span v-if="support.note" class="note">{{ support.note }}</span>
-            <a class="source" :href="support.source" target="_blank" rel="noopener" title="Where this is documented">source ↗</a>
+            <a class="source" :href="support.source" target="_blank" rel="noopener" title="Open the cited documentation or source code in a new tab">source ↗</a>
           </span>
           <span v-if="use.through.length" class="through">
             {{ use.supports.length ? 'also ' : '' }}through {{ use.through.map((s) => s.title).join(', ') }}
@@ -87,7 +87,7 @@ const usesOf = (software: Software) => (software.uses ?? []).join(', ');
         <p v-if="p.rule.ignores?.length" class="detail">Ignores {{ p.rule.ignores.map((s) => s.label).join('; ') }}.</p>
         <p v-if="p.rule.missing" class="detail">When none is present: {{ p.rule.missing }}</p>
         <p v-if="p.rule.note" class="detail">{{ p.rule.note }}</p>
-        <a class="source" :href="p.rule.source" target="_blank" rel="noopener">source ↗</a>
+        <a class="source" :href="p.rule.source" target="_blank" rel="noopener" title="Open the cited documentation or source code in a new tab">source ↗</a>
       </li>
     </ul>
   </div>

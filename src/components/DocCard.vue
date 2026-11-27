@@ -87,13 +87,13 @@ const undeclaredTitle = computed(() => [
 
 <template>
   <div class="doc" :class="[`type-${entry.type}`, { selected: isSelected }]">
-    <header @click="emit('select', entry.key, [''])">
+    <header :title="`Click to select this ${TYPE_LABEL[entry.type]} and show it in the JSON panel`" @click="emit('select', entry.key, [''])">
       <button
         v-if="hasChildren"
         type="button"
         class="twisty"
         :aria-label="entry.expanded ? 'Collapse child documents' : 'Expand child documents'"
-        :title="entry.expanded ? 'Hide child documents' : 'Show child documents'"
+        :title="entry.expanded ? 'Click to hide child documents' : 'Click to show child documents'"
         @click.stop="emit('toggle', entry)"
       >{{ entry.expanded ? '▾' : '▸' }}</button>
       <span v-else class="twisty-space" />
@@ -111,15 +111,15 @@ const undeclaredTitle = computed(() => [
       </span>
       <span v-if="entry.rewrites" class="rewritten" :title="`${entry.rewrites} rewrite(s) applied to this document: it is shown and validated as rewritten`">
         ✎ {{ entry.rewrites }} rewrite{{ entry.rewrites === 1 ? '' : 's' }}
-        <button type="button" :aria-label="`Undo the rewrites of ${entry.title}`" @click.stop="emit('reset', entry.key)">undo</button>
+        <button type="button" :title="`Click to undo all local rewrites on ${entry.title}`" :aria-label="`Undo the rewrites of ${entry.title}`" @click.stop="emit('reset', entry.key)">undo</button>
       </span>
       <span v-if="entry.undeclared?.length" class="undeclared" :title="undeclaredTitle">
         ⚠ undeclared: {{ entry.undeclared.map((u) => sourceLabel(u.source, docSources)).join(', ') }}
       </span>
-      <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the JSON in a new tab" @click.stop>↗</a>
+      <a v-if="entry.href" class="open" :href="entry.href" target="_blank" rel="noopener" title="Open the original JSON in a new tab" @click.stop>↗</a>
     </header>
     <div v-if="entry.view && !entry.compact" class="body">
-      <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" @click.stop="emit('select', entry.key, [''])">
+      <div v-if="entry.view.fields.length" class="root-fields" :class="{ selected: pointers.includes('') }" title="Click to highlight the top-level document in the JSON panel" @click.stop="emit('select', entry.key, [''])">
         <span class="glyph">top level</span>
         <FieldChips :fields="entry.view.fields" :sources="docSources" :group="group" :focus="focus" :editable="editable" @field="(s: string, n: string) => pick([''], s, n)" @group="(s: string, names: string[]) => pickGroup([''], s, names)" @edit="(f: FieldView) => emit('edit', entry.key, [''], f)" />
       </div>
@@ -148,7 +148,13 @@ const undeclaredTitle = computed(() => [
       :aria-label="`Metadata embedded in the ${READER_LABEL[file.kind]} of asset ${file.assets.join(', ')}`"
     >
       <div class="data-head file-head">
-        <button type="button" class="data-toggle" :aria-expanded="file.expanded" @click="emit('data', entry, file)">
+        <button
+          type="button"
+          class="data-toggle"
+          :aria-expanded="file.expanded"
+          :title="file.expanded ? `Click to collapse embedded metadata for this ${READER_LABEL[file.kind]}` : `Click to expand embedded metadata for this ${READER_LABEL[file.kind]}`"
+          @click="emit('data', entry, file)"
+        >
           <span class="data-twisty" aria-hidden="true">{{ file.expanded ? '▾' : '▸' }}</span>
           <span class="data-icon" aria-hidden="true">
             <svg viewBox="0 0 16 16" width="14" height="14"><ellipse cx="8" cy="3.5" rx="5.5" ry="2" fill="none" stroke="currentColor" stroke-width="1.3" /><path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" fill="none" stroke="currentColor" stroke-width="1.3" /></svg>
@@ -160,7 +166,7 @@ const undeclaredTitle = computed(() => [
         <span v-if="file.status === 'loading'" class="status">reading…</span>
         <span v-else-if="file.status === 'error'" class="status error" :title="file.error">⚠ {{ file.error }}</span>
         <span v-else-if="file.status === 'ready'" class="status">{{ file.nodes.length }} node{{ file.nodes.length === 1 ? '' : 's' }}</span>
-        <a class="open" :href="file.href" target="_blank" rel="noopener" :title="`Open the ${READER_LABEL[file.kind]}\n${file.href}`">↗</a>
+        <a class="open" :href="file.href" target="_blank" rel="noopener" :title="`Open the ${READER_LABEL[file.kind]} in a new tab\n${file.href}`">↗</a>
       </div>
       <div v-if="file.expanded" class="data-nodes">
         <p v-for="note in file.notes" :key="note" class="note">ⓘ {{ note }}</p>
@@ -195,7 +201,7 @@ const undeclaredTitle = computed(() => [
           :key="file.href"
           type="button"
           class="data-file"
-          :title="`Read the embedded metadata of this ${READER_LABEL[file.kind]}\n${file.href}`"
+          :title="`Click to read the embedded metadata of this ${READER_LABEL[file.kind]}\n${file.href}`"
           @click="emit('data', entry, file)"
         ><code>{{ file.assets.join(', ') }}</code> ›</button>
       </div>
@@ -213,10 +219,10 @@ const undeclaredTitle = computed(() => [
           :key="asset.key"
           type="button"
           class="data-file"
-          :title="`Show this asset in the JSON${asset.href ? `\n${asset.href}` : ''}`"
+          :title="`Click to highlight this asset in the JSON panel${asset.href ? `\n${asset.href}` : ''}`"
           @click="emit('select', entry.key, [joinPointer('', 'assets', asset.key)])"
         ><code>{{ asset.key }}</code></button>
-        <button v-if="group.assets.length > shownAssets(group).length" type="button" class="more-assets" @click="expandedTypes.add(group.type ?? '')">
+        <button v-if="group.assets.length > shownAssets(group).length" type="button" class="more-assets" title="Click to list all assets of this media type" @click="expandedTypes.add(group.type ?? '')">
           +{{ group.assets.length - shownAssets(group).length }} more
         </button>
       </div>
@@ -240,7 +246,13 @@ const undeclaredTitle = computed(() => [
         @reset="(k: string) => emit('reset', k)"
         @data="(e: DocEntry, f: DataView) => emit('data', e, f)"
       />
-      <button v-if="entry.remaining.length || entry.itemsHref" type="button" class="more" @click="emit('more', entry)">
+      <button
+        v-if="entry.remaining.length || entry.itemsHref"
+        type="button"
+        class="more"
+        :title="entry.remaining.length ? 'Click to fetch the next batch of child documents' : 'Click to load items from this Collection\'s items endpoint'"
+        @click="emit('more', entry)"
+      >
         {{ entry.remaining.length ? `Show more (${entry.remaining.length} not loaded)` : 'Load items' }}
       </button>
     </div>

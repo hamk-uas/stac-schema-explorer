@@ -29,18 +29,19 @@ export function fieldTitle(field: FieldView, sources: SourceInfo[]): string {
     // Placed fields (with a kind) are required or optional where they are placed.
     const need = field.kind ? requirementText(field.required, true) : '';
     const doc = sources.find((s) => s.key === field.source)?.docs[field.name];
-    const about = doc ? [`${doc.title ?? ''}${doc.title ? ' — ' : ''}${doc.type}`, firstSentence(doc.description)] : [];
+    const heading = doc ? [doc.title, doc.type].filter(Boolean).join(' — ') : '';
+    const summary = firstSentence(doc?.description);
     const state = field.edit ? EDIT_TEXT[field.edit] : STATE_TEXT[field.state];
-    return [field.name, ...about, '', sourceLabel(field.source, sources), state, ...(need ? [need] : []), how, '', 'Click for details.']
-        .filter((line, i, all) => line !== undefined && !(line === '' && all[i - 1] === ''))
+    return [field.name, heading, summary, sourceLabel(field.source, sources), state, need, how, 'Click to open field details and highlight it in the JSON panel.']
+        .filter((line): line is string => !!line)
         .join('\n');
 }
 
 /** Tooltip text for a nested property inside a field's object value in the JSON view. */
 export function propertyTitle(prop: PropertyDoc): string {
-    const heading = `${prop.title ?? ''}${prop.title ? ' — ' : ''}${prop.type}`;
+    const heading = [prop.title, prop.type].filter(Boolean).join(' — ');
     const need = prop.required ? 'Required here' : 'Optional here';
-    return [prop.name, heading, firstSentence(prop.description), '', need]
-        .filter((line, i, all) => line !== undefined && !(line === '' && all[i - 1] === ''))
+    return [prop.name, heading, firstSentence(prop.description), need]
+        .filter((line): line is string => !!line)
         .join('\n');
 }

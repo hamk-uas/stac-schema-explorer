@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import { colorOf, sourceLabel } from '../lib/colors';
 import { buildMatrix, type MatrixCell, type MatrixGroup } from '../lib/matrix';
@@ -23,10 +23,20 @@ const emit = defineEmits<{
     schema: [source: string];
 }>();
 
+const hoveredCol = ref<string | null>(null);
 const matrix = computed(() => buildMatrix(props.groups, props.sources, new Set(props.hidden)));
 const typeSpans = computed(() => props.groups
     .map((g) => ({ type: g.type, label: g.label, tone: g.tone, count: matrix.value.columns.filter((c) => c.type === g.type).length }))
     .filter((t) => t.count > 0));
+const groupStarts = computed(() => {
+    const starts = new Set<string>();
+    let lastType: string | undefined;
+    for (const col of matrix.value.columns) {
+        if (col.type !== lastType) starts.add(col.key);
+        lastType = col.type;
+    }
+    return starts;
+});
 const rows = computed(() => {
     const out: { header?: string; source: string; field?: string }[] = [];
     let last = '';
@@ -44,12 +54,17 @@ function cell(source: string, field: string, column: string): MatrixCell | undef
 
 function cellTitle(field: string, c: MatrixCell): string {
     const how = c.kind === 'validated' ? 'validated by the schema' : 'presence satisfies the extension requirement (value not validated)';
-    return `${field}: ${how}${c.partial ? `\nonly in some of these objects:\n${c.locations.join('\n')}` : `\n${c.locations.join('\n')}`}`;
+    const locs = c.locations.filter(Boolean);
+    return [
+        `${field}: ${how}`,
+        ...(c.partial && locs.length ? ['only in some of these objects:', ...locs] : locs),
+        'Click to open field details and highlight it in the example JSON.',
+    ].join('\n');
 }
 
 function fieldTitle(source: string, field: string): string {
     const doc = props.sources.find((s) => s.key === source)?.docs[field];
-    return [doc?.title, doc?.type, 'Click for details.'].filter(Boolean).join('\n');
+    return [doc?.title, doc?.type, 'Click to open field details.'].filter(Boolean).join('\n');
 }
 </script>
 
@@ -60,35 +75,46 @@ function fieldTitle(source: string, field: string): string {
       <template v-if="legend">
         <span class="mark validated" /> validated by the schema, <span class="mark presence" /> presence only (counts towards the
         extension's “at least one field” requirement), <span class="mark validated partial" /> only in some objects of that kind
-        (hover for details). Click a cell to see it in the example JSON.
+        (hover for details). Click a cell to see field details and the example JSON.
       </template>
     </p>
     <p v-if="!matrix.rows.length" class="empty">No fields to place.</p>
     <div v-else class="scroll">
-      <table>
+      <table @mouseleave="hoveredCol = null">
         <thead>
           <tr>
-            <th class="corner" rowspan="2">Field</th>
-            <th v-for="t in typeSpans" :key="t.type" :colspan="t.count" class="type" :class="`type-${t.tone}`">{{ t.label }}</th>
+            <th class="corner" rowspan="2" @mouseenter="hoveredCol = null">Field</th>
+            <th v-for="t in typeSpans" :key="t.type" :colspan="t.count" class="type" :class="`type-${t.tone}`" @mouseenter="hoveredCol = null">{{ t.label }}</th>
           </tr>
           <tr>
-            <th v-for="col in matrix.columns" :key="col.key" class="col" :class="`type-${col.tone}`">
+            <th
+              v-for="col in matrix.columns"
+              :key="col.key"
+              class="col"
+              :class="[`type-${col.tone}`, { 'group-start': groupStarts.has(col.key), 'col-hover': hoveredCol === col.key }]"
+              @mouseenter="hoveredCol = col.key"
+            >
               <span>{{ col.path.length ? col.path.join(' › ') : (topLabel ?? 'top level') }}</span>
             </th>
           </tr>
         </thead>
         <tbody>
           <template v-for="(row, i) in rows" :key="i">
-            <tr v-if="row.header" class="source-row">
+            <tr v-if="row.header" class="source-row" @mouseenter="hoveredCol = null">
               <th :colspan="matrix.columns.length + 1" :style="{ '--c': colorOf(row.source) }">
-                <button type="button" :title="`About ${row.header}`" @click="emit('schema', row.source)">{{ row.header }}</button>
+                <button type="button" :title="`Click to open schema details for ${row.header}`" @click="emit('schema', row.source)">{{ row.header }}</button>
               </th>
             </tr>
-            <tr v-else :class="{ dimmed: focus && focus !== row.source }">
-              <th class="field" :style="{ '--c': colorOf(row.source) }">
+            <tr v-else class="data-row" :class="{ dimmed: focus && focus !== row.source }">
+              <th class="field" :style="{ '--c': colorOf(row.source) }" @mouseenter="hoveredCol = null">
                 <button type="button" :title="fieldTitle(row.source, row.field!)" @click="emit('field', row.source, row.field!)">{{ row.field }}</button>
               </th>
-              <td v-for="col in matrix.columns" :key="col.key" :class="`type-${col.tone}`">
+              <td
+                v-for="col in matrix.columns"
+                :key="col.key"
+                :class="[`type-${col.tone}`, { 'group-start': groupStarts.has(col.key), 'col-hover': hoveredCol === col.key }]"
+                @mouseenter="hoveredCol = col.key"
+              >
                 <button
                   v-if="cell(row.source, row.field!, col.key)"
                   type="button"
@@ -108,6 +134,15 @@ function fieldTitle(source: string, field: string): string {
 </template>
 
 <style scoped>
+.matrix-wrap {
+  /* Opaque equivalent of `--layer` over `--bg`, so sticky headers and field names stay opaque while blending into the panel. */
+  --surface: color-mix(in srgb, var(--ink) 3.5%, var(--bg));
+}
+@media (prefers-color-scheme: dark) {
+  .matrix-wrap {
+    --surface: color-mix(in srgb, var(--ink) 3%, var(--bg));
+  }
+}
 .intro {
   font-size: 12px;
   color: var(--slate-600);
@@ -116,8 +151,7 @@ function fieldTitle(source: string, field: string): string {
 }
 .scroll {
   overflow: auto;
-  border-radius: 8px;
-  background: var(--bg);
+  border-radius: 6px;
   max-height: calc(100vh - 230px);
 }
 table {
@@ -127,7 +161,7 @@ table {
 }
 thead th {
   position: sticky;
-  background: var(--bg);
+  background: var(--surface);
   z-index: 1;
 }
 thead tr:first-child th {
@@ -144,8 +178,8 @@ thead tr:nth-child(2) th {
 }
 th.type {
   font: 700 12px var(--sans);
-  padding: 4px;
-  border-left: 2px solid var(--slate-100);
+  padding: 4px 6px;
+  border-left: 2px solid var(--slate-200);
 }
 th.type-Catalog {
   color: var(--indigo-600);
@@ -162,6 +196,7 @@ th.type-node {
 .empty {
   font-size: 12px;
   color: var(--slate-400);
+  margin: 4px 0 0;
 }
 th.col {
   height: 130px;
@@ -170,6 +205,10 @@ th.col {
   border-bottom: 1px solid var(--slate-200);
   font: 500 11px var(--sans);
   color: var(--slate-600);
+}
+th.col.group-start,
+td.group-start {
+  border-left: 2px solid var(--slate-200);
 }
 th.col span {
   writing-mode: vertical-rl;
@@ -183,6 +222,7 @@ th.col span {
   color: color-mix(in srgb, var(--c) 80%, var(--ink));
   position: sticky;
   left: 0;
+  background: var(--surface);
 }
 .source-row button {
   border: 0;
@@ -198,7 +238,7 @@ th.col span {
 th.field {
   position: sticky;
   left: 0;
-  background: var(--bg);
+  background: var(--surface);
   text-align: left;
   padding: 2px 8px 2px 16px;
   white-space: nowrap;
@@ -218,10 +258,15 @@ td {
   text-align: center;
   padding: 2px 4px;
 }
-/* Opaque, since the field column stays in place over scrolled cells. */
-tr:hover td,
-tr:hover th.field {
-  background: color-mix(in srgb, var(--ink) 5%, var(--bg));
+/* Opaque hover tints, since sticky headers and field names stay in place over scrolled cells. */
+tr.data-row:hover td,
+tr.data-row:hover th.field,
+th.col.col-hover,
+td.col-hover {
+  background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+}
+tr.data-row:hover td.col-hover {
+  background: color-mix(in srgb, var(--ink) 9%, var(--surface));
 }
 tr.dimmed {
   opacity: 0.25;
@@ -238,10 +283,10 @@ tr.dimmed {
   vertical-align: middle;
 }
 .mark.presence {
-  background: var(--bg);
+  background: var(--surface);
   border-style: dashed;
 }
 .mark.partial {
-  background: linear-gradient(90deg, var(--c, var(--slate-600)) 50%, var(--bg) 50%);
+  background: linear-gradient(90deg, var(--c, var(--slate-600)) 50%, var(--surface) 50%);
 }
 </style>

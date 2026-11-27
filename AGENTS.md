@@ -259,8 +259,6 @@ Use Node >=22 and pnpm as pinned in [package.json](package.json).
 - [ ] Decide the localization/theme contract before claiming seamless
   multilingual Observatory embedding. The current app is English only and
   follows the system color scheme; an embedding host cannot yet choose it.
-- [ ] Reconcile README embedding plans with the existing `embed=1` implementation;
-  distinguish app support from downstream integration still to be done.
 - [ ] Establish an explicit software license; attribution of Apache-licensed
   source documentation in the README is not a repository-wide license.
 - [ ] Embedded metadata: this repository owns the netCDF/TIFF readers

@@ -25,8 +25,8 @@ import { LAYERS, STALE_MONTHS } from '../lib/layers';
     possibly outdated, and the latest releases of Python packages are looked up on PyPI.
   </p>
   <p class="note">
-    Click a field to see its meaning, type and allowed values, a field group to list its fields, an object to highlight it
-    in the JSON, an extension name to highlight its fields everywhere.
+    Click a field to open its details and highlight it in the JSON panel, a field group to expand it and view schema
+    details, an object to highlight it in the JSON panel, or a schema name in the sidebar to highlight its fields everywhere.
   </p>
 </template>
 

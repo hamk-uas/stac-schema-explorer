@@ -81,9 +81,9 @@ function onKeyClick() {
   <div class="node" :class="{ hl: highlighted.has(pointer) }" :data-pointer="pointer">
     <span v-if="depth > 0" class="indent">{{ indent }}</span><span v-if="name !== undefined && typeof name === 'string'" class="key" :class="field ? ['field', `state-${field.state}`] : propDoc ? ['prop'] : []" :style="keyStyle" :title="keyTitle" @click="onKeyClick">"{{ name }}"</span><span v-if="typeof name === 'string'" class="punct">: </span>
     <template v-if="isArray || isObject">
-      <span class="punct toggle" @click="collapsed = !collapsed">{{ open }}</span>
+      <span class="punct toggle" :title="entries.length ? (collapsed ? 'Click to expand' : 'Click to collapse') : undefined" @click="collapsed = !collapsed">{{ open }}</span>
       <template v-if="collapsed || entries.length === 0">
-        <span v-if="entries.length" class="ellipsis" @click="collapsed = false">… {{ entries.length }} {{ isArray ? 'items' : 'keys' }}</span><span class="punct">{{ close }}</span><span v-if="!last" class="punct">,</span>
+        <span v-if="entries.length" class="ellipsis" :title="`Click to expand ${entries.length} ${isArray ? 'items' : 'keys'}`" @click="collapsed = false">… {{ entries.length }} {{ isArray ? 'items' : 'keys' }}</span><span class="punct">{{ close }}</span><span v-if="!last" class="punct">,</span>
       </template>
       <template v-else>
         <div class="children">

@@ -1,357 +1,222 @@
 # STAC Schema Explorer
 
-A web app for understanding [SpatioTemporal Asset Catalog (STAC)](https://stacspec.org) core spec and STAC extensions:
-**where in the STAC hierarchy, and where within each STAC object, can each field go?** And, for the metadata embedded in
-the data files of assets (Zarr, netCDF, TIFF): which fields do their formats and conventions define, where do they go,
-and which STAC fields carry the same information?
+An interactive, browser-based tool for **exploring, comparing and communicating geospatial metadata schemas**:
+[SpatioTemporal Asset Catalog (STAC)](https://stacspec.org) core and extensions, alongside the metadata **embedded in
+data files** (Zarr v3/v2, netCDF, TIFF/GeoTIFF/COG) and their conventions.
 
-Live app: <https://hamk-uas.github.io/stac-schema-explorer/>
+**Live app:** <https://hamk-uas.github.io/stac-schema-explorer/>
 
-Reading extension JSON Schemas by hand to find out, say, whether `cf:cell_methods` may appear in an asset, in a band,
-in a `cube:variables` entry or in Collection `summaries` is slow and error-prone. This app answers the question by
-asking the schemas themselves.
+## Why this exists
 
-## Views
+Reading nested JSON Schemas by hand to answer everyday metadata design questions — *Can `cf:cell_methods` go in
+`table:columns`, `bands`, `cube:variables` or `summaries`? Which fields are required, and under what condition? Where
+does the same information live in Zarr or GeoTIFF, and which Python/GDAL libraries actually read it?* — is slow and
+error-prone.
 
-- **Cores, extensions and conventions**: the sidebar lists the schemas whose fields are shown, in the same way for
-  STAC and for data files. **Cores** are what documents and data files are built on: STAC itself (in version 1.1.0 or
-  1.0.0) and the data formats Zarr v3, Zarr v2, netCDF and TIFF (COG is a layout profile of TIFF, adding no fields).
-  **Extensions** add fields to STAC, **data conventions** to data files. A selected schema shows its fields, and its
-  name highlights them and describes the schema; all cores are selected at the start, no extensions or conventions.
-  STAC objects and data nodes are shown whether or not their core is selected. The sidebar's panels (Cores,
-  Extensions, Data conventions, Display, Legend) can be collapsed, and the app follows the system's light or dark
-  colour scheme.
-- **Example catalog**: a conceptual catalog tree (Catalog → sub-catalog, Collection → Item) showing the *extreme case*:
-  every field of the selected schemas placed everywhere the schemas allow it. Separate JSON documents are cards,
-  objects inside a document are indented rows (`{}` objects, `[{}]` objects in arrays), Item `properties` are a green
-  GeoJSON box, and fields are chips coloured by extension. Click a chip to see its field's information and the field in
-  the JSON panel (a chip group lists its fields and highlights them), an object to highlight it in the JSON panel. The
-  generated example documents validate against STAC core and every selected extension and can be copied or downloaded.
-- **Placement matrix**: every field × every conceptual location (Collection › Asset › Band, Item › properties ›
-  cube:variable, …) on one screen, for comparing extensions with each other. Below it, one matrix per data format that
-  is a selected core or that the selected conventions apply to (Zarr v3, Zarr v2, netCDF, TIFF), since each format has
-  its own node types and
-  conventions: its node types and their containers (`attributes`, `tags`, …) against its format and convention fields.
-  Click a cell to see the field in the example JSON.
-- **Explore a STAC or data URL**: open a Catalog, Collection or Item (static or STAC API) and browse its children, or
-  a data file (see *Explore embedded metadata* below). Each object shows its populated fields highlighted within all
-  fields the schemas would allow at the same place: dotted chips are allowed but absent, red chips are present but not
-  placed there by any selected or declared schema (with “Include extensions the documents declare”, the default).
-  Documents are validated against STAC core and the extensions they declare. A document that uses an extension's fields
-  without declaring the extension (in any version) in `stac_extensions` is marked “undeclared”, since validation does not
-  check those fields; Collection `summaries` and `item_assets` are not counted, as they describe the fields of Items.
-- **openEO**: an [openEO API](https://api.openeo.org/1.2.0/#tag/EO-Data-Discovery/STAC) back-end serves its data as
-  STAC Collections (`GET /collections/{collection_id}`), which can be explored like any STAC URL; openEO APIs allow
-  cross-origin requests. The extensions the openEO API requires or recommends (Datacube, Version, EO, Processing,
-  Raster, SAR, Satellite, Scientific) and those its back-ends use (Authentication, Alternate Assets) are in the
-  quick-select list. Fields openEO defines for its own responses, such as `openeo:status` of batch job results, have
-  no STAC extension schema and are explained as openEO API fields.
-- **Rewrites**: in an explored STAC document or data node, + on an absent field adds it with the example value of the
-  template, − on a present field removes it (struck through, + restores it), × undoes an addition. Adding a field of
-  an undeclared extension or convention also declares it (`stac_extensions`, a `zarr_conventions` entry, or a token
-  of the root's `Conventions` attribute). The rewritten documents are shown, validated, copied and downloaded, marked
-  “✎ rewritten”, with a banner while any rewrite applies; the originals are kept and the rewrites are part of the share
-  link. Fields of merged objects (`Asset data, metadata`) change in all of them.
-- **Field information**: click any field (a chip, or a row of the matrix) to see what it means: its title, description
-  and type, the allowed values with their meanings, and every place it can go, each saying whether the field is
-  required or optional there. The text comes from the schemas; see
-  [Vendored schemas](#vendored-schemas). Where a field has a counterpart on the other side of the
-  [STAC crosswalk](#embedded-metadata-schemas), it is listed too: the STAC field of an embedded field (`proj:code` of
-  the Zarr `proj` convention is `proj:code` of the Projection extension), or the embedded fields of a STAC field. So is
-  the software that reads or writes it, and which source each loader prefers for it (see `software.json` below).
-- **Embedded in the data**: below the example catalog, the nodes of the data formats (Zarr v3 and v2 groups and arrays,
-  netCDF groups and variables, TIFF files and images) that are selected cores or that the selected **data conventions**
-  apply to, with every field placed where the format and convention schemas allow it. Data conventions are chosen apart
-  from extensions, with their own quick-select list grouped by kind: Zarr conventions, attribute conventions (CF,
-  ACDD, UNC), format extensions (GeoTIFF) and tool conventions (GDAL, xarray, EOPF). A format's own fields, the counterparts
-  of STAC core, are shown when its core is selected.
-- **Explore embedded metadata**: open a Zarr store (or its `zarr.json` or `.zmetadata`; a store, group or array whose
-  URL does not end in `.zarr` is found by its `zarr.json` or `.zmetadata`), a netCDF file or a TIFF/COG
-  file directly, or open a STAC document with such assets: their data files appear inside the document's card, in
-  dashed “embedded in the data, not STAC” sections apart from its STAC objects. Assets naming the same Zarr store
-  (a `data` store and its `metadata` zarr.json) are one file. Zarr stores are read as soon as their document loads;
-  netCDF and TIFF files, which can need larger downloads, are listed compactly and read when clicked, or when a share
-  link selects or rewrites one of their nodes. Assets whose embedded metadata the app does not read (CSV tables, images,
-  documents, …) are listed too, grouped by their media type (the STAC asset `type`, with a readable name for common
-  types); clicking one shows it in the JSON. Every node is shown
-  within the fields its format and its declared (`zarr_conventions`, `Conventions`) or recognised conventions allow,
-  and validated against them. netCDF and TIFF files are read in a worker
-  ([src/reader.worker.ts](src/reader.worker.ts)) by HTTP range requests, fetching only their headers: netCDF-4 with
-  [h5wasm](https://github.com/usnistgov/h5wasm), TIFF with [geotiff.js](https://geotiffjs.github.io/). Classic netCDF
-  files, and netCDF files on servers without range requests, are downloaded instead, up to 64 MiB. The readers
-  ([src/lib/readers](src/lib/readers)) are owned here, beside the format schemas below that describe what they produce,
-  and other applications (the Observatory) import them as `stac-schema-explorer/readers`: `readNetCDF`, `readTiff`, and
-  the decoders `decodeAttributes`, `decodeGeoKeys` and `parseGDALMetadata`. The module is TypeScript source; it imports
-  only `h5wasm`, `netcdfjs` and `geotiff`, which the importing application provides.
+STAC Schema Explorer answers those questions directly from the schemas themselves (by probing with Ajv in a Web Worker,
+never a hand-maintained table) and encodes the entire view in the URL so you can share concrete examples in GitHub
+issues, pull requests, RFCs and documentation.
 
-Extensions are chosen from quick-select buttons (published STAC extensions, including those the openEO API recommends or its back-ends use) or added as any JSON Schema URL or `name@version`
-(short for `https://stac-extensions.github.io/<name>/v<version>/schema.json`).
+### Common uses
 
-All state is kept in the URL, so any view can be shared by copying the address.
+- **Explore and compare extensions & conventions:** pick any combination of STAC core (`1.1.0` / `1.0.0`), published
+  STAC extensions, data format cores (`Zarr v3`, `Zarr v2`, `netCDF`, `TIFF`) and embedded metadata conventions (Zarr
+  conventions, CF, ACDD, UNC, GeoTIFF, GDAL, xarray, EOPF).
+- **Communicate and review draft schemas:** paste or link any raw JSON Schema URL (for example a draft PR branch on
+  GitHub) via `?ext=<schema-url>` or `?conv=<schema-url>` to show exactly where the draft places fields, whether it
+  conflicts with existing extensions, and how it validates real documents.
+- **Inspect and prototype changes on real catalogs & data files:** open any CORS-enabled STAC Catalog, Collection, Item
+  (static or STAC API / openEO), Zarr store, netCDF or TIFF file, see populated vs. allowed vs. unexpected fields, test
+  local non-destructive **rewrites** (`+` / `−`), and share the exact state in a link.
+- **Bridge STAC and embedded data metadata:** inspect a STAC document together with the Zarr, netCDF or TIFF metadata
+  inside its assets, follow **STAC ↔ embedded crosswalk** links between corresponding fields, and see which drivers,
+  libraries and packages read, write or prioritize each field.
+
+## Views and capabilities
+
+- **Sidebar pickers (Cores, STAC extensions, Data conventions):**
+  - **Cores** are the base schemas documents and data files are built on (STAC `1.1.0` / `1.0.0`, Zarr v3, Zarr v2,
+    netCDF, TIFF; COG is a layout profile of TIFF and adds no fields). All cores start selected; clicking a core toggles
+    whether its own fields are shown.
+  - **STAC extensions** can be toggled from the quick-select list (published community extensions, including those used
+    with openEO) or added by `name@version` (short for `https://stac-extensions.github.io/<name>/v<version>/schema.json`)
+    or any JSON Schema URL.
+  - **Data conventions** are the data-file counterparts of STAC extensions, grouped by kind: Zarr conventions, attribute
+    conventions (CF, ACDD, UNC), format extensions (GeoTIFF) and tool conventions (GDAL, xarray, EOPF).
+  - Clicking a selected schema's name highlights its fields everywhere (dimming others) and opens its **Schema
+    information** panel. Sidebar panel collapse states and pane widths are persisted locally; the app follows the
+    system's light or dark colour scheme.
+- **Example catalog (Catalog tree):** generates the *extreme case* — a valid Catalog → sub-catalog, Collection → Item
+  tree (plus example nodes for selected data formats and conventions) with every field placed everywhere the selected
+  schemas allow it. Separate JSON documents are cards, nested objects are indented rows (`{}` objects, `[{}]` array
+  items), Item `properties` appear in a tinted GeoJSON block, and fields are colour-coded chips (`*` = always required,
+  `(*)` = conditionally required). Generated JSON validates against STAC core and all selected extensions and can be
+  copied or downloaded.
+- **Placement matrix:** compares every field × every conceptual location (`Collection › Asset › Band`, `Item ›
+  properties › cube:variable`, …) on one screen, followed by one matrix per active data format. Hover any mark for
+  exact JSON Pointers; click a mark to inspect the field and jump to it in the example JSON.
+- **Explore a STAC or data URL:** open a live STAC document (static or STAC API / openEO Collection) and browse its
+  children, or open a Zarr store (`zarr.json` / `.zmetadata`), netCDF or TIFF/COG file directly.
+  - Populated fields are highlighted alongside every field allowed at the same location (dotted = allowed but absent;
+    wavy red = present but not placed there by any selected or declared schema).
+  - Documents are validated against STAC core and the extensions they declare in `stac_extensions`. Fields belonging to
+    an undeclared extension are flagged as *undeclared* (excluding Collection `summaries` and `item_assets`, which
+    describe Items).
+  - Asset data files appear inside their STAC document card in dashed *"embedded in the data, not STAC"* sections. Zarr
+    stores load automatically; netCDF and TIFF files are listed compactly and read on demand via HTTP range requests in
+    a dedicated worker ([src/reader.worker.ts](src/reader.worker.ts)) using [h5wasm](https://github.com/usnistgov/h5wasm)
+    and [geotiff.js](https://geotiffjs.github.io/) (classic netCDF files or servers without range support fall back to
+    downloading up to 64 MiB). Other assets are grouped by media type and highlight in JSON on click.
+  - Fields defined by [openEO API](https://api.openeo.org/1.2.0/#tag/EO-Data-Discovery/STAC) without a STAC extension
+    schema (such as `openeo:status`) are recognized and explained rather than flagged as unknown.
+- **Local rewrites:** on any explored STAC document or data node, click `+` on an absent field to insert a valid example
+  value, `−` on a present field to remove it (struck through; `+` restores), or `×` to undo an addition. Adding a field
+  from an undeclared extension or convention also adds its declaration (`stac_extensions`, `zarr_conventions`, or
+  `Conventions`). Rewritten views are clearly marked (`✎ rewritten`), validated, copyable/downloadable, and encoded in
+  the share URL without modifying any remote data.
+- **Field & schema details, crosswalk and software support:** click any field chip, JSON key, or matrix row to inspect
+  its title, description, computed type, allowed values, nested object properties, every allowed location (with
+  required/optional conditions), **crosswalk** counterparts between STAC and embedded metadata, and **software
+  support** organized by layer (📜 Standard, 🤝 Convention/extension, 💾 Format, 🔌 Driver, 🧰 Library, 🖥️ Package/app)
+  including source-precedence rules when STAC and embedded metadata overlap. Verification dates and latest releases are
+  tracked (checks older than three months are flagged, and Python package releases are checked live against PyPI).
+
+## Sharing views and embedding
+
+All explorer state lives in the URL query string, so copying the browser address shares the exact view.
+
+**Example — demonstrating a draft STAC extension schema alongside Table `v1.3.0` in matrix view:**
+
+```text
+https://hamk-uas.github.io/stac-schema-explorer/?ext=table@1.3.0&ext=https://raw.githubusercontent.com/<owner>/<repo>/<branch>/json-schema/schema.json&view=matrix
+```
+
+### URL parameters
 
 | Parameter | Meaning |
 | --- | --- |
-| `mode` | `example` or `href` |
-| `v` | STAC version of the example (`1.1.0` default, `1.0.0`) |
-| `core` | a core whose fields are shown, repeatable: `stac`, `zarr-v3`, `zarr-v2`, `netcdf`, `tiff`; all when absent, none with an empty `core=` |
-| `ext` | an extension, repeatable: `name@version` or a schema URL; none when absent |
-| `conv` | a data convention, repeatable: `name@version` (`proj@v0.1`, `cf@1.13`) or a schema URL; none when absent |
-| `href` | STAC document, or data file to explore: a Zarr store or metadata document, a netCDF or TIFF file |
-| `sel`, `ptr` | selected document (`catalog`, `subcatalog`, `collection`, `item`, a URL, or `node:…` for a node of embedded metadata) and object (JSON Pointer) |
-| `view` | `matrix` for the placement matrix |
-| `focus` | an extension whose fields are highlighted (others dimmed) |
-| `field` | field shown in the field information panel: `<extension>\|<field>`, e.g. `cf@1.0.0\|cf:cell_methods`, or `core\|license` |
-| `schema` | extension, data convention or format shown in the information panel instead of a field (`name@version`, a schema URL or `core`) |
-| `rw` | a rewrite, repeatable, in order: `add\|<schema>\|<document>\|<pointer>\|<field>` or `remove\|…`; the document is a URL or `node:<metadata document>#<path>`; added values are regenerated from the template |
-| `group=0`, `declared=0` | list fields one by one; ignore extensions declared by explored documents |
-| `embed=1` | embedded in another app: no page header, a link to open the full app instead |
+| `mode` | `example` (default) or `href` |
+| `v` | STAC version for the example catalog (`1.1.0` default, or `1.0.0`) |
+| `core` | Core to show fields for, repeatable: `stac`, `zarr-v3`, `zarr-v2`, `netcdf`, `tiff` (all when omitted; `core=` for none) |
+| `ext` | STAC extension, repeatable: `name@version` or a full JSON Schema URL (none when omitted) |
+| `conv` | Data convention, repeatable: `name@version` (e.g. `proj@v0.1`, `cf@1.13`) or a schema URL (none when omitted) |
+| `href` | Remote STAC document or data file URL (Zarr store/metadata, netCDF, TIFF) to explore |
+| `sel`, `ptr` | Selected document (`catalog`, `subcatalog`, `collection`, `item`, URL, or `node:…`) and JSON Pointer |
+| `view` | `matrix` for the placement matrix (omit for the tree view) |
+| `focus` | Schema key (`core`, `name@version`, or schema URL) whose fields are highlighted |
+| `field` | Field open in the details panel: `<schema>\|<field>` (e.g. `cf@1.0.0\|cf:cell_methods`, `core\|license`) |
+| `schema` | Schema open in the details panel (`core`, `name@version`, or schema URL) |
+| `rw` | Local rewrite, repeatable in order: `add\|<schema>\|<document>\|<pointer>\|<field>` or `remove\|…` |
+| `group=0`, `declared=0` | Show individual field chips instead of grouped chips; ignore extensions declared by explored documents |
+| `embed=1` | Embedded layout for `<iframe>` use: hides the top header and shows a compact bar with an *open full app* link |
 
-### Embedding
-
-Other apps can show a STAC document in the explorer in an `<iframe>` (the Observatory plans this for its `?debug` mode):
+### Embedding in an `<iframe>`
 
 ```text
-https://hamk-uas.github.io/stac-schema-explorer/?embed=1&mode=href&href=<URL-encoded STAC document URL>
+https://hamk-uas.github.io/stac-schema-explorer/?embed=1&mode=href&href=<URL-encoded STAC or data URL>
 ```
 
-The explorer then loads the document and its children, compares them with the extensions they declare (add `ext`
-parameters to compare with more) and keeps its state in its own URL. The document's server must allow cross-origin
-requests.
+Add `ext` or `conv` parameters to compare the document against additional schemas. Explored URLs and custom schema
+URLs must allow cross-origin requests (CORS).
 
 ## How it works
 
-Everything runs in the browser. Vendored schemas (below) are bundled; other schemas are fetched from their published
-URLs when selected. A Web Worker ([src/engine.worker.ts](src/engine.worker.ts)) does the work with
-[Ajv](https://ajv.js.org).
+Everything runs client-side in the browser. Vendored schemas are bundled; custom or unvendored schemas are fetched on
+demand. Probing and validation run off the main thread in [src/engine.worker.ts](src/engine.worker.ts) using
+[Ajv](https://ajv.js.org):
 
-1. **Field discovery** ([src/lib/fields.ts](src/lib/fields.ts)). An extension's fields are the property keys its schema
-   defines at "container" level (object root, Item `properties`, assets, bands, `cube:variables` entries, Table columns
-   and so on), found by following `$ref`, `allOf`/`anyOf`/`oneOf`, `if`/`then`/`else` and `not`. The extension's own
-   prefixes come from the conventional `"patternProperties": {"^(?!cube:)": {}}`, or the most frequent prefix. Fields of
-   *other* extensions that a schema validates (for example a schema that validates `cf:cell_methods` in Table columns)
-   are reported too, attributed to the schema that validates them.
-2. **Example values** ([src/lib/sampler.ts](src/lib/sampler.ts)). A value valid against each field's subschema is
-   generated from the schema (with readable hints for well-known fields) and checked with Ajv. Each `oneOf`/`anyOf`
-   branch is sampled without the properties only the other branches require, an `if` that only asks for properties is
-   sampled with them (its `then`) and without (its `else`), and an object that misses a required property too deep to
-   sample is left out rather than given an invalid value. Samples are cached per field and per `$ref`.
-3. **Placement probing** ([src/lib/probe.ts](src/lib/probe.ts)). Starting from minimal valid Catalog, Collection and
-   Item documents with one link, provider, asset and item asset each, every field is tried in every object of the
-   document:
-   - The schema **validates** a field at a location if the document passes with a valid value there but fails with an
-     invalid one. Invalid values that the schema also rejects under an unknown key (every entry of `item_assets` must be
-     an object, for example) are not counted.
-   - A field's placement is **presence only** if the schema does not validate the value there, but the field's
-     presence satisfies the extension's "use at least one of my fields" rule (typical for `summaries`).
-   - Each extension is probed with its own fields removed from elsewhere, so each alternative of an
-     `anyOf` (Datacube in Item `properties` *or* in assets) is found.
-   - Fields that need company (`cube:variables` requires `cube:dimensions`) are tried together.
-   - Placed fields create new objects (`bands[0]`, `cube:variables` entries, Table columns), which are probed in
-     further rounds, as are earlier locations, since one placement can enable another: STAC 1.1.0 allows `bands` in
-     Item `properties` only when an asset has `bands`.
-   - Before a placement is accepted, every other schema must still accept the document; otherwise it is reported as a
-     conflict.
-   - A placed field is **required** there if removing it from the finished example makes its schema report it missing
-     ([src/lib/requirement.ts](src/lib/requirement.ts)): always (`*` on its chip: Zarr `node_type`, a Collection's
-     `license`), or when a condition holds (`(*)`), which the field information puts in words from the schema's `if`
-     or dependency: Zarr v3 `shape` when `node_type` is `"array"`, STAC `end_datetime` when `start_datetime` is present.
-     A field every alternative of an `anyOf` requires (STAC `datetime`, null or not) is always required. Fields without
-     a mark are optional.
-4. **Field documentation** ([src/lib/field-docs.ts](src/lib/field-docs.ts)). Title and description are the nearest ones
-   along the field's `$ref` chain; the type is computed from the schema (`array of (string or null)`,
-   `object: name → Variable Object`); allowed values come from `oneOf` lists of titled constants (or `enum`).
-5. **Embedded placement probing** ([src/lib/embedded-probe.ts](src/lib/embedded-probe.ts)). The fields of a format or
-   convention schema are the keys it defines for a node and the entries of its `attributes`, `tags` and `geo_keys`.
-   Starting from a minimal valid node of each format and node type (with the `zarr_conventions` entry a Zarr convention
-   requires), each field is added with an example value and kept unless it adds validation errors, so required
-   companions (`spatial:dimensions` of an array) are kept in any order; a field the convention accepts only with others it
-   then reports missing (UNC's `coverage_interval` and `coverage_probability`, each requiring the other) is added together
-   with them. A convention whose node still fails cannot apply
-   there (`multiscales` in an array). As for STAC, a field is validated where an invalid value fails and presence-only
-   where any value passes.
-
-   Conventions compose like STAC extensions. A convention whose container entries have a prefix (`proj:`, `spatial:`)
-   owns only those; its other entries are objects of other conventions to which it adds fields. The spatial schema, for
-   example, defines a `multiscales` key only to add `spatial:shape` and `spatial:transform` to the `layout` items of the
-   multiscales convention. Such fields are placed in a last pass, only inside the objects a selected convention
-   supplies (`attributes › multiscales › layout[]` when multiscales is selected too), never on their own: selecting
-   spatial alone does not place `multiscales`. The same pass places a convention's own fields within the objects of its
-   entries when its entries have no prefix (`layout` of multiscales, `asset` and `transform` of its items), repeated so
-   that fields needing company (`derived_from` requires `transform`) are placed too. Within a prefixed entry's value
-   (PROJJSON of `proj:projjson`), keys are that value, not fields. The objects searched include array items and the
-   entries of maps keyed by name (the coordinate set convention's `axes`, keyed by dimension name), down to coordinate
-   values. A document the convention `$ref`s is searched only if it is another convention's (the ref objects of
-   geolocation arrays); keys of any other are fields where the convention places its object (`proj:code` in a CRS `id`),
-   not deeper (PROJJSON), and the values of prefixed keys (`proj:projjson`) are not searched. Mutually exclusive
-   alternatives (exactly one of `regular`,
-   `external` or `explicit` coordinate values) are each placed, in variants of the example node that are searched
-   further, while the example shown keeps the first.
+1. **Field discovery** ([src/lib/fields.ts](src/lib/fields.ts)): extracts container-level property keys across `$ref`,
+   `allOf`/`anyOf`/`oneOf`, `if`/`then`/`else` and `not`, identifies own prefixes, and also attributes foreign-prefix
+   fields validated by a schema.
+2. **Example sampling** ([src/lib/sampler.ts](src/lib/sampler.ts)): generates valid example values from each field's
+   subschema (with readable hints for common fields) and verifies them with Ajv.
+3. **STAC placement probing** ([src/lib/probe.ts](src/lib/probe.ts)): tests every discovered field in every object of
+   minimal valid Catalog, Collection and Item documents across multiple rounds (so fields that create child containers
+   such as `bands`, `cube:variables` or `table:columns` are probed recursively), distinguishing **validated** vs.
+   **presence-only** placements, detecting cross-extension conflicts, and probing **required / conditionally required**
+   status ([src/lib/requirement.ts](src/lib/requirement.ts)).
+4. **Embedded placement probing** ([src/lib/embedded-probe.ts](src/lib/embedded-probe.ts)): applies the same probing to
+   format nodes (Zarr groups/arrays, netCDF groups/variables, TIFF files/images) and composes conventions that extend
+   each other's structures (such as `spatial` extending `multiscales` layout items).
+5. **Field documentation** ([src/lib/field-docs.ts](src/lib/field-docs.ts)): resolves titles, descriptions, computed
+   types, allowed value tables and nested object shapes along `$ref` chains.
 
 ### Limitations
 
-- Only what the schemas check is found. Prose rules of an extension's README that its schema does not enforce are
-  invisible; so is anything a schema accepts without looking at it. `summaries` may summarize any Item field, but only
-  fields whose schemas validate (or require) them there are shown.
-- The extreme case combines conditional placements. Each placement is valid in the context of the others, but not
-  necessarily on its own (see the `bands` example above).
-- Placement is probed in the objects of the example only. Schemas rarely distinguish assets by role, so one asset
-  stands for all; dimension entries do differ (`x`, `y`, `time`), which is why the example has three.
-- If no valid example value can be generated for a field, the field is listed under the extension in the sidebar and
-  may be missing from the results.
-- Exploring a URL needs the server to allow cross-origin requests (CORS), as do custom schema URLs.
-- The explorer checks STAC **documents** against the STAC specification and extension schemas. It does not check
-  conformance to **STAC API** (a separate specification with its own versions: endpoints, conformance classes,
-  search) or to APIs that implement parts of it, such as openEO, whose API version (1.2.0) is neither its STAC API
-  version nor the `stac_version` of its documents. Item lists are followed by `items` links where present.
-- In STAC 1.0.0 the example Collection has `item_assets` even without the Item Assets extension, which 1.0.0 core does
-  not validate.
-- The placement matrix of embedded metadata shows the example nodes of the selected conventions; real Zarr, netCDF and
-  TIFF nodes are compared in the explore view. A Zarr store without consolidated metadata shows only the node
-  that was opened. Reading a netCDF or TIFF file also needs CORS on its server (the Earth Genome COGs, for example,
-  have none). Long TIFF tag arrays (tile offsets) are shown by their length, and at most 64 TIFF images are read.
+- **Schema-only visibility:** prose rules in a README that the JSON Schema does not enforce are not detected; similarly,
+  `summaries` can hold any Item field, but only fields validated or required there by a schema appear.
+- **Extreme-case context:** conditional placements are valid in the context of the combined example, not necessarily in
+  isolation (for example STAC 1.1.0 allows `bands` in Item `properties` only when an asset also has `bands`).
+- **Representative example objects:** probing runs against representative objects (one asset, three dimension types `x`,
+  `y`, `time`); fields that cannot be sampled are flagged in the sidebar.
+- **CORS & APIs:** exploring remote URLs or custom schemas requires CORS. Validation checks STAC **documents**, not
+  STAC API / openEO endpoint conformance (item links are followed where present).
+- **Embedded data limits:** Zarr stores without consolidated metadata show only the opened node; long TIFF tag arrays
+  are summarized by length, and at most 64 TIFF images (IFDs) are read.
 
-## Vendored schemas
+## Vendored and authored schemas
 
-Most published STAC schemas have no descriptions and list allowed values without explaining them; the explanations are
-in the extensions' READMEs. This repository therefore vendors STAC core (1.0.0 and 1.1.0), the extensions of the
-quick-select list, the Zarr conventions `proj`, `spatial`, `multiscales`, `stac` and `nz`
-([zarr-conventions](https://github.com/zarr-conventions)), the R-CF conventions `cs` (coordinate sets), `ref` and
-`geolocation` ([R-CF](https://github.com/R-CF)), and `license` and `uom`
-([clbarnes](https://github.com/clbarnes)) in [schemas/](schemas), as copies that add a title and a
-description to every field and turn every `enum` into a `oneOf` of titled (and, where documented, described) constants.
-The [Observatory](https://github.com/hamk-uas/observatory) uses these copies, adding its own Finnish and Swedish
-translations of STAC core.
+### Enriched STAC & Zarr convention schemas
 
-- [schemas/](schemas)`/<host>/<path>` is the documented copy of `https://<host>/<path>`; its `$id` is that URL (upstream
-  ids end in `#` or, for v1.1.0 `common.json`, have a typo). Dependencies are unmodified: GeoJSON and PROJJSON, and
-  the schemas `cs` references from other conventions' main branches (ref, geolocation, geo-proj),
-  listed in `DEPENDENCY_URLS` of [scripts/manifest.mjs](scripts/manifest.mjs); the released ref, geolocation and uom are
-  documented copies of their own.
-- [upstream/](upstream) holds the published originals. The tests ([test/vendored.test.ts](test/vendored.test.ts)) check
-  that each copy validates exactly like its original (annotations removed, value lists turned back into `enum`), keeps
-  every upstream title and description, documents every field, and lists each allowed value exactly once: a value listed
-  twice fails the `oneOf`.
-- Fields that only a dependency defines (the GeoJSON `type` of an Item) are documented by an annotation-only property
-  in the STAC schema; such a property accepts anything, so the copy still validates exactly like the original.
-- The texts come from the extensions' and the STAC specification's README tables (Apache License 2.0) and, for titles,
-  from [stac-utils/stac-fields](https://github.com/stac-utils/stac-fields), with corrections where the READMEs are wrong
-  (for example the Raster histogram `max`) and notes where README and schema disagree (Datacube `type` versus
-  `variable_type`). The Zarr convention texts come from their READMEs (Apache License 2.0).
+Many published STAC and Zarr convention JSON Schemas omit field descriptions and enum explanations (keeping them in
+README tables). This repository maintains reviewed, documentation-enriched copies in [schemas/](schemas) alongside
+pristine originals in [upstream/](upstream):
 
-To vendor another schema, add it to [scripts/manifest.mjs](scripts/manifest.mjs), then:
+- **STAC core** (`1.0.0`, `1.1.0`) and the **quick-select STAC extensions**
+- **Zarr conventions:** `proj`, `spatial`, `multiscales`, `stac`, `nz` ([zarr-conventions](https://github.com/zarr-conventions));
+  `cs`, `ref`, `geolocation` ([R-CF](https://github.com/R-CF)); `license`, `uom` ([clbarnes](https://github.com/clbarnes))
+
+Tests ([test/vendored.test.ts](test/vendored.test.ts)) verify that every enriched copy validates identically to its
+upstream original, preserves upstream annotations, documents every field, and lists each allowed value once. Texts are
+drawn from upstream READMEs (Apache-2.0) and [stac-utils/stac-fields](https://github.com/stac-utils/stac-fields).
+
+To add or refresh a vendored schema, edit [scripts/manifest.mjs](scripts/manifest.mjs) and run:
 
 ```sh
-node scripts/fetch-upstream.mjs     # download the original (and what it references) into upstream/ and schemas/
-node scripts/draft-docs.mjs <name>  # draft missing titles and descriptions from the README tables; never overwrites, never writes into dependencies or other conventions' schemas
-node scripts/report.mjs             # list what is still undocumented
-node scripts/review.mjs <name>      # print the added texts for review
+node scripts/fetch-upstream.mjs     # fetch originals into upstream/ and seed schemas/
+node scripts/draft-docs.mjs <name>  # draft missing titles/descriptions from READMEs
+node scripts/report.mjs             # report any undocumented fields
+node scripts/review.mjs <name>      # review added documentation
 ```
 
-Edit the files in `schemas/` directly to improve the texts; `pnpm test` keeps them honest.
+### Embedded metadata schemas, crosswalk, software registry & readers
 
-## Embedded metadata schemas
+Because Zarr core, netCDF, TIFF, CF, ACDD, UNC, GeoTIFF, GDAL, xarray and EOPF do not publish official JSON Schemas for
+their embedded metadata, this repository authors clearly labelled **unofficial JSON Schemas** under
+[schemas/hamk-uas.github.io/stac-schema-explorer/schemas/](schemas/hamk-uas.github.io/stac-schema-explorer/schemas) and
+publishes them at their `$id` URLs together with:
 
-Data files carry metadata of their own: Zarr `zarr.json` documents, netCDF attributes, TIFF tags. Deciding what to put
-in STAC, what in the data and what in both needs the same answer as for STAC fields: what does each field mean, and
-where may it go? This repository therefore also describes the metadata **embedded** in data assets, with the same
-treatment as STAC:
+- [registry.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/registry.json) — data formats, convention
+  versions, UUID/attribute detection rules, maturity and verification dates.
+- [crosswalk.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/crosswalk.json) — field-level mappings
+  between embedded metadata and STAC fields (`same`, `converted`, `related`).
+- [software.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/software.json) — verified, source-cited
+  read/write support and source-precedence rules across drivers, libraries and packages.
 
-| STAC | Embedded metadata |
-| --- | --- |
-| STAC core (Catalog, Collection, Item) | **Format schemas**: Zarr v3 and v2 nodes, netCDF groups and variables, TIFF files and images |
-| STAC extensions, declared in `stac_extensions` | **Conventions**: Zarr conventions declared in `zarr_conventions` (NZ also in `conventions`); CF and ACDD declared in the `Conventions` attribute; UNC (uncertainty, no declaration of its own), GeoTIFF, GDAL, xarray and EOPF recognised from their keys |
+CF attribute descriptions come from CF Conventions 1.13 Appendices A and F (CC0 1.0); other convention texts are
+summarised in our own words with links to their specifications. UNC (`unc@draft-v0.2`, proposed as CF chapter 10 in
+[cf-conventions#661](https://github.com/cf-convention/cf-conventions/pull/661)) and `unc@v0.1` (as read/written by
+[obsarray](https://obsarray.readthedocs.io) 1.1) are modelled separately until included in a CF release.
 
-Every schema validates one **node** of a format document: a Zarr group or array (its `zarr.json`, or for Zarr v2 its
-`.zgroup`/`.zarray` with `.zattrs` as `attributes`), a netCDF group or variable, or a TIFF file or image (Image File
-Directory). Conventions add their fields to the node's `attributes` (Zarr, netCDF) or `tags`/`geo_keys`/`gdal_metadata`
-(TIFF), exactly as the published Zarr convention schemas do. netCDF and TIFF have no JSON form of their own, so their
-format schemas define one: what `ncdump -h` shows, and named TIFF tags with decoded GeoKeys and GDAL metadata.
+The browser netCDF and TIFF metadata readers in [src/lib/readers](src/lib/readers) are also exported as
+`stac-schema-explorer/readers` (TypeScript source: `readNetCDF`, `readTiff`, `decodeAttributes`, `decodeGeoKeys`,
+`parseGDALMetadata`), depending only on peer libraries (`h5wasm`, `netcdfjs`, `geotiff`) provided by the consuming app.
 
-Zarr conventions are vendored like extensions (above). No official JSON Schema exists for Zarr core, netCDF, TIFF, CF,
-ACDD, UNC, GeoTIFF, GDAL, xarray or EOPF metadata, so this repository **authors** unofficial ones, each saying so in its
-description, in
-[schemas/hamk-uas.github.io/stac-schema-explorer/schemas/](schemas/hamk-uas.github.io/stac-schema-explorer/schemas).
-They have no upstream copy; the build publishes them at their `$id`,
-`https://hamk-uas.github.io/stac-schema-explorer/schemas/<name>/<version>/schema.json`, with:
+## Development and deployment
 
-- [registry.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/registry.json): the formats (schema, media
-  types, node types) and conventions (kind, formats, versions and how each is declared or recognised). Zarr conventions
-  are identified by the UUID of their `zarr_conventions` entry, which stays the same when a schema moves; their names
-  are only labels (TESSERA writes `spatial:` where the convention says `spatial`). A version vendored before the schema
-  URL it declares for itself is published (NZ, pinned to a commit until its `v1` tag exists; `cs`, whose declared URL
-  names a repository that does not exist) records that URL as
-  `declaredSchema`, so that data declaring it is validated with the vendored copy.
-- [crosswalk.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/crosswalk.json): where embedded fields
-  correspond to STAC fields (`proj:code` in both, ACDD `title` and STAC `title`, GeoTIFF `ProjectedCRSGeoKey` and
-  `proj:code`, …): the same value, the same value after a named conversion, or related information in different forms.
-- [software.json](schemas/hamk-uas.github.io/stac-schema-explorer/schemas/software.json): which software interprets,
-  passes through or writes which fields of conventions, formats and STAC extensions, since which version, and, per
-  topic (CRS and grid, nodata, scale and offset), which source it prefers when STAC and the data, or two conventions,
-  say the same thing: stackstac and odc-stac place assets by STAC `proj:` and ignore the files' GeoTIFF keys, rio-tiler
-  reads pixels by the files' own. Conventions say who defines fields; software says who uses them, so software
-  overlaps where conventions do not. Each program is in a layer: 🔌 a driver of one format inside a library (GDAL's
-  GTiff, netCDF, Zarr, STACIT and STACTA drivers), 🧰 a library (GDAL, rasterio, xarray, netCDF4-python) or 🖥️ a
-  package or application (rioxarray, obsarray, stackstac, odc-stac, rio-tiler/TiTiler); a library takes its drivers' claims over,
-  and software built on other software (`extends`: rasterio on GDAL) theirs. Every claim cites documentation or source
-  code, and every program records when it was checked and its latest release then; what could not be verified is left
-  out. Field and schema information show it.
-
-The explorer places everything in **layers**: 📜 standards (STAC itself), 🤝 conventions and extensions that define
-fields, 💾 formats that contain them, and the 🔌 drivers, 🧰 libraries and 🖥️ packages and apps that read and write
-them. Field information says which convention defines a field and which formats contain it, then lists the software by
-layer. To tell whether this information is current, the registry records for every format and convention when it was
-checked, its latest release then and the maturity a convention states (proj, spatial, multiscales, cs, ref and
-geolocation are *Pilot*, NZ a *Proposal*), and
-the software list does the same for every program. Checks older than three months are flagged as possibly outdated,
-and the latest releases of the Python packages are looked up on PyPI when shown, to flag newer releases.
-
-The CF attribute descriptions are those of the CF Conventions 1.13 Appendices A and F (public domain, CC0 1.0); the
-others summarise their specifications in our own words and link to them.
-
-UNC, the [Uncertainty Metadata Naming Conventions](https://comet-toolkit.github.io/unc_website/) (draft v0.2), is an
-authored convention of its own (`unc@draft-v0.2`), not part of the CF schema: its attributes (`uncertainty_variables`,
-`coverage_interval`, `coverage_probability`, …) are proposed as the new CF chapter 10 "Uncertainty" in
-[cf-conventions#661](https://github.com/cf-convention/cf-conventions/pull/661), with the same names and vocabularies,
-but are in no released CF version yet. When a CF release includes them, that CF version's schema gets them. UNC has no
-`Conventions` token, so it is recognised from its attributes; it applies to netCDF variables and Zarr arrays, not
-groups. Its schema checks what one variable's attributes show (vocabularies, which attributes require or exclude
-others); rules spanning variables (named variables exist, interval dimensions, equivalent units) are described only.
-
-UNC v0.1 (`unc@v0.1`), the incompatible earlier version, is what [obsarray](https://obsarray.readthedocs.io) 1.1 reads
-and writes, and with it punpy and the HYPERNETS processor: `unc_comps` on observation variables, and on uncertainty
-variables `pdf_shape` and numbered error-correlation attributes `err_corr_<i>_dim`, `_form`, `_params` and `_units`
-(indices 1 to 9). The specification names these `err_corr_dim<i>_name`, `_form`, …, but no known software writes or
-reads that spelling, so the schema follows the implementations. Each version is recognised from its own attributes (a
-registry version can carry its own `detection`); v0.1 not by `pdf_shape`, which FIDUCEO FCDRs also write. Claims in the
-software list can be limited to convention `versions`, so obsarray is listed for v0.1 only. The fixtures
-`obsarray-unc-v0.1.*` were written by obsarray 1.1 itself.
-
-The tests
-([test/authored.test.ts](test/authored.test.ts)) check that every authored schema compiles, documents every field and
-lists allowed values as titled constants, that the registry and crosswalk point to existing schemas and fields, and
-that the embedded metadata of the sample catalogs (Arctic CH4, Blue Marble and TESSERA Zarr v3, EOPF Zarr v2,
-UNC netCDF-4 files and an Earth Genome COG, in [test/fixtures/embedded](test/fixtures/embedded)) validates. The
-reader tests ([test/readers.test.ts](test/readers.test.ts)) check that what the netCDF and TIFF readers produce from
-generated files validates as well.
-
-## Development
-
-Requires Node.js 22 and pnpm.
+Requires Node.js >= 22 and pnpm.
 
 ```sh
 pnpm install
-pnpm dev          # development server
-pnpm test         # unit tests, including the vendored-schema checks
-pnpm build        # type check and production build into dist/
-pnpm explore -- cf@1.0.0   # print placements in the terminal
+pnpm dev                    # local dev server
+pnpm test                   # unit, vendored-schema, authored-schema & reader tests
+pnpm typecheck              # TypeScript / Vue type check
+pnpm build                  # type check and production build into dist/
+pnpm explore -- cf@1.0.0    # print probed placements in the terminal
 ```
 
-Tests and `pnpm explore` read schemas from [schemas/](schemas), then [test/fixtures](test/fixtures) (for any
-non-vendored schemas); a schema missing from both is downloaded once into `test/fixtures`. Delete a fixture to
-refresh it.
+Tests and `pnpm explore` resolve schemas from [schemas/](schemas), then [test/fixtures](test/fixtures), caching any
+other fetched schema once under `test/fixtures`.
 
-## Deployment
-
-[.github/workflows/pages.yml](.github/workflows/pages.yml) tests, builds and deploys to GitHub Pages on every push to
-`main`. In the repository settings, set **Pages → Build and deployment → Source** to **GitHub Actions**. The build uses
-relative paths, so it also works from any other static host or subdirectory.
+[.github/workflows/pages.yml](.github/workflows/pages.yml) tests, builds and deploys `dist/` to GitHub Pages on pushes
+to `main`. The build uses relative paths and works at a domain root or any subdirectory.

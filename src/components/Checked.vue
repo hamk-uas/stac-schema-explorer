@@ -17,7 +17,7 @@ const newer = computed(() => !!props.live && props.live !== props.latest);
 
 <template>
   <span class="checked">
-    <a v-if="source" :href="source" target="_blank" rel="noopener" :title="note ?? 'Where this was checked'">checked {{ date }}</a>
+    <a v-if="source" :href="source" target="_blank" rel="noopener" :title="[note, 'Open the source where this was checked in a new tab.'].filter(Boolean).join('\n')">checked {{ date }}</a>
     <span v-else :title="note">checked {{ date }}</span>
     <template v-if="latest">
       <span v-if="version && !behind" class="ok">· the latest release</span>
